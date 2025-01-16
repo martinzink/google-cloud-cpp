@@ -1,5 +1,5 @@
 # ~~~
-# Copyright 2018 Google Inc.
+# Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,50 +18,34 @@ include(GoogleapisConfig)
 set(DOXYGEN_PROJECT_NAME "Google Cloud Bigtable C++ Client")
 set(DOXYGEN_PROJECT_BRIEF "A C++ Client Library for Google Cloud Bigtable")
 set(DOXYGEN_PROJECT_NUMBER "${PROJECT_VERSION}")
-set(DOXYGEN_EXAMPLE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/examples"
-                         "${CMAKE_CURRENT_SOURCE_DIR}/quickstart")
-set(DOXYGEN_EXCLUDE_SYMBOLS "benchmarks" "bigtable_admin_internal"
-                            "bigtable_internal" "internal" "testing" "examples")
+set(DOXYGEN_EXAMPLE_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/examples"
+    "${CMAKE_CURRENT_SOURCE_DIR}/admin/samples"
+    "${CMAKE_CURRENT_SOURCE_DIR}/quickstart")
+set(DOXYGEN_EXCLUDE_SYMBOLS
+    "benchmarks"
+    "bigtable_admin_internal"
+    "bigtable_internal"
+    "internal"
+    "testing"
+    "examples"
+    "testproxy"
+    "test_proxy")
+
+include(GoogleCloudCppDoxygen)
+google_cloud_cpp_doxygen_targets("bigtable" DEPENDS cloud-docs
+                                 google-cloud-cpp::bigtable_protos)
 
 include(GoogleCloudCppCommon)
 
-# Configure the location of proto files, particularly the googleapis protos.
-list(APPEND PROTOBUF_IMPORT_DIRS "${PROJECT_THIRD_PARTY_DIR}/googleapis"
-     "${PROJECT_SOURCE_DIR}")
+include(GoogleCloudCppLibrary)
+google_cloud_cpp_add_library_protos(bigtable)
 
 # Enable unit tests
 include(CTest)
 
 # Export the version information for Bazel.
 include(CreateBazelConfig)
-
-# Create a header-only library for the mocks. We use a CMake `INTERFACE` library
-# for these, a regular library would not work on macOS (where the library needs
-# at least one .o file). Unfortunately INTERFACE libraries are a bit weird in
-# that they need absolute paths for their sources.
-add_library(google_cloud_cpp_bigtable_mocks INTERFACE)
-target_sources(
-    google_cloud_cpp_bigtable_mocks
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/admin/mocks/mock_bigtable_instance_admin_connection.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/admin/mocks/mock_bigtable_table_admin_connection.h
-)
-target_link_libraries(
-    google_cloud_cpp_bigtable_mocks
-    INTERFACE google-cloud-cpp::bigtable GTest::gmock_main GTest::gmock
-              GTest::gtest)
-set_target_properties(google_cloud_cpp_bigtable_mocks
-                      PROPERTIES EXPORT_NAME google-cloud-cpp::bigtable_mocks)
-create_bazel_config(google_cloud_cpp_bigtable_mocks YEAR "2021")
-target_include_directories(
-    google_cloud_cpp_bigtable_mocks
-    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-              $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-              $<INSTALL_INTERFACE:include>)
-target_compile_options(google_cloud_cpp_bigtable_mocks
-                       INTERFACE ${GOOGLE_CLOUD_CPP_EXCEPTIONS_FLAG})
-add_library(google-cloud-cpp::bigtable_mocks ALIAS
-            google_cloud_cpp_bigtable_mocks)
 
 # the client library
 add_library(
@@ -95,6 +79,10 @@ add_library(
     admin/internal/bigtable_instance_admin_stub.h
     admin/internal/bigtable_instance_admin_stub_factory.cc
     admin/internal/bigtable_instance_admin_stub_factory.h
+    admin/internal/bigtable_instance_admin_tracing_connection.cc
+    admin/internal/bigtable_instance_admin_tracing_connection.h
+    admin/internal/bigtable_instance_admin_tracing_stub.cc
+    admin/internal/bigtable_instance_admin_tracing_stub.h
     admin/internal/bigtable_table_admin_auth_decorator.cc
     admin/internal/bigtable_table_admin_auth_decorator.h
     admin/internal/bigtable_table_admin_connection_impl.cc
@@ -110,6 +98,10 @@ add_library(
     admin/internal/bigtable_table_admin_stub.h
     admin/internal/bigtable_table_admin_stub_factory.cc
     admin/internal/bigtable_table_admin_stub_factory.h
+    admin/internal/bigtable_table_admin_tracing_connection.cc
+    admin/internal/bigtable_table_admin_tracing_connection.h
+    admin/internal/bigtable_table_admin_tracing_stub.cc
+    admin/internal/bigtable_table_admin_tracing_stub.h
     admin_client.cc
     admin_client.h
     app_profile_config.cc
@@ -125,6 +117,8 @@ add_library(
     completion_queue.h
     data_client.cc
     data_client.h
+    data_connection.cc
+    data_connection.h
     expr.cc
     expr.h
     filters.h
@@ -141,6 +135,8 @@ add_library(
     instance_config.cc
     instance_config.h
     instance_list_responses.h
+    instance_resource.cc
+    instance_resource.h
     instance_update_config.cc
     instance_update_config.h
     internal/admin_client_params.cc
@@ -148,36 +144,77 @@ add_library(
     internal/async_bulk_apply.cc
     internal/async_bulk_apply.h
     internal/async_retry_op.h
+    internal/async_row_reader.cc
+    internal/async_row_reader.h
     internal/async_row_sampler.cc
     internal/async_row_sampler.h
+    internal/async_streaming_read.h
+    internal/bigtable_auth_decorator.cc
+    internal/bigtable_auth_decorator.h
+    internal/bigtable_channel_refresh.cc
+    internal/bigtable_channel_refresh.h
+    internal/bigtable_logging_decorator.cc
+    internal/bigtable_logging_decorator.h
+    internal/bigtable_metadata_decorator.cc
+    internal/bigtable_metadata_decorator.h
+    internal/bigtable_round_robin_decorator.cc
+    internal/bigtable_round_robin_decorator.h
+    internal/bigtable_stub.cc
+    internal/bigtable_stub.h
+    internal/bigtable_stub_factory.cc
+    internal/bigtable_stub_factory.h
+    internal/bigtable_tracing_stub.cc
+    internal/bigtable_tracing_stub.h
     internal/bulk_mutator.cc
     internal/bulk_mutator.h
     internal/client_options_defaults.h
-    internal/common_client.cc
     internal/common_client.h
+    internal/connection_refresh_state.cc
+    internal/connection_refresh_state.h
     internal/convert_policies.cc
     internal/convert_policies.h
+    internal/data_connection_impl.cc
+    internal/data_connection_impl.h
+    internal/data_tracing_connection.cc
+    internal/data_tracing_connection.h
+    internal/default_row_reader.cc
+    internal/default_row_reader.h
     internal/defaults.cc
     internal/defaults.h
     internal/google_bytes_traits.cc
     internal/google_bytes_traits.h
+    internal/legacy_async_bulk_apply.cc
+    internal/legacy_async_bulk_apply.h
+    internal/legacy_async_row_reader.cc
+    internal/legacy_async_row_reader.h
+    internal/legacy_async_row_sampler.cc
+    internal/legacy_async_row_sampler.h
+    internal/legacy_row_reader.cc
+    internal/legacy_row_reader.h
     internal/logging_data_client.cc
     internal/logging_data_client.h
+    internal/mutate_rows_limiter.cc
+    internal/mutate_rows_limiter.h
     internal/prefix_range_end.cc
     internal/prefix_range_end.h
+    internal/rate_limiter.cc
+    internal/rate_limiter.h
     internal/readrowsparser.cc
     internal/readrowsparser.h
-    internal/rowreaderiterator.cc
-    internal/rowreaderiterator.h
+    internal/retry_context.cc
+    internal/retry_context.h
+    internal/retry_traits.h
+    internal/row_reader_impl.h
     internal/rpc_policy_parameters.h
     internal/rpc_policy_parameters.inc
+    internal/traced_row_reader.cc
+    internal/traced_row_reader.h
     internal/unary_client_utils.h
-    internal/wait_for_consistency.cc
-    internal/wait_for_consistency.h
     metadata_update_policy.cc
     metadata_update_policy.h
     mutation_batcher.cc
     mutation_batcher.h
+    mutation_branch.h
     mutations.cc
     mutations.h
     options.h
@@ -186,6 +223,7 @@ add_library(
     read_modify_write_rule.h
     resource_names.cc
     resource_names.h
+    retry_policy.h
     row.h
     row_key.h
     row_key_sample.h
@@ -205,9 +243,13 @@ add_library(
     table_admin.h
     table_config.cc
     table_config.h
+    table_resource.cc
+    table_resource.h
     version.cc
     version.h
-    version_info.h)
+    version_info.h
+    wait_for_consistency.cc
+    wait_for_consistency.h)
 target_link_libraries(
     google_cloud_cpp_bigtable
     PUBLIC absl::memory
@@ -227,13 +269,85 @@ target_compile_options(google_cloud_cpp_bigtable
                        PUBLIC ${GOOGLE_CLOUD_CPP_EXCEPTIONS_FLAG})
 set_target_properties(
     google_cloud_cpp_bigtable
-    PROPERTIES EXPORT_NAME "google-cloud-cpp::bigtable" VERSION
-                                                        ${PROJECT_VERSION}
+    PROPERTIES EXPORT_NAME "google-cloud-cpp::bigtable"
+               VERSION ${PROJECT_VERSION}
                SOVERSION ${PROJECT_VERSION_MAJOR})
 add_library(google-cloud-cpp::bigtable ALIAS google_cloud_cpp_bigtable)
 
 include(CreateBazelConfig)
 create_bazel_config(google_cloud_cpp_bigtable)
+
+# Export the CMake targets to make it easy to create configuration files.
+install(
+    EXPORT google_cloud_cpp_bigtable-targets
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_bigtable"
+    COMPONENT google_cloud_cpp_development)
+
+install(
+    TARGETS google_cloud_cpp_bigtable google_cloud_cpp_bigtable_protos
+    EXPORT google_cloud_cpp_bigtable-targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            COMPONENT google_cloud_cpp_runtime
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            COMPONENT google_cloud_cpp_runtime
+            NAMELINK_COMPONENT google_cloud_cpp_development
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            COMPONENT google_cloud_cpp_development)
+
+google_cloud_cpp_install_headers("google_cloud_cpp_bigtable"
+                                 "include/google/cloud/bigtable")
+
+google_cloud_cpp_add_pkgconfig(
+    bigtable
+    "The Google Cloud Bigtable C++ Client Library"
+    "Provides C++ APIs to access Google Cloud Bigtable."
+    "google_cloud_cpp_grpc_utils"
+    "google_cloud_cpp_common"
+    "google_cloud_cpp_bigtable_protos")
+
+# Create and install the CMake configuration files.
+include(CMakePackageConfigHelpers)
+configure_file("config.cmake.in" "google_cloud_cpp_bigtable-config.cmake" @ONLY)
+write_basic_package_version_file(
+    "google_cloud_cpp_bigtable-config-version.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY ExactVersion)
+
+install(
+    FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/google_cloud_cpp_bigtable-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/google_cloud_cpp_bigtable-config-version.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_bigtable"
+    COMPONENT google_cloud_cpp_development)
+
+if (GOOGLE_CLOUD_CPP_WITH_MOCKS)
+    add_library(
+        google_cloud_cpp_bigtable_mocks # cmake-format: sort
+        admin/mocks/mock_bigtable_instance_admin_connection.h
+        admin/mocks/mock_bigtable_table_admin_connection.h
+        mocks/mock_data_connection.h
+        mocks/mock_row_reader.cc
+        mocks/mock_row_reader.h)
+    target_link_libraries(
+        google_cloud_cpp_bigtable_mocks
+        PUBLIC google-cloud-cpp::bigtable
+        INTERFACE GTest::gmock GTest::gtest)
+    set_target_properties(
+        google_cloud_cpp_bigtable_mocks
+        PROPERTIES EXPORT_NAME google-cloud-cpp::bigtable_mocks)
+    create_bazel_config(google_cloud_cpp_bigtable_mocks YEAR "2021")
+    target_include_directories(
+        google_cloud_cpp_bigtable_mocks
+        INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+                  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+                  $<INSTALL_INTERFACE:include>)
+    target_compile_options(google_cloud_cpp_bigtable_mocks
+                           INTERFACE ${GOOGLE_CLOUD_CPP_EXCEPTIONS_FLAG})
+    add_library(google-cloud-cpp::bigtable_mocks ALIAS
+                google_cloud_cpp_bigtable_mocks)
+
+    google_cloud_cpp_install_mocks(bigtable "Google Cloud Bigtable")
+endif ()
 
 if (BUILD_TESTING)
     add_library(
@@ -245,7 +359,9 @@ if (BUILD_TESTING)
         testing/inprocess_data_client.cc
         testing/inprocess_data_client.h
         testing/mock_async_failing_rpc_factory.h
+        testing/mock_bigtable_stub.h
         testing/mock_data_client.h
+        testing/mock_mutate_rows_limiter.h
         testing/mock_mutate_rows_reader.h
         testing/mock_policies.h
         testing/mock_read_rows_reader.h
@@ -259,17 +375,20 @@ if (BUILD_TESTING)
         testing/table_test_fixture.h)
     target_link_libraries(
         bigtable_client_testing
-        PUBLIC absl::memory
-               google-cloud-cpp::bigtable
+        PUBLIC google-cloud-cpp::bigtable
                google-cloud-cpp::bigtable_mocks
                google-cloud-cpp::bigtable_protos
                google-cloud-cpp::common
                google-cloud-cpp::grpc_utils
+               google_cloud_cpp_testing
+               google_cloud_cpp_testing_grpc
                GTest::gmock_main
                GTest::gmock
                GTest::gtest
                gRPC::grpc++
                gRPC::grpc
+               absl::memory
+               absl::str_format
                protobuf::libprotobuf)
     google_cloud_cpp_add_common_options(bigtable_client_testing)
 
@@ -281,13 +400,13 @@ if (BUILD_TESTING)
         admin_client_test.cc
         app_profile_config_test.cc
         async_read_stream_test.cc
-        async_row_reader_test.cc
         bigtable_version_test.cc
         cell_test.cc
         client_options_test.cc
         cluster_config_test.cc
         column_family_test.cc
         data_client_test.cc
+        data_connection_test.cc
         expr_test.cc
         filters_test.cc
         force_sanitizer_failures_test.cc
@@ -297,19 +416,38 @@ if (BUILD_TESTING)
         instance_admin_client_test.cc
         instance_admin_test.cc
         instance_config_test.cc
+        instance_resource_test.cc
         instance_update_config_test.cc
         internal/admin_client_params_test.cc
         internal/async_bulk_apply_test.cc
+        internal/async_row_reader_test.cc
         internal/async_row_sampler_test.cc
+        internal/async_streaming_read_test.cc
+        internal/bigtable_channel_refresh_test.cc
+        internal/bigtable_stub_factory_test.cc
         internal/bulk_mutator_test.cc
-        internal/common_client_test.cc
+        internal/connection_refresh_state_test.cc
         internal/convert_policies_test.cc
+        internal/data_connection_impl_test.cc
+        internal/data_tracing_connection_test.cc
+        internal/default_row_reader_test.cc
         internal/defaults_test.cc
         internal/google_bytes_traits_test.cc
+        internal/legacy_async_bulk_apply_test.cc
+        internal/legacy_async_row_reader_test.cc
+        internal/legacy_async_row_sampler_test.cc
+        internal/legacy_bulk_mutator_test.cc
+        internal/legacy_row_reader_test.cc
         internal/logging_data_client_test.cc
+        internal/mutate_rows_limiter_test.cc
         internal/prefix_range_end_test.cc
-        internal/wait_for_consistency_test.cc
+        internal/rate_limiter_test.cc
+        internal/retry_context_test.cc
+        internal/retry_traits_test.cc
+        internal/traced_row_reader_test.cc
+        legacy_table_test.cc
         metadata_update_policy_test.cc
+        mocks/mock_row_reader_test.cc
         mutation_batcher_test.cc
         mutations_test.cc
         polling_policy_test.cc
@@ -328,10 +466,12 @@ if (BUILD_TESTING)
         table_readmodifywriterow_test.cc
         table_readrow_test.cc
         table_readrows_test.cc
+        table_resource_test.cc
         table_sample_row_keys_test.cc
         table_test.cc
         testing/cleanup_stale_resources_test.cc
-        testing/random_names_test.cc)
+        testing/random_names_test.cc
+        wait_for_consistency_test.cc)
 
     # Export the list of unit tests so the Bazel BUILD file can pick it up.
     export_list_to_bazel("bigtable_client_unit_tests.bzl"
@@ -360,27 +500,15 @@ if (BUILD_TESTING)
                     gRPC::grpc
                     protobuf::libprotobuf)
         google_cloud_cpp_add_common_options(${target})
-        if (MSVC)
-            target_compile_options(${target} PRIVATE "/bigobj")
-        endif ()
         add_test(NAME ${target} COMMAND ${target})
     endforeach ()
 endif ()
 
-option(GOOGLE_CLOUD_CPP_FORCE_STATIC_ANALYZER_ERRORS
-       "If set, enable tests that force errors detected by the static analyzer."
-       "")
-mark_as_advanced(GOOGLE_CLOUD_CPP_FORCE_STATIC_ANALYZER_ERRORS)
-if (GOOGLE_CLOUD_CPP_FORCE_STATIC_ANALYZER_ERRORS)
-    target_compile_definitions(
-        bigtable_client_force_sanitizer_failures_test
-        PRIVATE -DBIGTABLE_CLIENT_FORCE_STATIC_ANALYZER_ERRORS)
-endif ()
-
 # Only compile integration tests and benchmarks if testing is enabled.
 if (BUILD_TESTING)
-    add_subdirectory(admin/integration_tests)
+    add_subdirectory(admin/samples)
     add_subdirectory(benchmarks)
+    add_subdirectory(test_proxy)
     add_subdirectory(tests)
 endif ()
 
@@ -401,66 +529,3 @@ if (GOOGLE_CLOUD_CPP_ENABLE_EXAMPLES)
     set_tests_properties(bigtable_quickstart
                          PROPERTIES LABELS "integration-test;quickstart")
 endif ()
-
-# Export the CMake targets to make it easy to create configuration files.
-install(
-    EXPORT google_cloud_cpp_bigtable-targets
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_bigtable"
-    COMPONENT google_cloud_cpp_development)
-
-install(
-    TARGETS google_cloud_cpp_bigtable
-    EXPORT google_cloud_cpp_bigtable-targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            COMPONENT google_cloud_cpp_runtime
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            COMPONENT google_cloud_cpp_runtime
-            NAMELINK_SKIP
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            COMPONENT google_cloud_cpp_development)
-# With CMake-3.12 and higher we could avoid this separate command (and the
-# duplication).
-install(
-    TARGETS google_cloud_cpp_bigtable
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            COMPONENT google_cloud_cpp_development
-            NAMELINK_ONLY
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            COMPONENT google_cloud_cpp_development)
-
-google_cloud_cpp_install_headers("google_cloud_cpp_bigtable"
-                                 "include/google/cloud/bigtable")
-google_cloud_cpp_install_headers("google_cloud_cpp_bigtable_mocks"
-                                 "include/google/cloud/bigtable")
-
-# Setup global variables used in the following *.in files.
-set(GOOGLE_CLOUD_CPP_PC_NAME "The Google Cloud Bigtable C++ Client Library")
-set(GOOGLE_CLOUD_CPP_PC_DESCRIPTION
-    "Provides C++ APIs to access Google Cloud Bigtable.")
-set(GOOGLE_CLOUD_CPP_PC_LIBS "-lgoogle_cloud_cpp_bigtable")
-string(CONCAT GOOGLE_CLOUD_CPP_PC_REQUIRES "google_cloud_cpp_grpc_utils"
-              " google_cloud_cpp_common" " google_cloud_cpp_bigtable_protos"
-              " absl_memory")
-
-# Create and install the pkg-config files.
-configure_file("${PROJECT_SOURCE_DIR}/google/cloud/config.pc.in"
-               "google_cloud_cpp_bigtable.pc" @ONLY)
-install(
-    FILES "${CMAKE_CURRENT_BINARY_DIR}/google_cloud_cpp_bigtable.pc"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-    COMPONENT google_cloud_cpp_development)
-
-# Create and install the CMake configuration files.
-include(CMakePackageConfigHelpers)
-configure_file("config.cmake.in" "google_cloud_cpp_bigtable-config.cmake" @ONLY)
-write_basic_package_version_file(
-    "google_cloud_cpp_bigtable-config-version.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY ExactVersion)
-
-install(
-    FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/google_cloud_cpp_bigtable-config.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/google_cloud_cpp_bigtable-config-version.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_bigtable"
-    COMPONENT google_cloud_cpp_development)

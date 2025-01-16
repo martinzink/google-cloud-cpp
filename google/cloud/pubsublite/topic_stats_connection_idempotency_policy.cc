@@ -17,7 +17,6 @@
 // source: google/cloud/pubsublite/v1/topic_stats.proto
 
 #include "google/cloud/pubsublite/topic_stats_connection_idempotency_policy.h"
-#include "absl/memory/memory.h"
 #include <memory>
 
 namespace google {
@@ -30,41 +29,49 @@ using ::google::cloud::Idempotency;
 TopicStatsServiceConnectionIdempotencyPolicy::
     ~TopicStatsServiceConnectionIdempotencyPolicy() = default;
 
-namespace {
-class DefaultTopicStatsServiceConnectionIdempotencyPolicy
-    : public TopicStatsServiceConnectionIdempotencyPolicy {
- public:
-  ~DefaultTopicStatsServiceConnectionIdempotencyPolicy() override = default;
+std::unique_ptr<TopicStatsServiceConnectionIdempotencyPolicy>
+TopicStatsServiceConnectionIdempotencyPolicy::clone() const {
+  return std::make_unique<TopicStatsServiceConnectionIdempotencyPolicy>(*this);
+}
 
-  /// Create a new copy of this object.
-  std::unique_ptr<TopicStatsServiceConnectionIdempotencyPolicy> clone()
-      const override {
-    return absl::make_unique<
-        DefaultTopicStatsServiceConnectionIdempotencyPolicy>(*this);
-  }
+Idempotency TopicStatsServiceConnectionIdempotencyPolicy::ComputeMessageStats(
+    google::cloud::pubsublite::v1::ComputeMessageStatsRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency ComputeMessageStats(
-      google::cloud::pubsublite::v1::ComputeMessageStatsRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency TopicStatsServiceConnectionIdempotencyPolicy::ComputeHeadCursor(
+    google::cloud::pubsublite::v1::ComputeHeadCursorRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency ComputeHeadCursor(
-      google::cloud::pubsublite::v1::ComputeHeadCursorRequest const&) override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency TopicStatsServiceConnectionIdempotencyPolicy::ComputeTimeCursor(
+    google::cloud::pubsublite::v1::ComputeTimeCursorRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency ComputeTimeCursor(
-      google::cloud::pubsublite::v1::ComputeTimeCursorRequest const&) override {
-    return Idempotency::kNonIdempotent;
-  }
-};
-}  // namespace
+Idempotency TopicStatsServiceConnectionIdempotencyPolicy::ListOperations(
+    google::longrunning::ListOperationsRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
+
+Idempotency TopicStatsServiceConnectionIdempotencyPolicy::GetOperation(
+    google::longrunning::GetOperationRequest const&) {
+  return Idempotency::kIdempotent;
+}
+
+Idempotency TopicStatsServiceConnectionIdempotencyPolicy::DeleteOperation(
+    google::longrunning::DeleteOperationRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
+
+Idempotency TopicStatsServiceConnectionIdempotencyPolicy::CancelOperation(
+    google::longrunning::CancelOperationRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
 std::unique_ptr<TopicStatsServiceConnectionIdempotencyPolicy>
 MakeDefaultTopicStatsServiceConnectionIdempotencyPolicy() {
-  return absl::make_unique<
-      DefaultTopicStatsServiceConnectionIdempotencyPolicy>();
+  return std::make_unique<TopicStatsServiceConnectionIdempotencyPolicy>();
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

@@ -18,6 +18,7 @@
 #include "google/cloud/storage/version.h"
 #include "absl/types/optional.h"
 #include <iostream>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -48,7 +49,7 @@ class ComplexOption {
   bool has_value() const { return value_.has_value(); }
   T const& value() const { return value_.value(); }
   template <typename U>
-  T value_or(U&& default_val) {
+  T value_or(U&& default_val) const {
     return value_.value_or(std::forward<U>(default_val));
   }
 

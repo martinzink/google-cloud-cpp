@@ -14,6 +14,9 @@
 
 #include "google/cloud/internal/async_polling_loop.h"
 #include "google/cloud/grpc_options.h"
+#include "google/cloud/internal/call_context.h"
+#include "google/cloud/internal/grpc_opentelemetry.h"
+#include "google/cloud/internal/make_status.h"
 #include "google/cloud/log.h"
 #include <algorithm>
 #include <mutex>
@@ -30,25 +33,25 @@ class AsyncPollingLoopImpl
     : public std::enable_shared_from_this<AsyncPollingLoopImpl> {
  public:
   AsyncPollingLoopImpl(google::cloud::CompletionQueue cq,
+                       ImmutableOptions options,
                        AsyncPollLongRunningOperation poll,
                        AsyncCancelLongRunningOperation cancel,
                        std::unique_ptr<PollingPolicy> polling_policy,
                        std::string location)
       : cq_(std::move(cq)),
+        options_(std::move(options)),
         poll_(std::move(poll)),
         cancel_(std::move(cancel)),
         polling_policy_(std::move(polling_policy)),
         location_(std::move(location)),
-        promise_(null_promise_t{}),
-        delayed_cancel_(false) {}
+        promise_(null_promise_t{}) {}
 
   future<StatusOr<Operation>> Start(future<StatusOr<Operation>> op) {
     auto self = shared_from_this();
     auto w = WeakFromThis();
-    auto const& options = CurrentOptions();
-    promise_ = promise<StatusOr<Operation>>([w, options]() mutable {
+    promise_ = promise<StatusOr<Operation>>([w, c = CallContext{}]() mutable {
       if (auto self = w.lock()) {
-        OptionsSpan span(std::move(options));
+        ScopedCallContext scope(std::move(c));
         self->DoCancel();
       }
     });
@@ -75,11 +78,12 @@ class AsyncPollingLoopImpl
     }
     // Cancels are best effort, so we use weak pointers.
     auto w = WeakFromThis();
-    auto context = absl::make_unique<grpc::ClientContext>();
-    ConfigurePollContext(*context, CurrentOptions());
-    cancel_(cq_, std::move(context), request).then([w](future<Status> f) {
-      if (auto self = w.lock()) self->OnCancel(f.get());
-    });
+    auto context = std::make_shared<grpc::ClientContext>();
+    ConfigurePollContext(*context, *options_);
+    cancel_(cq_, std::move(context), options_, request)
+        .then([w](future<Status> f) {
+          if (auto self = w.lock()) self->OnCancel(f.get());
+        });
   }
 
   void OnCancel(Status const& status) {
@@ -87,7 +91,9 @@ class AsyncPollingLoopImpl
   }
 
   void OnStart(StatusOr<Operation> op) {
-    if (!op || op->done()) return promise_.set_value(std::move(op));
+    if (!op) return promise_.set_value(std::move(op));
+    AddSpanAttribute(*options_, "gl-cpp.LRO_name", op->name());
+    if (op->done()) return promise_.set_value(std::move(op));
     GCP_LOG(DEBUG) << location_ << "() polling loop starting for "
                    << op->name();
     bool do_cancel = false;
@@ -105,8 +111,8 @@ class AsyncPollingLoopImpl
     GCP_LOG(DEBUG) << location_ << "() polling loop waiting "
                    << duration.count() << "ms";
     auto self = shared_from_this();
-    cq_.MakeRelativeTimer(duration).then(
-        [self](TimerResult f) { self->OnTimer(std::move(f)); });
+    TracedAsyncBackoff(cq_, *options_, duration, "Async Backoff")
+        .then([self](TimerResult f) { self->OnTimer(std::move(f)); });
   }
 
   void OnTimer(TimerResult f) {
@@ -119,9 +125,9 @@ class AsyncPollingLoopImpl
       request.set_name(op_name_);
     }
     auto self = shared_from_this();
-    auto context = absl::make_unique<grpc::ClientContext>();
-    ConfigurePollContext(*context, CurrentOptions());
-    poll_(cq_, std::move(context), request)
+    auto context = std::make_shared<grpc::ClientContext>();
+    ConfigurePollContext(*context, *options_);
+    poll_(cq_, std::move(context), options_, request)
         .then([self](future<StatusOr<Operation>> g) {
           self->OnPoll(std::move(g));
         });
@@ -137,15 +143,18 @@ class AsyncPollingLoopImpl
     // after too many polling attempts.
     if (!polling_policy_->OnFailure(op.status())) {
       if (op) {
-        return promise_.set_value(Status(
-            StatusCode::kDeadlineExceeded,
-            location_ + "() - polling loop terminated by polling policy"));
+        // We should not be fabricating a `Status` value here. Rather, we
+        // should cancel the operation and wait for the next poll to return
+        // an accurate status to the user, otherwise they will have no idea
+        // how to react. But for now, we leave the operation running. It
+        // may eventually complete.
+        return promise_.set_value(internal::DeadlineExceededError(
+            location_ + "() - polling loop terminated by "
+                        "polling policy",
+            GCP_ERROR_INFO()));
       }
+      // This could be a transient error if the policy is exhausted.
       return promise_.set_value(std::move(op).status());
-    }
-    if (op) {
-      std::unique_lock<std::mutex> lk(mu_);
-      op_name_ = std::move(*op->mutable_name());
     }
     return Wait();
   }
@@ -154,6 +163,7 @@ class AsyncPollingLoopImpl
   // `Start()`, and then only used from the `On*()` callbacks, which are
   // serialized, so they need no external synchronization.
   google::cloud::CompletionQueue cq_;
+  ImmutableOptions options_;
   AsyncPollLongRunningOperation poll_;
   AsyncCancelLongRunningOperation cancel_;
   std::unique_ptr<PollingPolicy> polling_policy_;
@@ -163,16 +173,17 @@ class AsyncPollingLoopImpl
   // `delayed_cancel_` and `op_name_`, in contrast, are also used from
   // `DoCancel()`, which is called asynchronously, so they need locking.
   std::mutex mu_;
-  bool delayed_cancel_;  // GUARDED_BY(mu_)
-  std::string op_name_;  // GUARDED_BY(mu_)
+  bool delayed_cancel_ = false;  // GUARDED_BY(mu_)
+  std::string op_name_;          // GUARDED_BY(mu_)
 };
 
 future<StatusOr<Operation>> AsyncPollingLoop(
-    google::cloud::CompletionQueue cq, future<StatusOr<Operation>> op,
-    AsyncPollLongRunningOperation poll, AsyncCancelLongRunningOperation cancel,
+    google::cloud::CompletionQueue cq, ImmutableOptions options,
+    future<StatusOr<Operation>> op, AsyncPollLongRunningOperation poll,
+    AsyncCancelLongRunningOperation cancel,
     std::unique_ptr<PollingPolicy> polling_policy, std::string location) {
   auto loop = std::make_shared<AsyncPollingLoopImpl>(
-      std::move(cq), std::move(poll), std::move(cancel),
+      std::move(cq), std::move(options), std::move(poll), std::move(cancel),
       std::move(polling_policy), std::move(location));
   return loop->Start(std::move(op));
 }

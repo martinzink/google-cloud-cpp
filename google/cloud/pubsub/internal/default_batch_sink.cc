@@ -13,32 +13,62 @@
 // limitations under the License.
 
 #include "google/cloud/pubsub/internal/default_batch_sink.h"
+#include "google/cloud/pubsub/message.h"
 #include "google/cloud/pubsub/options.h"
 #include "google/cloud/internal/async_retry_loop.h"
+#include <numeric>
 
 namespace google {
 namespace cloud {
 namespace pubsub_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+using ::google::cloud::pubsub::CompressionAlgorithmOption;
+using ::google::cloud::pubsub::CompressionThresholdOption;
+using ::google::pubsub::v1::PubsubMessage;
+
+namespace {
+
+std::size_t RequestSize(google::pubsub::v1::PublishRequest const& request) {
+  return std::accumulate(request.messages().begin(), request.messages().end(),
+                         std::size_t{0},
+                         [](std::size_t a, PubsubMessage const& m) {
+                           return a + MessageProtoSize(m);
+                         });
+}
+
+}  // namespace
+
 DefaultBatchSink::DefaultBatchSink(std::shared_ptr<PublisherStub> stub,
                                    CompletionQueue cq, Options opts)
-    : stub_(std::move(stub)), cq_(std::move(cq)), options_(std::move(opts)) {}
+    : stub_(std::move(stub)),
+      cq_(std::move(cq)),
+      options_(google::cloud::internal::MakeImmutableOptions(std::move(opts))) {
+}
 
 future<StatusOr<google::pubsub::v1::PublishResponse>>
 DefaultBatchSink::AsyncPublish(google::pubsub::v1::PublishRequest request) {
-  internal::OptionsSpan span(options_);
-
-  auto& stub = stub_;
   return internal::AsyncRetryLoop(
-      options_.get<pubsub::RetryPolicyOption>()->clone(),
-      options_.get<pubsub::BackoffPolicyOption>()->clone(),
+      options_->get<pubsub::RetryPolicyOption>()->clone(),
+      options_->get<pubsub::BackoffPolicyOption>()->clone(),
       Idempotency::kIdempotent, cq_,
-      [stub](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             google::pubsub::v1::PublishRequest const& request) {
-        return stub->AsyncPublish(cq, std::move(context), request);
+      [stub = stub_](CompletionQueue& cq,
+                     std::shared_ptr<grpc::ClientContext> context,
+                     google::cloud::internal::ImmutableOptions options,
+                     google::pubsub::v1::PublishRequest const& request) {
+        if (options->has<CompressionThresholdOption>() &&
+            options->has<CompressionAlgorithmOption>()) {
+          auto const threshold = options->get<CompressionThresholdOption>();
+          if (RequestSize(request) >= threshold) {
+            context->set_compression_algorithm(
+                static_cast<grpc_compression_algorithm>(
+                    options->get<CompressionAlgorithmOption>()));
+          }
+        }
+        return stub->AsyncPublish(cq, std::move(context), std::move(options),
+                                  request);
       },
-      std::move(request), __func__);
+      options_, std::move(request), __func__);
 }
 
 void DefaultBatchSink::ResumePublish(std::string const&) {}

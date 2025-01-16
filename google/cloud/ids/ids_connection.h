@@ -20,70 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_IDS_IDS_CONNECTION_H
 
 #include "google/cloud/ids/ids_connection_idempotency_policy.h"
-#include "google/cloud/ids/internal/ids_retry_traits.h"
-#include "google/cloud/ids/internal/ids_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/ids/v1/ids_connection.h"
 
 namespace google {
 namespace cloud {
 namespace ids {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using IDSRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    ids_internal::IDSRetryTraits>;
+/// @deprecated Use ids_v1::MakeIDSConnection directly.
+using ::google::cloud::ids_v1::MakeIDSConnection;
 
-using IDSLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        ids_internal::IDSRetryTraits>;
+/// @deprecated Use ids_v1::IDSConnection directly.
+using ::google::cloud::ids_v1::IDSConnection;
 
-using IDSLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        ids_internal::IDSRetryTraits>;
+/// @deprecated Use ids_v1::IDSLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::ids_v1::IDSLimitedErrorCountRetryPolicy;
 
-class IDSConnection {
- public:
-  virtual ~IDSConnection() = 0;
+/// @deprecated Use ids_v1::IDSLimitedTimeRetryPolicy directly.
+using ::google::cloud::ids_v1::IDSLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::ids::v1::Endpoint> ListEndpoints(
-      google::cloud::ids::v1::ListEndpointsRequest request);
-
-  virtual StatusOr<google::cloud::ids::v1::Endpoint> GetEndpoint(
-      google::cloud::ids::v1::GetEndpointRequest const& request);
-
-  virtual future<StatusOr<google::cloud::ids::v1::Endpoint>> CreateEndpoint(
-      google::cloud::ids::v1::CreateEndpointRequest const& request);
-
-  virtual future<StatusOr<google::cloud::ids::v1::OperationMetadata>>
-  DeleteEndpoint(google::cloud::ids::v1::DeleteEndpointRequest const& request);
-};
-
-std::shared_ptr<IDSConnection> MakeIDSConnection(Options options = {});
+/// @deprecated Use ids_v1::IDSRetryPolicy directly.
+using ::google::cloud::ids_v1::IDSRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace ids
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace ids_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<ids::IDSConnection> MakeIDSConnection(
-    std::shared_ptr<IDSStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace ids_internal
 }  // namespace cloud
 }  // namespace google
 

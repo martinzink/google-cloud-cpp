@@ -20,88 +20,33 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_BIGQUERY_WRITE_CONNECTION_H
 
 #include "google/cloud/bigquery/bigquery_write_connection_idempotency_policy.h"
-#include "google/cloud/bigquery/internal/bigquery_write_retry_traits.h"
-#include "google/cloud/bigquery/internal/bigquery_write_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/experimental_tag.h"
-#include "google/cloud/internal/async_read_write_stream_impl.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/bigquery/storage/v1/bigquery_write_connection.h"
 
 namespace google {
 namespace cloud {
 namespace bigquery {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using BigQueryWriteRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        bigquery_internal::BigQueryWriteRetryTraits>;
+/// @deprecated Use bigquery_storage_v1::MakeBigQueryWriteConnection directly.
+using ::google::cloud::bigquery_storage_v1::MakeBigQueryWriteConnection;
 
-using BigQueryWriteLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        bigquery_internal::BigQueryWriteRetryTraits>;
+/// @deprecated Use bigquery_storage_v1::BigQueryWriteConnection directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryWriteConnection;
 
-using BigQueryWriteLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        bigquery_internal::BigQueryWriteRetryTraits>;
+/// @deprecated Use
+/// bigquery_storage_v1::BigQueryWriteLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::bigquery_storage_v1::
+    BigQueryWriteLimitedErrorCountRetryPolicy;
 
-class BigQueryWriteConnection {
- public:
-  virtual ~BigQueryWriteConnection() = 0;
+/// @deprecated Use bigquery_storage_v1::BigQueryWriteLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryWriteLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::bigquery::storage::v1::WriteStream>
-  CreateWriteStream(
-      google::cloud::bigquery::storage::v1::CreateWriteStreamRequest const&
-          request);
-
-  virtual std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
-      google::cloud::bigquery::storage::v1::AppendRowsRequest,
-      google::cloud::bigquery::storage::v1::AppendRowsResponse>>
-      AsyncAppendRows(ExperimentalTag);
-
-  virtual StatusOr<google::cloud::bigquery::storage::v1::WriteStream>
-  GetWriteStream(
-      google::cloud::bigquery::storage::v1::GetWriteStreamRequest const&
-          request);
-
-  virtual StatusOr<
-      google::cloud::bigquery::storage::v1::FinalizeWriteStreamResponse>
-  FinalizeWriteStream(
-      google::cloud::bigquery::storage::v1::FinalizeWriteStreamRequest const&
-          request);
-
-  virtual StatusOr<
-      google::cloud::bigquery::storage::v1::BatchCommitWriteStreamsResponse>
-  BatchCommitWriteStreams(google::cloud::bigquery::storage::v1::
-                              BatchCommitWriteStreamsRequest const& request);
-
-  virtual StatusOr<google::cloud::bigquery::storage::v1::FlushRowsResponse>
-  FlushRows(
-      google::cloud::bigquery::storage::v1::FlushRowsRequest const& request);
-};
-
-std::shared_ptr<BigQueryWriteConnection> MakeBigQueryWriteConnection(
-    Options options = {});
+/// @deprecated Use bigquery_storage_v1::BigQueryWriteRetryPolicy directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryWriteRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigquery
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace bigquery_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<bigquery::BigQueryWriteConnection> MakeBigQueryWriteConnection(
-    std::shared_ptr<BigQueryWriteStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace bigquery_internal
 }  // namespace cloud
 }  // namespace google
 

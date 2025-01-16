@@ -165,7 +165,7 @@ TEST_F(DatabaseAdminClientTest, DatabaseBasicCRUD) {
                 updated_policy->bindings().Get(0).members().Get(0));
     }
 
-    // Perform a different update using the the OCC loop API:
+    // Perform a different update using the OCC loop API:
     updated_policy = client_.SetIamPolicy(
         database_, [this, &writer_role](google::iam::v1::Policy current) {
           std::string const expected_member =
@@ -200,23 +200,17 @@ TEST_F(DatabaseAdminClientTest, DatabaseBasicCRUD) {
   EXPECT_EQ(0, get_ddl_result->statements_size());
 
   std::vector<std::string> statements;
-  if (!emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (!emulator_) {  // version_retention_period
     statements.push_back("ALTER DATABASE `" + database_.database_id() +
                          "` SET OPTIONS (version_retention_period='7d')");
   }
   statements.emplace_back(R"""(
         CREATE TABLE Singers (
-          SingerId   INT64 NOT NULL,
-          FirstName  STRING(1024),
-          LastName   STRING(1024),
-          SingerInfo BYTES(MAX)
-      )""");
-  if (!emulator_) {
-    // TODO(#6873): Remove this check when the emulator supports JSON.
-    statements.back().append(R"""(,SingerDetails JSON)""");
-  }
-  statements.back().append(R"""(
+          SingerId      INT64 NOT NULL,
+          FirstName     STRING(1024),
+          LastName      STRING(1024),
+          SingerInfo    BYTES(MAX),
+          SingerDetails JSON
         ) PRIMARY KEY (SingerId)
       )""");
   auto metadata = client_.UpdateDatabase(database_, statements).get();
@@ -239,20 +233,8 @@ TEST_F(DatabaseAdminClientTest, DatabaseBasicCRUD) {
           ON Singers(SingerDetails)
       )""");
   metadata = client_.UpdateDatabase(database_, statements).get();
-  if (!emulator_) {
-    // TODO(#6873): Remove this check when the emulator supports JSON.
-    EXPECT_THAT(metadata,
-                StatusIs(StatusCode::kFailedPrecondition,
-                         AllOf(HasSubstr("Index SingersByDetail"),
-                               HasSubstr("column of unsupported type JSON"))));
-  } else {
-    EXPECT_THAT(
-        metadata,
-        StatusIs(
-            StatusCode::kInvalidArgument,
-            AllOf(HasSubstr("Index SingersByDetail"),
-                  HasSubstr("column SingerDetails which does not exist"))));
-  }
+  EXPECT_THAT(metadata, StatusIs(StatusCode::kFailedPrecondition,
+                                 HasSubstr("SingersByDetail")));
 
   // Verify that a JSON column cannot be used as a primary key.
   statements.clear();
@@ -262,15 +244,9 @@ TEST_F(DatabaseAdminClientTest, DatabaseBasicCRUD) {
         ) PRIMARY KEY (Key)
       )""");
   metadata = client_.UpdateDatabase(database_, statements).get();
-  if (!emulator_) {
-    // TODO(#6873): Remove this check when the emulator supports JSON.
-    EXPECT_THAT(metadata,
-                StatusIs(StatusCode::kInvalidArgument,
-                         AllOf(HasSubstr("Key has type JSON"),
-                               HasSubstr("part of the primary key"))));
-  } else {
-    EXPECT_THAT(metadata, Not(IsOk()));
-  }
+  EXPECT_THAT(metadata, StatusIs(StatusCode::kInvalidArgument,
+                                 AllOf(HasSubstr("Key has type JSON"),
+                                       HasSubstr("part of the primary key"))));
 
   EXPECT_TRUE(DatabaseExists()) << "Database " << database_;
   auto drop_status = client_.DropDatabase(database_);
@@ -288,10 +264,9 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodCreate) {
               {absl::StrCat("ALTER DATABASE `", database_.database_id(),
                             "` SET OPTIONS (version_retention_period='7d')")})
           .get();
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
     EXPECT_THAT(database, Not(IsOk()));
-    return;
+    GTEST_SKIP();
   }
   ASSERT_THAT(database, IsOk());
   EXPECT_EQ(database_.FullName(), database->name());
@@ -334,8 +309,7 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdate) {
       client_.CreateDatabase(database_, /*extra_statements=*/{}).get();
   ASSERT_THAT(database, IsOk());
   EXPECT_EQ(database_.FullName(), database->name());
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
     EXPECT_EQ("", database->version_retention_period());
   } else {
     EXPECT_NE("", database->version_retention_period());  // default value
@@ -349,8 +323,7 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdate) {
               {absl::StrCat("ALTER DATABASE `", database_.database_id(),
                             "` SET OPTIONS (version_retention_period='7d')")})
           .get();
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
     EXPECT_THAT(update, Not(IsOk()));
   } else {
     ASSERT_THAT(update, IsOk());
@@ -363,8 +336,7 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdate) {
   auto get = client_.GetDatabase(database_);
   ASSERT_THAT(get, IsOk());
   EXPECT_EQ(database->name(), get->name());
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
     EXPECT_EQ("", get->version_retention_period());
   } else {
     EXPECT_EQ("7d", get->version_retention_period());
@@ -380,8 +352,7 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdate) {
   }();
   ASSERT_THAT(list_db, IsOk());
   EXPECT_EQ(database->name(), list_db->name());
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
     EXPECT_EQ("", list_db->version_retention_period());
   } else {
     EXPECT_EQ("7d", list_db->version_retention_period());
@@ -390,8 +361,7 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdate) {
   // Verify that version_retention_period is returned from GetDatabaseDdl().
   auto ddl = client_.GetDatabaseDdl(database_);
   ASSERT_THAT(ddl, IsOk());
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
   } else {
     EXPECT_THAT(ddl->statements(),
                 Contains(ContainsRegex("version_retention_period *= *'7d'")));
@@ -408,8 +378,7 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdateFailure) {
       client_.CreateDatabase(database_, /*extra_statements=*/{}).get();
   ASSERT_THAT(database, IsOk());
   EXPECT_EQ(database_.FullName(), database->name());
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
     EXPECT_EQ("", database->version_retention_period());
   } else {
     EXPECT_NE("", database->version_retention_period());  // default value
@@ -418,8 +387,7 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdateFailure) {
   auto get0 = client_.GetDatabase(database_);
   ASSERT_THAT(get0, IsOk());
   EXPECT_EQ(database->name(), get0->name());
-  if (emulator_) {
-    // TODO(#5479): Awaiting emulator support for version_retention_period.
+  if (emulator_) {  // version_retention_period
     EXPECT_EQ("", get0->version_retention_period());
   } else {
     EXPECT_NE("", get0->version_retention_period());  // default value
@@ -448,7 +416,6 @@ TEST_F(DatabaseAdminClientTest, VersionRetentionPeriodUpdateFailure) {
 
 // @test Verify we can create a database with an encryption key.
 TEST_F(DatabaseAdminClientTest, CreateWithEncryptionKey) {
-  if (emulator_) GTEST_SKIP() << "emulator does not support CMEK";
   KmsKeyName encryption_key(instance_.project_id(), location_, kKeyRing,
                             kKeyName);
   auto database = client_
@@ -457,34 +424,38 @@ TEST_F(DatabaseAdminClientTest, CreateWithEncryptionKey) {
                       .get();
   ASSERT_STATUS_OK(database);
   EXPECT_EQ(database->name(), database_.FullName());
-  EXPECT_TRUE(database->has_encryption_config());
-  if (database->has_encryption_config()) {
-    EXPECT_EQ(database->encryption_config().kms_key_name(),
-              encryption_key.FullName());
-  }
-
-  auto get_result = client_.GetDatabase(database_);
-  ASSERT_STATUS_OK(get_result);
-  EXPECT_EQ(database->name(), get_result->name());
-  EXPECT_TRUE(get_result->has_encryption_config());
-  if (get_result->has_encryption_config()) {
-    EXPECT_EQ(get_result->encryption_config().kms_key_name(),
-              encryption_key.FullName());
-  }
-
-  // Verify that encryption config is returned via ListDatabases().
-  auto list_db = [&] {
-    for (auto const& db : client_.ListDatabases(database_.instance())) {
-      if (db && db->name() == database_.FullName()) return db;
+  if (emulator_) {
+    EXPECT_FALSE(database->has_encryption_config());
+  } else {
+    EXPECT_TRUE(database->has_encryption_config());
+    if (database->has_encryption_config()) {
+      EXPECT_EQ(database->encryption_config().kms_key_name(),
+                encryption_key.FullName());
     }
-    return StatusOr<google::spanner::admin::database::v1::Database>{
-        Status{StatusCode::kNotFound, "disappeared"}};
-  }();
-  ASSERT_THAT(list_db, IsOk());
-  EXPECT_TRUE(list_db->has_encryption_config());
-  if (list_db->has_encryption_config()) {
-    EXPECT_EQ(list_db->encryption_config().kms_key_name(),
-              encryption_key.FullName());
+
+    auto get_result = client_.GetDatabase(database_);
+    ASSERT_STATUS_OK(get_result);
+    EXPECT_EQ(database->name(), get_result->name());
+    EXPECT_TRUE(get_result->has_encryption_config());
+    if (get_result->has_encryption_config()) {
+      EXPECT_EQ(get_result->encryption_config().kms_key_name(),
+                encryption_key.FullName());
+    }
+
+    // Verify that encryption config is returned via ListDatabases().
+    auto list_db = [&] {
+      for (auto const& db : client_.ListDatabases(database_.instance())) {
+        if (db && db->name() == database_.FullName()) return db;
+      }
+      return StatusOr<google::spanner::admin::database::v1::Database>{
+          Status{StatusCode::kNotFound, "disappeared"}};
+    }();
+    ASSERT_THAT(list_db, IsOk());
+    EXPECT_TRUE(list_db->has_encryption_config());
+    if (list_db->has_encryption_config()) {
+      EXPECT_EQ(list_db->encryption_config().kms_key_name(),
+                encryption_key.FullName());
+    }
   }
 
   EXPECT_STATUS_OK(client_.DropDatabase(database_));
@@ -493,7 +464,6 @@ TEST_F(DatabaseAdminClientTest, CreateWithEncryptionKey) {
 // @test Verify creating a database fails if a nonexistent encryption key is
 // supplied.
 TEST_F(DatabaseAdminClientTest, CreateWithNonexistentEncryptionKey) {
-  if (emulator_) GTEST_SKIP() << "emulator does not support CMEK";
   KmsKeyName nonexistent_encryption_key(instance_.project_id(), location_,
                                         kKeyRing, "ceci-n-est-pas-une-cle");
   auto database =
@@ -501,8 +471,14 @@ TEST_F(DatabaseAdminClientTest, CreateWithNonexistentEncryptionKey) {
           .CreateDatabase(database_, /*extra_statements=*/{},
                           CustomerManagedEncryption(nonexistent_encryption_key))
           .get();
-  EXPECT_THAT(database, StatusIs(StatusCode::kFailedPrecondition,
-                                 HasSubstr("KMS Key provided is not usable")));
+  if (emulator_) {
+    EXPECT_THAT(database, IsOk());
+    EXPECT_STATUS_OK(client_.DropDatabase(database_));
+  } else {
+    EXPECT_THAT(database,
+                StatusIs(StatusCode::kFailedPrecondition,
+                         HasSubstr("KMS Key provided is not usable")));
+  }
 }
 
 /// @test Verify the backwards compatibility `v1` namespace still exists.

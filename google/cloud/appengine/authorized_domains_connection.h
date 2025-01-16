@@ -20,62 +20,33 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_AUTHORIZED_DOMAINS_CONNECTION_H
 
 #include "google/cloud/appengine/authorized_domains_connection_idempotency_policy.h"
-#include "google/cloud/appengine/internal/authorized_domains_retry_traits.h"
-#include "google/cloud/appengine/internal/authorized_domains_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/appengine/v1/authorized_domains_connection.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using AuthorizedDomainsRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        appengine_internal::AuthorizedDomainsRetryTraits>;
+/// @deprecated Use appengine_v1::MakeAuthorizedDomainsConnection directly.
+using ::google::cloud::appengine_v1::MakeAuthorizedDomainsConnection;
 
-using AuthorizedDomainsLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::AuthorizedDomainsRetryTraits>;
+/// @deprecated Use appengine_v1::AuthorizedDomainsConnection directly.
+using ::google::cloud::appengine_v1::AuthorizedDomainsConnection;
 
-using AuthorizedDomainsLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::AuthorizedDomainsRetryTraits>;
+/// @deprecated Use appengine_v1::AuthorizedDomainsLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::appengine_v1::
+    AuthorizedDomainsLimitedErrorCountRetryPolicy;
 
-class AuthorizedDomainsConnection {
- public:
-  virtual ~AuthorizedDomainsConnection() = 0;
+/// @deprecated Use appengine_v1::AuthorizedDomainsLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::appengine_v1::AuthorizedDomainsLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::appengine::v1::AuthorizedDomain>
-  ListAuthorizedDomains(
-      google::appengine::v1::ListAuthorizedDomainsRequest request);
-};
-
-std::shared_ptr<AuthorizedDomainsConnection> MakeAuthorizedDomainsConnection(
-    Options options = {});
+/// @deprecated Use appengine_v1::AuthorizedDomainsRetryPolicy directly.
+using ::google::cloud::appengine_v1::AuthorizedDomainsRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::AuthorizedDomainsConnection>
-MakeAuthorizedDomainsConnection(std::shared_ptr<AuthorizedDomainsStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

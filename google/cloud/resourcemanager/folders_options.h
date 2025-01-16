@@ -21,40 +21,29 @@
 
 #include "google/cloud/resourcemanager/folders_connection.h"
 #include "google/cloud/resourcemanager/folders_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/resourcemanager/v3/folders_options.h"
 
 namespace google {
 namespace cloud {
 namespace resourcemanager {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct FoldersRetryPolicyOption {
-  using Type = std::shared_ptr<FoldersRetryPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::FoldersPollingPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::FoldersPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct FoldersBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::FoldersBackoffPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::FoldersBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct FoldersPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::FoldersConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::resourcemanager_v3::
+    FoldersConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct FoldersConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<FoldersConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::FoldersPolicyOptionList directly.
+using ::google::cloud::resourcemanager_v3::FoldersPolicyOptionList;
 
-using FoldersPolicyOptionList =
-    OptionList<FoldersRetryPolicyOption, FoldersBackoffPolicyOption,
-               FoldersPollingPolicyOption,
-               FoldersConnectionIdempotencyPolicyOption>;
+/// @deprecated Use resourcemanager_v3::FoldersRetryPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::FoldersRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace resourcemanager

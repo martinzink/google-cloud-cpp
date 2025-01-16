@@ -14,11 +14,12 @@
 
 #include "google/cloud/internal/oauth2_authorized_user_credentials.h"
 #include "google/cloud/internal/oauth2_credential_constants.h"
+#include "google/cloud/internal/oauth2_universe_domain.h"
+#include "google/cloud/testing_util/chrono_output.h"
 #include "google/cloud/testing_util/mock_http_payload.h"
 #include "google/cloud/testing_util/mock_rest_client.h"
 #include "google/cloud/testing_util/mock_rest_response.h"
 #include "google/cloud/testing_util/status_matchers.h"
-#include "absl/memory/memory.h"
 #include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
 
@@ -28,69 +29,65 @@ namespace oauth2_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
-using ::google::cloud::rest_internal::HttpPayload;
 using ::google::cloud::rest_internal::RestRequest;
 using ::google::cloud::rest_internal::RestResponse;
-using ::google::cloud::testing_util::IsOk;
-using ::google::cloud::testing_util::MockHttpPayload;
+using ::google::cloud::testing_util::MakeMockHttpPayloadSuccess;
 using ::google::cloud::testing_util::MockRestClient;
 using ::google::cloud::testing_util::MockRestResponse;
 using ::google::cloud::testing_util::StatusIs;
 using ::testing::_;
-using ::testing::A;
 using ::testing::AllOf;
-using ::testing::Contains;
+using ::testing::ByMove;
 using ::testing::HasSubstr;
+using ::testing::IsSupersetOf;
+using ::testing::MatcherCast;
 using ::testing::Not;
+using ::testing::Pair;
+using ::testing::Property;
 using ::testing::Return;
+
+using MockHttpClientFactory =
+    ::testing::MockFunction<std::unique_ptr<rest_internal::RestClient>(
+        Options const&)>;
 
 class AuthorizedUserCredentialsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    mock_rest_client_ = absl::make_unique<MockRestClient>();
+    mock_rest_client_ = std::make_unique<MockRestClient>();
   }
   std::unique_ptr<MockRestClient> mock_rest_client_;
 };
 
 /// @test Verify that we can create credentials from a JWT string.
 TEST_F(AuthorizedUserCredentialsTest, Simple) {
-  std::string response = R"""({
+  std::string response_payload = R"""({
     "token_type": "Type",
     "access_token": "access-token-value",
-    "id_token": "id-token-value",
     "expires_in": 1234
 })""";
 
-  auto mock_response = absl::make_unique<MockRestResponse>();
-  EXPECT_CALL(*mock_response, StatusCode)
-      .WillRepeatedly(Return(rest_internal::HttpStatusCode::kOk));
-  EXPECT_CALL(std::move(*mock_response), ExtractPayload).WillOnce([&] {
-    auto mock_http_payload = absl::make_unique<MockHttpPayload>();
-    EXPECT_CALL(*mock_http_payload, Read)
-        .WillOnce([response](absl::Span<char> buffer) {
-          std::copy(response.begin(), response.end(), buffer.begin());
-          return response.size();
-        })
-        .WillOnce([](absl::Span<char>) { return 0; });
-    return std::unique_ptr<HttpPayload>(std::move(mock_http_payload));
-  });
+  auto client = [&]() {
+    auto response = std::make_unique<MockRestResponse>();
+    EXPECT_CALL(*response, StatusCode)
+        .WillRepeatedly(Return(rest_internal::HttpStatusCode::kOk));
+    EXPECT_CALL(std::move(*response), ExtractPayload)
+        .WillOnce(Return(ByMove(MakeMockHttpPayloadSuccess(response_payload))));
 
-  EXPECT_CALL(
-      *mock_rest_client_,
-      Post(_, A<std::vector<std::pair<std::string, std::string>> const&>()))
-      .WillOnce(
-          [&](RestRequest const&,
-              std::vector<std::pair<std::string, std::string>> const& payload) {
-            EXPECT_THAT(payload, Contains(std::pair<std::string, std::string>(
-                                     "grant_type", "refresh_token")));
-            EXPECT_THAT(payload, Contains(std::pair<std::string, std::string>(
-                                     "client_id", "a-client-id.example.com")));
-            EXPECT_THAT(payload, Contains(std::pair<std::string, std::string>(
-                                     "client_secret", "a-123456ABCDEF")));
-            EXPECT_THAT(payload, Contains(std::pair<std::string, std::string>(
-                                     "refresh_token", "1/THETOKEN")));
-            return std::unique_ptr<RestResponse>(std::move(mock_response));
-          });
+    auto client = std::make_unique<MockRestClient>();
+    using FormDataType = std::vector<std::pair<std::string, std::string>>;
+    auto expected_request =
+        Property(&RestRequest::path, GoogleOAuthRefreshEndpoint());
+    auto expected_form_data = MatcherCast<FormDataType const&>(IsSupersetOf({
+        Pair("grant_type", "refresh_token"),
+        Pair("client_id", "a-client-id.example.com"),
+        Pair("client_secret", "a-123456ABCDEF"),
+        Pair("refresh_token", "1/THETOKEN"),
+    }));
+    EXPECT_CALL(*client, Post(_, expected_request, expected_form_data))
+        .WillOnce(
+            Return(ByMove(std::unique_ptr<RestResponse>(std::move(response)))));
+    return client;
+  }();
 
   std::string config = R"""({
       "client_id": "a-client-id.example.com",
@@ -102,135 +99,13 @@ TEST_F(AuthorizedUserCredentialsTest, Simple) {
   auto info = ParseAuthorizedUserCredentials(config, "test");
   ASSERT_STATUS_OK(info);
 
+  MockHttpClientFactory client_factory;
+  EXPECT_CALL(client_factory, Call).WillOnce(Return(ByMove(std::move(client))));
   AuthorizedUserCredentials credentials(*info, {},
-                                        std::move(mock_rest_client_));
-  EXPECT_EQ(std::make_pair(std::string{"Authorization"},
-                           std::string{"Type access-token-value"}),
-            credentials.AuthorizationHeader().value());
-}
-
-/// @test Verify that we can refresh service account credentials.
-TEST_F(AuthorizedUserCredentialsTest, Refresh) {
-  // Prepare two responses, the first one is used but becomes immediately
-  // expired, resulting in another refresh next time the caller tries to get
-  // an authorization header.
-  std::string r1 = R"""({
-    "token_type": "Type",
-    "access_token": "access-token-r1",
-    "id_token": "id-token-value",
-    "expires_in": 0
-})""";
-  std::string r2 = R"""({
-    "token_type": "Type",
-    "access_token": "access-token-r2",
-    "id_token": "id-token-value",
-    "expires_in": 1000
-})""";
-
-  auto mock_response1 = absl::make_unique<MockRestResponse>();
-  EXPECT_CALL(*mock_response1, StatusCode)
-      .WillRepeatedly(Return(rest_internal::HttpStatusCode::kOk));
-  EXPECT_CALL(std::move(*mock_response1), ExtractPayload).WillOnce([&] {
-    auto mock_http_payload = absl::make_unique<MockHttpPayload>();
-    EXPECT_CALL(*mock_http_payload, Read)
-        .WillOnce([r1](absl::Span<char> buffer) {
-          std::copy(r1.begin(), r1.end(), buffer.begin());
-          return r1.size();
-        })
-        .WillOnce([](absl::Span<char>) { return 0; });
-    return std::unique_ptr<HttpPayload>(std::move(mock_http_payload));
-  });
-
-  auto mock_response2 = absl::make_unique<MockRestResponse>();
-  EXPECT_CALL(*mock_response2, StatusCode)
-      .WillRepeatedly(Return(rest_internal::HttpStatusCode::kOk));
-  EXPECT_CALL(std::move(*mock_response2), ExtractPayload).WillOnce([&] {
-    auto mock_http_payload = absl::make_unique<MockHttpPayload>();
-    EXPECT_CALL(*mock_http_payload, Read)
-        .WillOnce([r2](absl::Span<char> buffer) {
-          std::copy(r2.begin(), r2.end(), buffer.begin());
-          return r2.size();
-        })
-        .WillOnce([](absl::Span<char>) { return 0; });
-    return std::unique_ptr<HttpPayload>(std::move(mock_http_payload));
-  });
-
-  EXPECT_CALL(
-      *mock_rest_client_,
-      Post(_, A<std::vector<std::pair<std::string, std::string>> const&>()))
-      .WillOnce([&](RestRequest const&,
-                    std::vector<std::pair<std::string, std::string>> const&) {
-        return std::unique_ptr<RestResponse>(std::move(mock_response1));
-      })
-      .WillOnce([&](RestRequest const&,
-                    std::vector<std::pair<std::string, std::string>> const&) {
-        return std::unique_ptr<RestResponse>(std::move(mock_response2));
-      });
-
-  std::string config = R"""({
-      "client_id": "a-client-id.example.com",
-      "client_secret": "a-123456ABCDEF",
-      "refresh_token": "1/THETOKEN",
-      "type": "magic_type"
-})""";
-  auto info = ParseAuthorizedUserCredentials(config, "test");
-  ASSERT_STATUS_OK(info);
-  AuthorizedUserCredentials credentials(*info, {},
-                                        std::move(mock_rest_client_));
-
-  EXPECT_EQ(std::make_pair(std::string{"Authorization"},
-                           std::string{"Type access-token-r1"}),
-            credentials.AuthorizationHeader().value());
-  EXPECT_EQ(std::make_pair(std::string{"Authorization"},
-                           std::string{"Type access-token-r2"}),
-            credentials.AuthorizationHeader().value());
-  EXPECT_EQ(std::make_pair(std::string{"Authorization"},
-                           std::string{"Type access-token-r2"}),
-            credentials.AuthorizationHeader().value());
-}
-
-/// @test Mock a failed refresh response.
-TEST_F(AuthorizedUserCredentialsTest, FailedRefresh) {
-  auto mock_response = absl::make_unique<MockRestResponse>();
-  EXPECT_CALL(*mock_response, StatusCode)
-      .WillRepeatedly(Return(rest_internal::HttpStatusCode::kBadRequest));
-  EXPECT_CALL(std::move(*mock_response), ExtractPayload).WillOnce([&] {
-    auto mock_http_payload = absl::make_unique<MockHttpPayload>();
-    EXPECT_CALL(*mock_http_payload, Read).WillOnce([](absl::Span<char>) {
-      return 0;
-    });
-    return std::unique_ptr<HttpPayload>(std::move(mock_http_payload));
-  });
-
-  EXPECT_CALL(
-      *mock_rest_client_,
-      Post(_, A<std::vector<std::pair<std::string, std::string>> const&>()))
-      .WillOnce([](RestRequest const&,
-                   std::vector<std::pair<std::string, std::string>> const&)
-                    -> StatusOr<std::unique_ptr<RestResponse>> {
-        return {Status(StatusCode::kAborted, "Fake Curl error", {})};
-      })
-      .WillOnce([&](RestRequest const&,
-                    std::vector<std::pair<std::string, std::string>> const&) {
-        return std::unique_ptr<RestResponse>(std::move(mock_response));
-      });
-
-  std::string config = R"""({
-      "client_id": "a-client-id.example.com",
-      "client_secret": "a-123456ABCDEF",
-      "refresh_token": "1/THETOKEN",
-      "type": "magic_type"
-})""";
-  auto info = ParseAuthorizedUserCredentials(config, "test");
-  ASSERT_STATUS_OK(info);
-  AuthorizedUserCredentials credentials(*info, {},
-                                        std::move(mock_rest_client_));
-  // Response 1
-  auto status = credentials.AuthorizationHeader();
-  EXPECT_THAT(status, StatusIs(StatusCode::kAborted));
-  // Response 2
-  status = credentials.AuthorizationHeader();
-  EXPECT_THAT(status, Not(IsOk()));
+                                        client_factory.AsStdFunction());
+  auto token = credentials.GetToken(std::chrono::system_clock::now());
+  ASSERT_STATUS_OK(token);
+  EXPECT_EQ(token->token, "access-token-value");
 }
 
 /// @test Verify that parsing an authorized user account JSON string works.
@@ -250,6 +125,51 @@ TEST_F(AuthorizedUserCredentialsTest, ParseSimple) {
   EXPECT_EQ("a-123456ABCDEF", actual->client_secret);
   EXPECT_EQ("1/THETOKEN", actual->refresh_token);
   EXPECT_EQ("https://oauth2.googleapis.com/test_endpoint", actual->token_uri);
+  EXPECT_EQ(actual->universe_domain, GoogleDefaultUniverseDomain());
+}
+
+/// @test Verify that parsing an authorized user account JSON string with a
+/// non-empty universe_domain works.
+TEST_F(AuthorizedUserCredentialsTest, ParseSimpleWithUniverseDomain) {
+  std::string config = R"""({
+      "client_id": "a-client-id.example.com",
+      "client_secret": "a-123456ABCDEF",
+      "refresh_token": "1/THETOKEN",
+      "token_uri": "https://oauth2.googleapis.com/test_endpoint",
+      "type": "magic_type",
+      "universe_domain": "my-ud.net"
+})""";
+
+  auto actual =
+      ParseAuthorizedUserCredentials(config, "test-data", "unused-uri");
+  ASSERT_STATUS_OK(actual);
+  EXPECT_EQ("a-client-id.example.com", actual->client_id);
+  EXPECT_EQ("a-123456ABCDEF", actual->client_secret);
+  EXPECT_EQ("1/THETOKEN", actual->refresh_token);
+  EXPECT_EQ("https://oauth2.googleapis.com/test_endpoint", actual->token_uri);
+  EXPECT_EQ(actual->universe_domain, "my-ud.net");
+}
+
+/// @test Verify that parsing an authorized user account JSON string with a
+/// non-empty universe_domain works.
+TEST_F(AuthorizedUserCredentialsTest, ParseSimpleWithEmptyUniverseDomain) {
+  std::string config = R"""({
+      "client_id": "a-client-id.example.com",
+      "client_secret": "a-123456ABCDEF",
+      "refresh_token": "1/THETOKEN",
+      "token_uri": "https://oauth2.googleapis.com/test_endpoint",
+      "type": "magic_type",
+      "universe_domain": ""
+})""";
+
+  auto actual =
+      ParseAuthorizedUserCredentials(config, "test-data", "unused-uri");
+  EXPECT_THAT(
+      actual,
+      StatusIs(
+          StatusCode::kInvalidArgument,
+          HasSubstr(
+              "universe_domain field in credentials file cannot be empty")));
 }
 
 /// @test Verify that parsing an authorized user account JSON string works.
@@ -348,37 +268,22 @@ TEST_F(AuthorizedUserCredentialsTest,
   // Does not have access_token.
   std::string r2 = R"""({
     "token_type": "Type",
-    "id_token": "id-token-value",
     "expires_in": 1000
 })""";
 
-  auto mock_response1 = absl::make_unique<MockRestResponse>();
+  auto mock_response1 = std::make_unique<MockRestResponse>();
   EXPECT_CALL(*mock_response1, StatusCode)
       .WillRepeatedly(Return(rest_internal::HttpStatusCode::kBadRequest));
   EXPECT_CALL(std::move(*mock_response1), ExtractPayload).WillOnce([&] {
-    auto mock_http_payload = absl::make_unique<MockHttpPayload>();
-    EXPECT_CALL(*mock_http_payload, Read)
-        .WillOnce([r1](absl::Span<char> buffer) {
-          std::copy(r1.begin(), r1.end(), buffer.begin());
-          return r1.size();
-        })
-        .WillOnce([](absl::Span<char>) { return 0; });
-    return std::unique_ptr<HttpPayload>(std::move(mock_http_payload));
+    return MakeMockHttpPayloadSuccess(r1);
   });
 
-  auto mock_response2 = absl::make_unique<MockRestResponse>();
+  auto mock_response2 = std::make_unique<MockRestResponse>();
   //  EXPECT_CALL(*mock_response2, Headers).WillOnce(Return(headers_));
   EXPECT_CALL(*mock_response2, StatusCode)
       .WillRepeatedly(Return(rest_internal::HttpStatusCode::kBadRequest));
   EXPECT_CALL(std::move(*mock_response2), ExtractPayload).WillOnce([&] {
-    auto mock_http_payload = absl::make_unique<MockHttpPayload>();
-    EXPECT_CALL(*mock_http_payload, Read)
-        .WillOnce([r2](absl::Span<char> buffer) {
-          std::copy(r2.begin(), r2.end(), buffer.begin());
-          return r2.size();
-        })
-        .WillOnce([](absl::Span<char>) { return 0; });
-    return std::unique_ptr<HttpPayload>(std::move(mock_http_payload));
+    return MakeMockHttpPayloadSuccess(r2);
   });
 
   auto status = ParseAuthorizedUserRefreshResponse(
@@ -394,45 +299,28 @@ TEST_F(AuthorizedUserCredentialsTest,
                        HasSubstr("Could not find all required fields")));
 }
 
-/// @test Parsing a refresh response yields a TemporaryToken.
+/// @test Parsing a refresh response yields an access token.
 TEST_F(AuthorizedUserCredentialsTest, ParseAuthorizedUserRefreshResponse) {
   std::string r1 = R"""({
     "token_type": "Type",
     "access_token": "access-token-r1",
-    "id_token": "id-token-value",
     "expires_in": 1000
 })""";
 
-  auto mock_response = absl::make_unique<MockRestResponse>();
+  auto mock_response = std::make_unique<MockRestResponse>();
   EXPECT_CALL(*mock_response, StatusCode)
       .WillRepeatedly(Return(rest_internal::HttpStatusCode::kOk));
   EXPECT_CALL(std::move(*mock_response), ExtractPayload).WillOnce([&] {
-    auto mock_http_payload = absl::make_unique<MockHttpPayload>();
-    EXPECT_CALL(*mock_http_payload, Read)
-        .WillOnce([r1](absl::Span<char> buffer) {
-          std::copy(r1.begin(), r1.end(), buffer.begin());
-          return r1.size();
-        })
-        .WillOnce([](absl::Span<char>) { return 0; });
-    return std::unique_ptr<HttpPayload>(std::move(mock_http_payload));
+    return MakeMockHttpPayloadSuccess(r1);
   });
 
-  auto expires_in = 1000;
-  auto clock_value = 2000;
-  auto status = ParseAuthorizedUserRefreshResponse(
-      *mock_response, std::chrono::system_clock::from_time_t(clock_value));
+  auto const now = std::chrono::system_clock::now();
+  auto const expires_in = std::chrono::seconds(1000);
+  auto status = ParseAuthorizedUserRefreshResponse(*mock_response, now);
   EXPECT_STATUS_OK(status);
   auto token = *status;
-  EXPECT_EQ(
-      std::chrono::time_point_cast<std::chrono::seconds>(token.expiration_time)
-          .time_since_epoch()
-          .count(),
-      std::chrono::time_point_cast<std::chrono::seconds>(
-          std::chrono::system_clock::from_time_t(clock_value + expires_in))
-          .time_since_epoch()
-          .count());
-  EXPECT_EQ(token.token, std::make_pair(std::string{"Authorization"},
-                                        std::string{"Type access-token-r1"}));
+  EXPECT_EQ(token.expiration, now + expires_in);
+  EXPECT_EQ(token.token, "access-token-r1");
 }
 
 }  // namespace

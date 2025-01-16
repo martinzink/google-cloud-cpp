@@ -20,59 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TALENT_EVENT_CONNECTION_H
 
 #include "google/cloud/talent/event_connection_idempotency_policy.h"
-#include "google/cloud/talent/internal/event_retry_traits.h"
-#include "google/cloud/talent/internal/event_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/talent/v4/event_connection.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using EventServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        talent_internal::EventServiceRetryTraits>;
+/// @deprecated Use talent_v4::MakeEventServiceConnection directly.
+using ::google::cloud::talent_v4::MakeEventServiceConnection;
 
-using EventServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        talent_internal::EventServiceRetryTraits>;
+/// @deprecated Use talent_v4::EventServiceConnection directly.
+using ::google::cloud::talent_v4::EventServiceConnection;
 
-using EventServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        talent_internal::EventServiceRetryTraits>;
+/// @deprecated Use talent_v4::EventServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::talent_v4::EventServiceLimitedErrorCountRetryPolicy;
 
-class EventServiceConnection {
- public:
-  virtual ~EventServiceConnection() = 0;
+/// @deprecated Use talent_v4::EventServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::talent_v4::EventServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::talent::v4::ClientEvent> CreateClientEvent(
-      google::cloud::talent::v4::CreateClientEventRequest const& request);
-};
-
-std::shared_ptr<EventServiceConnection> MakeEventServiceConnection(
-    Options options = {});
+/// @deprecated Use talent_v4::EventServiceRetryPolicy directly.
+using ::google::cloud::talent_v4::EventServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace talent_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<talent::EventServiceConnection> MakeEventServiceConnection(
-    std::shared_ptr<EventServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace talent_internal
 }  // namespace cloud
 }  // namespace google
 

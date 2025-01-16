@@ -21,35 +21,27 @@
 
 #include "google/cloud/monitoring/uptime_check_connection.h"
 #include "google/cloud/monitoring/uptime_check_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/uptime_check_options.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct UptimeCheckServiceRetryPolicyOption {
-  using Type = std::shared_ptr<UptimeCheckServiceRetryPolicy>;
-};
+/// @deprecated Use monitoring_v3::UptimeCheckServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::monitoring_v3::UptimeCheckServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct UptimeCheckServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// monitoring_v3::UptimeCheckServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::monitoring_v3::
+    UptimeCheckServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct UptimeCheckServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<UptimeCheckServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use monitoring_v3::UptimeCheckServicePolicyOptionList directly.
+using ::google::cloud::monitoring_v3::UptimeCheckServicePolicyOptionList;
 
-using UptimeCheckServicePolicyOptionList =
-    OptionList<UptimeCheckServiceRetryPolicyOption,
-               UptimeCheckServiceBackoffPolicyOption,
-               UptimeCheckServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use monitoring_v3::UptimeCheckServiceRetryPolicyOption directly.
+using ::google::cloud::monitoring_v3::UptimeCheckServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring

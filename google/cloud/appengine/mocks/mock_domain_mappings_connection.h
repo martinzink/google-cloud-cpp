@@ -20,45 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_MOCKS_MOCK_DOMAIN_MAPPINGS_CONNECTION_H
 
 #include "google/cloud/appengine/domain_mappings_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/appengine/v1/mocks/mock_domain_mappings_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in appengine_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace appengine_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockDomainMappingsConnection
-    : public appengine::DomainMappingsConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::appengine::v1::DomainMapping>,
-              ListDomainMappings,
-              (google::appengine::v1::ListDomainMappingsRequest request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::appengine::v1::DomainMapping>, GetDomainMapping,
-              (google::appengine::v1::GetDomainMappingRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::appengine::v1::DomainMapping>>,
-      CreateDomainMapping,
-      (google::appengine::v1::CreateDomainMappingRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::appengine::v1::DomainMapping>>,
-      UpdateDomainMapping,
-      (google::appengine::v1::UpdateDomainMappingRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::appengine::v1::OperationMetadataV1>>,
-      DeleteDomainMapping,
-      (google::appengine::v1::DeleteDomainMappingRequest const& request),
-      (override));
-};
+/// @deprecated Use appengine_v1_mocks::MockDomainMappingsConnection directly.
+using ::google::cloud::appengine_v1_mocks::MockDomainMappingsConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine_mocks

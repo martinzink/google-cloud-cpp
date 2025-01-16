@@ -16,6 +16,7 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_POPULATE_COMMON_OPTIONS_H
 
 #include "google/cloud/options.h"
+#include "google/cloud/tracing_options.h"
 #include "google/cloud/version.h"
 #include <string>
 
@@ -27,34 +28,52 @@ namespace internal {
 /**
  * Modify @p opts to have default values for common options.
  *
- * Add default values for common options, including
- * `EndpointOption`,`UserAgentProductsOption`, `TracingComponentsOption`, and
- * `UserProjectOption`.
+ * Add default values for common options, including:
+ *  - `AuthorityOption`
+ *  - `EndpointOption`
+ *  - `LoggingComponentsOption`
+ *  - `UserAgentProductsOption`
+ *  - `UserProjectOption`
  *
  * @param opts the current options. Any values already present in this
  *     collection are not modified.
- * @param endpoint_env_var an environment variable name to override the
+ * @param endpoint_env_var an environment variable name used to override the
  *     default endpoint. If no `EndpointOption` is set in `opts`, **and** this
  *     environment variable is set, **and** its value is not the empty string,
  *     use the environment variable value for `EndpointOption`. This parameter
- *     is ignored if empty. This is useful on libraries that do not have an
- *     environment variable to override the endpoint value.
+ *     is ignored if empty, which is useful when a service does not need an
+ *     override.
  * @param emulator_env_var an environment variable name to override the endpoint
  *     and the default credentials. If this environment variable is set, use its
- *     value for `EndpointOption`. Not all services have emulators, in this
- *     case, the library can provide an empty value for this environment
- *     variable.
- * @param default_endpoint the default value for `EndpointOption`, if none of
- *     the other mechanisms has set a value.
+ *     value for `EndpointOption`. This parameter is ignored if empty, which is
+ *     useful when a service does not have an emulator.
+ * @param authority_env_var an environment variable name to override the value
+ *     for `AuthorityOption`. This parameter is ignored if empty.
+ * @param default_endpoint the default value for `EndpointOption` and
+ *     `AuthorityOption` if none of the other mechanisms has set a value.
  *
  * @return opts with some common defaults set.
  */
 Options PopulateCommonOptions(Options opts, std::string const& endpoint_env_var,
                               std::string const& emulator_env_var,
+                              std::string const& authority_env_var,
                               std::string default_endpoint);
 
 /// Compute the default value for the tracing components.
 std::set<std::string> DefaultTracingComponents();
+
+/// Compute the default value for the tracing options.
+TracingOptions DefaultTracingOptions();
+
+/**
+ * Given client options, returns a minimal set of matching options to be used by
+ * the authentication components.
+ *
+ * For example, if tracing is enabled in a client via the
+ * `OpenTelemetryTracingOption`, we also want to enable tracing in the auth
+ * components.
+ */
+Options MakeAuthOptions(Options const& options);
 
 }  // namespace internal
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

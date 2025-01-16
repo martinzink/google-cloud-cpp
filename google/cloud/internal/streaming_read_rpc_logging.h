@@ -16,6 +16,7 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_STREAMING_READ_RPC_LOGGING_H
 
 #include "google/cloud/internal/absl_str_cat_quiet.h"
+#include "google/cloud/internal/grpc_request_metadata.h"
 #include "google/cloud/internal/log_wrapper.h"
 #include "google/cloud/internal/streaming_read_rpc.h"
 #include "google/cloud/status.h"
@@ -32,7 +33,6 @@ namespace google {
 namespace cloud {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
-std::string FormatMetadata(StreamingRpcMetadata const& metadata);
 
 /**
  * Logging decorator for StreamingReadRpc.
@@ -50,22 +50,22 @@ class StreamingReadRpcLogging : public StreamingReadRpc<ResponseType> {
 
   void Cancel() override {
     auto const prefix = std::string(__func__) + "(" + request_id_ + ")";
-    GCP_LOG(DEBUG) << prefix << "() >> (void)";
+    GCP_LOG(DEBUG) << prefix << "() << (void)";
     reader_->Cancel();
     GCP_LOG(DEBUG) << prefix << "() >> (void)";
   }
   absl::variant<Status, ResponseType> Read() override {
     auto const prefix = std::string(__func__) + "(" + request_id_ + ")";
-    GCP_LOG(DEBUG) << prefix << "() >> (void)";
+    GCP_LOG(DEBUG) << prefix << "() << (void)";
     auto result = reader_->Read();
     GCP_LOG(DEBUG) << prefix << "() >> "
                    << absl::visit(ResultVisitor(tracing_options_), result);
     return result;
   }
-  StreamingRpcMetadata GetRequestMetadata() const override {
+  RpcMetadata GetRequestMetadata() const override {
     auto metadata = reader_->GetRequestMetadata();
-    GCP_LOG(DEBUG) << __func__ << "() >> metadata={" << FormatMetadata(metadata)
-                   << "}";
+    GCP_LOG(DEBUG) << __func__ << "() >> metadata={"
+                   << FormatForLoggingDecorator(metadata) << "}";
     return metadata;
   }
 

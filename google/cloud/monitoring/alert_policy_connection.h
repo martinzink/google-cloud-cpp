@@ -20,73 +20,33 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_ALERT_POLICY_CONNECTION_H
 
 #include "google/cloud/monitoring/alert_policy_connection_idempotency_policy.h"
-#include "google/cloud/monitoring/internal/alert_policy_retry_traits.h"
-#include "google/cloud/monitoring/internal/alert_policy_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/alert_policy_connection.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using AlertPolicyServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        monitoring_internal::AlertPolicyServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MakeAlertPolicyServiceConnection directly.
+using ::google::cloud::monitoring_v3::MakeAlertPolicyServiceConnection;
 
-using AlertPolicyServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        monitoring_internal::AlertPolicyServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::AlertPolicyServiceConnection directly.
+using ::google::cloud::monitoring_v3::AlertPolicyServiceConnection;
 
-using AlertPolicyServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        monitoring_internal::AlertPolicyServiceRetryTraits>;
+/// @deprecated Use
+/// monitoring_v3::AlertPolicyServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::monitoring_v3::
+    AlertPolicyServiceLimitedErrorCountRetryPolicy;
 
-class AlertPolicyServiceConnection {
- public:
-  virtual ~AlertPolicyServiceConnection() = 0;
+/// @deprecated Use monitoring_v3::AlertPolicyServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_v3::AlertPolicyServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::monitoring::v3::AlertPolicy> ListAlertPolicies(
-      google::monitoring::v3::ListAlertPoliciesRequest request);
-
-  virtual StatusOr<google::monitoring::v3::AlertPolicy> GetAlertPolicy(
-      google::monitoring::v3::GetAlertPolicyRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::AlertPolicy> CreateAlertPolicy(
-      google::monitoring::v3::CreateAlertPolicyRequest const& request);
-
-  virtual Status DeleteAlertPolicy(
-      google::monitoring::v3::DeleteAlertPolicyRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::AlertPolicy> UpdateAlertPolicy(
-      google::monitoring::v3::UpdateAlertPolicyRequest const& request);
-};
-
-std::shared_ptr<AlertPolicyServiceConnection> MakeAlertPolicyServiceConnection(
-    Options options = {});
+/// @deprecated Use monitoring_v3::AlertPolicyServiceRetryPolicy directly.
+using ::google::cloud::monitoring_v3::AlertPolicyServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace monitoring_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<monitoring::AlertPolicyServiceConnection>
-MakeAlertPolicyServiceConnection(std::shared_ptr<AlertPolicyServiceStub> stub,
-                                 Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace monitoring_internal
 }  // namespace cloud
 }  // namespace google
 

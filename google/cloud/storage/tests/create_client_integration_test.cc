@@ -21,6 +21,8 @@
 #include "google/cloud/testing_util/status_matchers.h"
 #include <gmock/gmock.h>
 #include <fstream>
+#include <string>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -71,10 +73,14 @@ TEST_F(CreateClientIntegrationTest, DefaultWorks) {
 }
 
 TEST_F(CreateClientIntegrationTest, SettingPolicies) {
-  auto credentials = oauth2::GoogleDefaultCredentials();
-  ASSERT_THAT(credentials, IsOk());
+  auto credentials = oauth2::CreateAnonymousCredentials();
+  if (!UsingEmulator()) {
+    auto c = oauth2::GoogleDefaultCredentials();
+    ASSERT_THAT(c, IsOk());
+    credentials = *std::move(c);
+  }
   auto client =
-      Client(ClientOptions(*credentials),
+      Client(ClientOptions(std::move(credentials)),
              LimitedErrorCountRetryPolicy(/*maximum_failures=*/5),
              ExponentialBackoffPolicy(/*initial_delay=*/std::chrono::seconds(1),
                                       /*maximum_delay=*/std::chrono::minutes(5),

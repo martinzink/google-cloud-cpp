@@ -21,34 +21,26 @@
 
 #include "google/cloud/containeranalysis/grafeas_connection.h"
 #include "google/cloud/containeranalysis/grafeas_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/containeranalysis/v1/grafeas_options.h"
 
 namespace google {
 namespace cloud {
 namespace containeranalysis {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct GrafeasRetryPolicyOption {
-  using Type = std::shared_ptr<GrafeasRetryPolicy>;
-};
+/// @deprecated Use containeranalysis_v1::GrafeasBackoffPolicyOption directly.
+using ::google::cloud::containeranalysis_v1::GrafeasBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct GrafeasBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// containeranalysis_v1::GrafeasConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::containeranalysis_v1::
+    GrafeasConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct GrafeasConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<GrafeasConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use containeranalysis_v1::GrafeasPolicyOptionList directly.
+using ::google::cloud::containeranalysis_v1::GrafeasPolicyOptionList;
 
-using GrafeasPolicyOptionList =
-    OptionList<GrafeasRetryPolicyOption, GrafeasBackoffPolicyOption,
-               GrafeasConnectionIdempotencyPolicyOption>;
+/// @deprecated Use containeranalysis_v1::GrafeasRetryPolicyOption directly.
+using ::google::cloud::containeranalysis_v1::GrafeasRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace containeranalysis

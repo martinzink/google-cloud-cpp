@@ -19,83 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_JOB_CONTROLLER_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_JOB_CONTROLLER_CONNECTION_H
 
-#include "google/cloud/dataproc/internal/job_controller_retry_traits.h"
-#include "google/cloud/dataproc/internal/job_controller_stub.h"
 #include "google/cloud/dataproc/job_controller_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/dataproc/v1/job_controller_connection.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using JobControllerRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        dataproc_internal::JobControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::MakeJobControllerConnection directly.
+using ::google::cloud::dataproc_v1::MakeJobControllerConnection;
 
-using JobControllerLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        dataproc_internal::JobControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::JobControllerConnection directly.
+using ::google::cloud::dataproc_v1::JobControllerConnection;
 
-using JobControllerLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        dataproc_internal::JobControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::JobControllerLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::JobControllerLimitedErrorCountRetryPolicy;
 
-class JobControllerConnection {
- public:
-  virtual ~JobControllerConnection() = 0;
+/// @deprecated Use dataproc_v1::JobControllerLimitedTimeRetryPolicy directly.
+using ::google::cloud::dataproc_v1::JobControllerLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::dataproc::v1::Job> SubmitJob(
-      google::cloud::dataproc::v1::SubmitJobRequest const& request);
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::Job>>
-  SubmitJobAsOperation(
-      google::cloud::dataproc::v1::SubmitJobRequest const& request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::Job> GetJob(
-      google::cloud::dataproc::v1::GetJobRequest const& request);
-
-  virtual StreamRange<google::cloud::dataproc::v1::Job> ListJobs(
-      google::cloud::dataproc::v1::ListJobsRequest request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::Job> UpdateJob(
-      google::cloud::dataproc::v1::UpdateJobRequest const& request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::Job> CancelJob(
-      google::cloud::dataproc::v1::CancelJobRequest const& request);
-
-  virtual Status DeleteJob(
-      google::cloud::dataproc::v1::DeleteJobRequest const& request);
-};
-
-std::shared_ptr<JobControllerConnection> MakeJobControllerConnection(
-    Options options = {});
+/// @deprecated Use dataproc_v1::JobControllerRetryPolicy directly.
+using ::google::cloud::dataproc_v1::JobControllerRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace dataproc_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<dataproc::JobControllerConnection> MakeJobControllerConnection(
-    std::shared_ptr<JobControllerStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace dataproc_internal
 }  // namespace cloud
 }  // namespace google
 

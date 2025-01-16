@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/servicecontrol/service_controller_client.h"
+//! [all]
+#include "google/cloud/servicecontrol/v1/service_controller_client.h"
 #include "google/cloud/project.h"
 #include <google/protobuf/util/time_util.h>
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace servicecontrol = ::google::cloud::servicecontrol;
+  namespace servicecontrol = ::google::cloud::servicecontrol_v1;
   auto client = servicecontrol::ServiceControllerClient(
       servicecontrol::MakeServiceControllerConnection());
 
@@ -38,16 +38,17 @@ int main(int argc, char* argv[]) try {
     op.set_operation_id("TODO-use-UUID-4-or-UUID-5");
     op.set_operation_name("google.pubsub.v1.Publisher.Publish");
     op.set_consumer_id(project.FullName());
-    *op.mutable_start_time() = TimeUtil::GetCurrentTime();
+    *op.mutable_start_time() = (TimeUtil::GetCurrentTime)();
     return op;
   }();
 
   auto response = client.Check(request);
-  if (!response) throw std::runtime_error(response.status().message());
+  if (!response) throw std::move(response).status();
   std::cout << response->DebugString() << "\n";
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

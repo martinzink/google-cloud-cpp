@@ -16,11 +16,10 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_STORAGE_CLIENT_H
 
 #include "google/cloud/storage/hmac_key_metadata.h"
-#include "google/cloud/storage/internal/logging_client.h"
-#include "google/cloud/storage/internal/parameter_pack_validation.h"
 #include "google/cloud/storage/internal/policy_document_request.h"
-#include "google/cloud/storage/internal/retry_client.h"
+#include "google/cloud/storage/internal/request_project_id.h"
 #include "google/cloud/storage/internal/signed_url_requests.h"
+#include "google/cloud/storage/internal/storage_connection.h"
 #include "google/cloud/storage/internal/tuple_filter.h"
 #include "google/cloud/storage/list_buckets_reader.h"
 #include "google/cloud/storage/list_hmac_keys_reader.h"
@@ -34,10 +33,14 @@
 #include "google/cloud/storage/retry_policy.h"
 #include "google/cloud/storage/upload_options.h"
 #include "google/cloud/storage/version.h"
+#include "google/cloud/internal/group_options.h"
 #include "google/cloud/internal/throw_delegate.h"
+#include "google/cloud/options.h"
 #include "google/cloud/status.h"
 #include "google/cloud/status_or.h"
 #include "absl/meta/type_traits.h"
+#include "absl/strings/string_view.h"
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -87,7 +90,7 @@ struct ClientImplDetails;
  *
  * Note that the application may (at times) use more connections than the
  * maximum size of the pool. For example if N downloads are in progress the
- * library may need N connections, even if the the pool size is smaller.
+ * library may need N connections, even if the pool size is smaller.
  *
  * Two clients that compare equal share the same connection pool. Two clients
  * created with the default constructor or with the constructor from a
@@ -159,34 +162,68 @@ struct ClientImplDetails;
  * In addition, the @ref index "main page" contains examples using `StatusOr<T>`
  * to handle errors.
  *
- * @par Optional Parameters
- * Most of the member functions in this class can receive optional parameters
- * to modify their behavior. For example, the default when reading multi-version
- * objects is to retrieve the latest version:
+ * @par Optional Request Options
+ * Most of the member functions in this class can receive optional request
+ * options. For example, the default when reading multi-version objects is to
+ * retrieve the latest version:
  *
  * @code
  * auto stream = gcs.ReadObject("my-bucket", "my-object");
  * @endcode
  *
- * Some applications may want to retrieve specific versions, in this case
- * just provide the `Generation` option:
+ * Some applications may want to retrieve specific versions. In this case
+ * just provide the `Generation` request option:
  *
  * @code
  * auto stream = gcs.ReadObject(
  *     "my-bucket", "my-object", gcs::Generation(generation));
  * @endcode
  *
- * Each function documents the types accepted as optional parameters. These
- * options can be specified in any order. Specifying an option that is not
- * applicable to a member function results in a compile-time error.
+ * Each function documents the types accepted as optional request options. These
+ * parameters can be specified in any order. Specifying a request option that is
+ * not applicable to a member function results in a compile-time error.
+ *
+ * All operations support the following common request options:
+ *
+ * - `Fields`: return a [partial response], which includes only the desired
+ *   fields.
+ * - `QuotaUser`: attribute the request to this specific label for quota
+ *   purposes.
+ * - `UserProject`: change the request costs (if applicable) to this GCP
+ *   project.
+ * - `CustomHeader`: include a custom header with the request. These are
+ *   typically used for testing, though they are sometimes helpful if
+ *   environments where HTTPS traffic is mediated by a proxy.
+ * - `IfMatchEtag`: a pre-condition, the operation succeeds only if the resource
+ *   ETag matches. Typically used in OCC loops ("change X only if its Etag is
+ *   still Y"). Note that GCS sometimes ignores this header, we recommend you
+ *   use the GCS specific pre-conditions (e.g., `IfGenerationMatch`,
+ *   `IfMetagenerationMatch` and their `*NotMatch` counterparts) instead.
+ * - `IfNoneMatchEtag`: a pre-condition, abort the operation if the resource
+ *   ETag has not changed. Typically used in caching ("return the contents of X
+ *   only if the Etag is different from the last value I got, which was Y").
+ *   Note that GCS sometimes ignores this header, we recommend you use the GCS
+ *   specific pre-conditions (e.g., `IfGenerationMatch`, `IfMetagenerationMatch`
+ *   and their `*NotMatch` counterparts) instead.
+ * - `UserIp`: attribute the request to this specific IP address for quota
+ *   purpose. Not recommended, prefer `QuotaUser` instead.
+ *
+ * [partial response]:
+ * https://cloud.google.com/storage/docs/json_api#partial-response
+ *
+ * @par Per-operation Overrides
+ *
+ * In addition to the request options, which are passed on to the service to
+ * modify the request, you can specify options that override the local behavior
+ * of the library.  For example, you can override the local retry policy:
+ *
+ * @snippet storage_client_per_operation_samples.cc change-retry-policy
  *
  * @par Retry, Backoff, and Idempotency Policies
  *
  * The library automatically retries requests that fail with transient errors,
- * and follows the
- * [recommended
- * practice](https://cloud.google.com/storage/docs/exponential-backoff) to
- * backoff between retries.
+ * and follows the [recommended practice][exponential-backoff] to backoff
+ * between retries.
  *
  * The default policies are to continue retrying for up to 15 minutes, and to
  * use truncated (at 5 minutes) exponential backoff, doubling the maximum
@@ -196,6 +233,9 @@ struct ClientImplDetails;
  * The application can override these policies when constructing objects of this
  * class. The documentation for the constructors show examples of this in
  * action.
+ *
+ * [exponential-backoff]:
+ * https://cloud.google.com/storage/docs/exponential-backoff
  *
  * @see https://cloud.google.com/storage/ for an overview of GCS.
  *
@@ -239,107 +279,14 @@ class Client {
    */
   explicit Client(Options opts = {});
 
-  /**
-   * Creates the default client type given the options.
-   *
-   * @param options the client options, these are used to control credentials,
-   *   buffer sizes, etc.
-   * @param policies the client policies, these control the behavior of the
-   *   client, for example, how to backoff when an operation needs to be
-   *   retried, or what operations cannot be retried because they are not
-   *   idempotent.
-   *
-   * @deprecated use the constructor from `google::cloud::Options` instead.
-   */
-  template <typename... Policies>
-  explicit Client(ClientOptions options, Policies&&... policies)
-      : Client(InternalOnly{}, internal::ApplyPolicies(
-                                   internal::MakeOptions(std::move(options)),
-                                   std::forward<Policies>(policies)...)) {}
-
-  /**
-   * Creates the default client type given the credentials and policies.
-   *
-   * @param credentials a set of credentials to initialize the `ClientOptions`.
-   * @param policies the client policies, these control the behavior of the
-   *   client, for example, how to backoff when an operation needs to be
-   *   retried, or what operations cannot be retried because they are not
-   *   idempotent.
-   *
-   * @deprecated use the constructor from `google::cloud::Options` instead.
-   */
-  template <typename... Policies>
-  explicit Client(std::shared_ptr<oauth2::Credentials> credentials,
-                  Policies&&... policies)
-      : Client(InternalOnly{},
-               internal::ApplyPolicies(
-                   internal::DefaultOptions(std::move(credentials), {}),
-                   std::forward<Policies>(policies)...)) {}
-
-  /**
-   * Create a Client using ClientOptions::CreateDefaultClientOptions().
-   *
-   * @deprecated use the constructor from `google::cloud::Options` instead.
-   */
-  static StatusOr<Client> CreateDefaultClient();
-
-  /// Builds a client and maybe override the retry, idempotency, and/or backoff
-  /// policies.
-  /// @deprecated This was intended only for test code, applications should not
-  /// use it.
-  template <typename... Policies>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-  GOOGLE_CLOUD_CPP_DEPRECATED(
-      "applications should not need this."
-      " Please use the constructors from ClientOptions instead."
-      " For mocking, please use testing::ClientFromMock() instead."
-      " Please file a bug at https://github.com/googleapis/google-cloud-cpp"
-      " if you have a use-case not covered by these.")
-#endif  // _MSC_VER
-  // NOLINTNEXTLINE(performance-unnecessary-value-param)
-  explicit Client(std::shared_ptr<internal::RawClient> client,
-                  Policies&&... policies)
-      : Client(InternalOnlyNoDecorations{},
-               CreateDefaultInternalClient(
-                   internal::ApplyPolicies(
-                       internal::DefaultOptions(
-                           client->client_options().credentials(), {}),
-                       std::forward<Policies>(policies)...),
-                   client)) {
-  }
-
-  /// Define a tag to disable automatic decorations of the RawClient.
-  struct NoDecorations {};
-
-  /// Builds a client with a specific RawClient, without decorations.
-  /// @deprecated This was intended only for test code, applications should not
-  /// use it.
-  GOOGLE_CLOUD_CPP_DEPRECATED(
-      "applications should not need this."
-      " Please file a bug at https://github.com/googleapis/google-cloud-cpp"
-      " if you do.")
-  explicit Client(std::shared_ptr<internal::RawClient> client, NoDecorations)
-      : Client(InternalOnlyNoDecorations{}, std::move(client)) {}
-
-  //@{
-  // @name Equality
+  /// @name Equality
+  ///@{
   friend bool operator==(Client const& a, Client const& b) {
-    return a.raw_client_ == b.raw_client_;
+    return a.connection_ == b.connection_;
   }
   friend bool operator!=(Client const& a, Client const& b) { return !(a == b); }
-  //@}
+  ///@}
 
-  /// Access the underlying `RawClient`.
-  /// @deprecated Only intended for implementors, do not use.
-  GOOGLE_CLOUD_CPP_DEPRECATED(
-      "applications should not need this."
-      " Please file a bug at https://github.com/googleapis/google-cloud-cpp"
-      " if you do.")
-  std::shared_ptr<internal::RawClient> raw_client() const {
-    return raw_client_;
-  }
-
-  //@{
   /**
    * @name Bucket operations.
    *
@@ -351,13 +298,15 @@ class Client {
    * @see https://cloud.google.com/storage/docs/key-terms#buckets for more
    * information about GCS buckets.
    */
+  ///@{
   /**
    * Fetches the list of buckets for a given project.
    *
    * @param project_id the project to query.
    * @param options a list of optional query parameters and/or request headers.
    *     Valid types for this operation include `MaxResults`, `Prefix`,
-   *     `UserProject`, and `Projection`.
+   *     `Projection`, and `UserProject`. `OverrideDefaultProject` is accepted,
+   *     but has no effect.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
@@ -368,9 +317,11 @@ class Client {
   template <typename... Options>
   ListBucketsReader ListBucketsForProject(std::string const& project_id,
                                           Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ListBucketsRequest request(project_id);
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto client = raw_client_;
+    auto& client = connection_;
     return google::cloud::internal::MakePaginationRange<ListBucketsReader>(
         request,
         [client](internal::ListBucketsRequest const& r) {
@@ -382,16 +333,18 @@ class Client {
   /**
    * Fetches the list of buckets for the default project.
    *
-   * The default project is required to be configured in the `ClientOptions`
-   * used to construct this object. If the application does not set the project
-   * id in the `ClientOptions`, the value of the `GOOGLE_CLOUD_PROJECT` is
-   * used. If neither the environment variable is set, nor a value is set
-   * explicitly by the application, the returned `ListBucketsReader` will
-   * return an error status when used.
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @param options a list of optional query parameters and/or request headers.
    *     Valid types for this operation include `MaxResults`, `Prefix`,
-   *     `UserProject`, and `Projection`.
+   *     `Projection`, `UserProject`, and `OverrideDefaultProject`.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
@@ -401,21 +354,37 @@ class Client {
    */
   template <typename... Options>
   ListBucketsReader ListBuckets(Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    return ListBucketsForProject(project_id, std::forward<Options>(options)...);
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) {
+      return google::cloud::internal::MakeErrorPaginationRange<
+          ListBucketsReader>(std::move(project_id).status());
+    }
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
+    return ListBucketsForProject(*std::move(project_id),
+                                 std::forward<Options>(options)...);
   }
 
   /**
-   * Creates a new Google Cloud Storage bucket using the default project. If
-   * the default project is not configured the server will reject the request,
-   * and this function returns the error status.
+   * Creates a new Google Cloud Storage bucket using the default project.
+   *
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @param bucket_name the name of the new bucket.
    * @param metadata the metadata for the new Bucket.  The `name` field is
    *     ignored in favor of @p bucket_name.
    * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `PredefinedAcl`,
-   *     `PredefinedDefaultObjectAcl`, `Projection`, and `UserProject`.
+   *     Valid types for this operation include `EnableObjectRetention`,
+   *     `PredefinedAcl`, `PredefinedDefaultObjectAcl`, `Projection`,
+   *     `UserProject`, and `OverrideDefaultProject`.
    *
    * @par Idempotency
    * This operation is always idempotent. It fails if the bucket already exists.
@@ -436,10 +405,16 @@ class Client {
   StatusOr<BucketMetadata> CreateBucket(std::string bucket_name,
                                         BucketMetadata metadata,
                                         Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    return CreateBucketForProject(std::move(bucket_name), project_id,
-                                  std::move(metadata),
-                                  std::forward<Options>(options)...);
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) return std::move(project_id).status();
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
+    metadata.set_name(std::move(bucket_name));
+    internal::CreateBucketRequest request(*std::move(project_id),
+                                          std::move(metadata));
+    request.set_multiple_options(std::forward<Options>(options)...);
+    return connection_->CreateBucket(request);
   }
 
   /**
@@ -450,8 +425,10 @@ class Client {
    * @param metadata the metadata for the new Bucket.  The `name` field is
    *     ignored in favor of @p bucket_name.
    * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `PredefinedAcl`,
-   *     `PredefinedDefaultObjectAcl`, `Projection`, and `UserProject`.
+   *     Valid types for this operation include `EnableObjectRetention`,
+   *     `PredefinedAcl`, `PredefinedDefaultObjectAcl`, `Projection`, and
+   *     `UserProject`. The function also accepts `OverrideDefaultProject`, but
+   *     this option has no effect.
    *
    * @par Idempotency
    * This operation is always idempotent. It fails if the bucket already exists.
@@ -473,11 +450,13 @@ class Client {
                                                   std::string project_id,
                                                   BucketMetadata metadata,
                                                   Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     metadata.set_name(std::move(bucket_name));
     internal::CreateBucketRequest request(std::move(project_id),
                                           std::move(metadata));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->CreateBucket(request);
+    return connection_->CreateBucket(request);
   }
 
   /**
@@ -497,9 +476,11 @@ class Client {
   template <typename... Options>
   StatusOr<BucketMetadata> GetBucketMetadata(std::string const& bucket_name,
                                              Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetBucketMetadataRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetBucketMetadata(request);
+    return connection_->GetBucketMetadata(request);
   }
 
   /**
@@ -519,9 +500,11 @@ class Client {
    */
   template <typename... Options>
   Status DeleteBucket(std::string const& bucket_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::DeleteBucketRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->DeleteBucket(request).status();
+    return connection_->DeleteBucket(request).status();
   }
 
   /**
@@ -561,10 +544,12 @@ class Client {
   StatusOr<BucketMetadata> UpdateBucket(std::string bucket_name,
                                         BucketMetadata metadata,
                                         Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     metadata.set_name(std::move(bucket_name));
     internal::UpdateBucketRequest request(std::move(metadata));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->UpdateBucket(request);
+    return connection_->UpdateBucket(request);
   }
 
   /**
@@ -586,7 +571,8 @@ class Client {
    * @param updated the updated value for the bucket metadata.
    * @param options a list of optional query parameters and/or request headers.
    *     Valid types for this operation include `IfMetagenerationMatch`,
-   *     `IfMetagenerationNotMatch`, `Projection`, and `UserProject`.
+   *     `IfMetagenerationNotMatch`, `PredefinedAcl`,
+   *     `PredefinedDefaultObjectAcl`, `Projection`, and `UserProject`.
    *
    * @par Idempotency
    * This operation is only idempotent if restricted by pre-conditions, in this
@@ -609,10 +595,12 @@ class Client {
                                        BucketMetadata const& original,
                                        BucketMetadata const& updated,
                                        Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchBucketRequest request(std::move(bucket_name), original,
                                          updated);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchBucket(request);
+    return connection_->PatchBucket(request);
   }
 
   /**
@@ -629,7 +617,8 @@ class Client {
    * @param builder the set of updates to perform in the Bucket.
    * @param options a list of optional query parameters and/or request headers.
    *     Valid types for this operation include `IfMetagenerationMatch`,
-   *     `IfMetagenerationNotMatch`, `Projection`, and `UserProject`.
+   *     `IfMetagenerationNotMatch`, `PredefinedAcl`,
+   *     `PredefinedDefaultObjectAcl`, `Projection`, and `UserProject`.
    *
    * @par Idempotency
    * This operation is only idempotent if restricted by pre-conditions, in this
@@ -651,58 +640,16 @@ class Client {
   StatusOr<BucketMetadata> PatchBucket(
       std::string bucket_name, BucketMetadataPatchBuilder const& builder,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchBucketRequest request(std::move(bucket_name), builder);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchBucket(request);
+    return connection_->PatchBucket(request);
   }
 
   /**
-   * Fetches the [IAM policy](@ref google::cloud::IamPolicy) for a Bucket.
-   *
-   * Google Cloud Identity & Access Management (IAM) lets administrators
-   * authorize who can take action on specific resources, including Google
-   * Cloud Storage Buckets. This operation allows you to query the IAM policies
-   * for a Bucket. IAM policies are a superset of the Bucket ACL, changes
-   * to the Bucket ACL are reflected in the IAM policy, and vice-versa. The
-   * documentation describes
-   * [the
-   * mapping](https://cloud.google.com/storage/docs/access-control/iam#acls)
-   * between legacy Bucket ACLs and IAM policies.
-   *
-   * Consult
-   * [the
-   * documentation](https://cloud.google.com/storage/docs/access-control/iam)
-   * for a more detailed description of IAM policies and their use in
-   * Google Cloud Storage.
-   *
-   * @param bucket_name query metadata information about this bucket.
-   * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `UserProject`.
-   *
-   * @deprecated this function is deprecated; it doesn't support conditional
-   *     bindings and will not support any other features to come; please use
-   *     `GetNativeBucketIamPolicy` instead.
-   *
-   * @par Idempotency
-   * This is a read-only operation and is always idempotent.
-   *
-   * @par Example
-   * Use #GetNativeBucketIamPolicy() instead.
-   *
-   * @see #google::cloud::IamPolicy for details about the `IamPolicy` class.
-   */
-  template <typename... Options>
-  GOOGLE_CLOUD_CPP_STORAGE_IAM_DEPRECATED("GetNativeBucketIamPolicy")
-  StatusOr<IamPolicy> GetBucketIamPolicy(std::string const& bucket_name,
-                                         Options&&... options) {
-    internal::GetBucketIamPolicyRequest request(bucket_name);
-    request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetBucketIamPolicy(request);
-  }
-
-  /**
-   * Fetches the native [IAM policy](@ref google::cloud::IamPolicy) for a
-   * Bucket.
+   * Fetches the native
+   * [IAM policy](@ref google::cloud::storage::NativeIamPolicy) for a Bucket.
    *
    * Google Cloud Identity & Access Management (IAM) lets administrators
    * authorize who can take action on specific resources, including Google
@@ -730,18 +677,22 @@ class Client {
    * @par Example
    * @snippet storage_bucket_iam_samples.cc native get bucket iam policy
    *
-   * @see #google::cloud::IamPolicy for details about the `IamPolicy` class.
+   * @see #google::cloud::storage::NativeIamPolicy for details about the
+   *     `NativeIamPolicy` class.
    */
   template <typename... Options>
   StatusOr<NativeIamPolicy> GetNativeBucketIamPolicy(
       std::string const& bucket_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetBucketIamPolicyRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetNativeBucketIamPolicy(request);
+    return connection_->GetNativeBucketIamPolicy(request);
   }
 
   /**
-   * Sets the [IAM Policy](@ref google::cloud::IamPolicy) for a Bucket.
+   * Sets the native
+   * [IAM Policy](@ref google::cloud::storage::NativeIamPolicy) for a Bucket.
    *
    * Google Cloud Identity & Access Management (IAM) lets administrators
    * authorize who can take action on specific resources, including Google
@@ -761,66 +712,11 @@ class Client {
    *
    * @note The server rejects requests where the ETag value of the policy does
    *   not match the current ETag. Effectively this means that applications must
-   *   use `GetBucketIamPolicy()` to fetch the current value and ETag before
-   *   calling `SetBucketIamPolicy()`. Applications should use optimistic
-   *   concurrency control techniques to retry changes in case some other
-   *   application modified the IAM policy between the `GetBucketIamPolicy`
-   *   and `SetBucketIamPolicy` calls.
-   *
-   * @param bucket_name query metadata information about this bucket.
-   * @param iam_policy the new IAM policy.
-   * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `UserProject`.
-   *
-   * @par Idempotency
-   * This operation is only idempotent if restricted by pre-conditions, in this
-   * case, `IfMetagenerationMatch`.
-   *
-   * @deprecated this function is deprecated; it doesn't support conditional
-   *     bindings and will not support any other features to come; please use
-   *     `SetNativeBucketIamPolicy` instead.
-   *
-   * @par Example: adding a new member
-   * Use #GetNativeBucketIamPolicy() instead.
-   *
-   * @see #google::cloud::IamPolicy for details about the `IamPolicy` class.
-   */
-  template <typename... Options>
-  GOOGLE_CLOUD_CPP_STORAGE_IAM_DEPRECATED("SetNativeBucketIamPolicy")
-  StatusOr<IamPolicy> SetBucketIamPolicy(std::string const& bucket_name,
-                                         IamPolicy const& iam_policy,
-                                         Options&&... options) {
-    internal::SetBucketIamPolicyRequest request(bucket_name, iam_policy);
-    request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->SetBucketIamPolicy(request);
-  }
-
-  /**
-   * Sets the native [IAM Policy](@ref google::cloud::IamPolicy) for a Bucket.
-   *
-   * Google Cloud Identity & Access Management (IAM) lets administrators
-   * authorize who can take action on specific resources, including Google
-   * Cloud Storage Buckets. This operation allows you to set the IAM policies
-   * for a Bucket. IAM policies are a superset of the Bucket ACL, changes
-   * to the Bucket ACL are reflected in the IAM policy, and vice-versa. The
-   * documentation describes
-   * [the
-   * mapping](https://cloud.google.com/storage/docs/access-control/iam#acls)
-   * between legacy Bucket ACLs and IAM policies.
-   *
-   * Consult
-   * [the
-   * documentation](https://cloud.google.com/storage/docs/access-control/iam)
-   * for a more detailed description of IAM policies their use in
-   * Google Cloud Storage.
-   *
-   * @note The server rejects requests where the ETag value of the policy does
-   *   not match the current ETag. Effectively this means that applications must
-   *   use `GetBucketIamPolicy()` to fetch the current value and ETag before
-   *   calling `SetBucketIamPolicy()`. Applications should use optimistic
-   *   concurrency control techniques to retry changes in case some other
-   *   application modified the IAM policy between the `GetBucketIamPolicy`
-   *   and `SetBucketIamPolicy` calls.
+   *   use `GetNativeBucketIamPolicy()` to fetch the current value and ETag
+   *   before calling `SetNativeBucketIamPolicy()`. Applications should use
+   *   optimistic concurrency control techniques to retry changes in case some
+   *   other application modified the IAM policy between the
+   *   `GetNativeBucketIamPolicy` and `SetNativeBucketIamPolicy` calls.
    *
    * @param bucket_name query metadata information about this bucket.
    * @param iam_policy the new IAM policy.
@@ -837,15 +733,18 @@ class Client {
    * @par Example: removing a IAM member
    * @snippet storage_bucket_iam_samples.cc native remove bucket iam member
    *
-   * @see #google::cloud::IamPolicy for details about the `IamPolicy` class.
+   * @see #google::cloud::storage::NativeIamPolicy for details about the
+   *     `NativeIamPolicy` class.
    */
   template <typename... Options>
   StatusOr<NativeIamPolicy> SetNativeBucketIamPolicy(
       std::string const& bucket_name, NativeIamPolicy const& iam_policy,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::SetNativeBucketIamPolicyRequest request(bucket_name, iam_policy);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->SetNativeBucketIamPolicy(request);
+    return connection_->SetNativeBucketIamPolicy(request);
   }
 
   /**
@@ -879,10 +778,12 @@ class Client {
   StatusOr<std::vector<std::string>> TestBucketIamPermissions(
       std::string bucket_name, std::vector<std::string> permissions,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::TestBucketIamPermissionsRequest request(std::move(bucket_name),
                                                       std::move(permissions));
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto result = raw_client_->TestBucketIamPermissions(request);
+    auto result = connection_->TestBucketIamPermissions(request);
     if (!result) {
       return std::move(result).status();
     }
@@ -939,14 +840,15 @@ class Client {
   StatusOr<BucketMetadata> LockBucketRetentionPolicy(
       std::string const& bucket_name, std::uint64_t metageneration,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::LockBucketRetentionPolicyRequest request(bucket_name,
                                                        metageneration);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->LockBucketRetentionPolicy(request);
+    return connection_->LockBucketRetentionPolicy(request);
   }
-  //@}
+  ///@}
 
-  //@{
   /**
    * @name Object operations
    *
@@ -959,8 +861,15 @@ class Client {
    * @see https://cloud.google.com/storage/docs/key-terms#objects for more
    * information about GCS objects.
    */
+  ///@{
   /**
    * Creates an object given its name and contents.
+   *
+   * If you need to perform larger uploads or uploads where the data is not
+   * contiguous in memory, use `WriteObject()`. This function always performs a
+   * single-shot upload, while `WriteObject()` always uses resumable uploads.
+   * The [service documentation] has recommendations on the upload size vs.
+   * single-shot or resumable uploads.
    *
    * @param bucket_name the name of the bucket that will contain the object.
    * @param object_name the name of the object to be created.
@@ -982,16 +891,43 @@ class Client {
    *
    * @par Example
    * @snippet storage_object_samples.cc insert object multipart
+   *
+   * [service documentation]:
+   * https://cloud.google.com/storage/docs/uploads-downloads#size
    */
   template <typename... Options>
   StatusOr<ObjectMetadata> InsertObject(std::string const& bucket_name,
                                         std::string const& object_name,
-                                        std::string contents,
+                                        absl::string_view contents,
                                         Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::InsertObjectMediaRequest request(bucket_name, object_name,
-                                               std::move(contents));
+                                               contents);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->InsertObjectMedia(request);
+    return connection_->InsertObjectMedia(request);
+  }
+
+  /// @overload InsertObject(std::string const& bucket_name, std::string const& object_name, absl::string_view contents, Options&&... options)
+  template <typename... Options>
+  StatusOr<ObjectMetadata> InsertObject(std::string const& bucket_name,
+                                        std::string const& object_name,
+                                        std::string const& contents,
+                                        Options&&... options) {
+    return InsertObject(bucket_name, object_name, absl::string_view(contents),
+                        std::forward<Options>(options)...);
+  }
+
+  /// @overload InsertObject(std::string const& bucket_name, std::string const& object_name, absl::string_view contents, Options&&... options)
+  template <typename... Options>
+  StatusOr<ObjectMetadata> InsertObject(std::string const& bucket_name,
+                                        std::string const& object_name,
+                                        char const* contents,
+                                        Options&&... options) {
+    auto c =
+        contents == nullptr ? absl::string_view{} : absl::string_view{contents};
+    return InsertObject(bucket_name, object_name, c,
+                        std::forward<Options>(options)...);
   }
 
   /**
@@ -1040,11 +976,13 @@ class Client {
                                       std::string destination_bucket_name,
                                       std::string destination_object_name,
                                       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::CopyObjectRequest request(
         std::move(source_bucket_name), std::move(source_object_name),
         std::move(destination_bucket_name), std::move(destination_object_name));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->CopyObject(request);
+    return connection_->CopyObject(request);
   }
 
   /**
@@ -1055,7 +993,8 @@ class Client {
    * @param options a list of optional query parameters and/or request headers.
    *     Valid types for this operation include `Generation`,
    *     `IfGenerationMatch`, `IfGenerationNotMatch`, `IfMetagenerationMatch`,
-   *     `IfMetagenerationNotMatch`, `Projection`, and `UserProject`.
+   *     `IfMetagenerationNotMatch`, `SoftDeleted`, `Projection`, and
+   *     `UserProject`.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
@@ -1067,9 +1006,11 @@ class Client {
   StatusOr<ObjectMetadata> GetObjectMetadata(std::string const& bucket_name,
                                              std::string const& object_name,
                                              Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetObjectMetadataRequest request(bucket_name, object_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetObjectMetadata(request);
+    return connection_->GetObjectMetadata(request);
   }
 
   /**
@@ -1077,10 +1018,10 @@ class Client {
    *
    * @param bucket_name the name of the bucket to list.
    * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include
-   *     `IfMetagenerationMatch`, `IfMetagenerationNotMatch`, `UserProject`,
-   *     `Projection`, `Prefix`, `Delimiter`, `IncludeTrailingDelimiter`,
-   *     `StartOffset`, `EndOffset`, and `Versions`.
+   *     Valid types for this operation include `MaxResults`, `Prefix`,
+   *     `Delimiter`, `IncludeTrailingDelimiter`, `StartOffset`, `EndOffset`,
+   *     `MatchGlob`, `Projection`, `SoftDeleted`, `UserProject`, and
+   *     `Versions`.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
@@ -1091,9 +1032,11 @@ class Client {
   template <typename... Options>
   ListObjectsReader ListObjects(std::string const& bucket_name,
                                 Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ListObjectsRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto client = raw_client_;
+    auto& client = connection_;
     return google::cloud::internal::MakePaginationRange<ListObjectsReader>(
         request,
         [client](internal::ListObjectsRequest const& r) {
@@ -1110,28 +1053,34 @@ class Client {
    *     Valid types for this operation include
    *     `IfMetagenerationMatch`, `IfMetagenerationNotMatch`, `UserProject`,
    *     `Projection`, `Prefix`, `Delimiter`, `IncludeTrailingDelimiter`,
-   *     `StartOffset`, `EndOffset`, and `Versions`.
+   *     `IncludeFoldersAsPrefixes`, `StartOffset`, `EndOffset`, `MatchGlob`,
+   *     `SoftDeleted`, and `Versions`.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
    *
    * @par Example
    * @snippet storage_object_samples.cc list objects and prefixes
+   *
+   * @par Example
+   * @snippet storage_object_samples.cc list-objects-and-folders
    */
   template <typename... Options>
   ListObjectsAndPrefixesReader ListObjectsAndPrefixes(
       std::string const& bucket_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ListObjectsRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto client = raw_client_;
     return google::cloud::internal::MakePaginationRange<
         ListObjectsAndPrefixesReader>(
         request,
-        [client](internal::ListObjectsRequest const& r) {
+        [client = connection_](internal::ListObjectsRequest const& r) {
           return client->ListObjects(r);
         },
         [](internal::ListObjectsResponse r) {
           std::vector<ObjectOrPrefix> result;
+          result.reserve(r.items.size() + r.prefixes.size());
           for (auto& item : r.items) {
             result.emplace_back(std::move(item));
           }
@@ -1158,10 +1107,10 @@ class Client {
    * @param object_name the name of the object to be read.
    * @param options a list of optional query parameters and/or request headers.
    *     Valid types for this operation include `DisableCrc32cChecksum`,
-   *     `DisableMD5Hash`, `IfGenerationMatch`, `EncryptionKey`, `Generation`,
-   *     `IfGenerationMatch`, `IfGenerationNotMatch`, `IfMetagenerationMatch`,
-   *     `IfMetagenerationNotMatch`, `ReadFromOffset`, `ReadRange`, `ReadLast`
-   *     and `UserProject`.
+   *     `DisableMD5Hash`, `EncryptionKey`, `Generation`, `IfGenerationMatch`,
+   *     `IfGenerationNotMatch`, `IfMetagenerationMatch`,
+   *     `IfMetagenerationNotMatch`, `ReadFromOffset`, `ReadRange`, `ReadLast`,
+   *     `UserProject`, and `AcceptEncoding`.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
@@ -1169,32 +1118,21 @@ class Client {
    * @par Example
    * @snippet storage_object_samples.cc read object
    *
-   * @par Example
+   * @par Example: read only a sub-range in the object.
    * @snippet storage_object_samples.cc read object range
    *
    * @par Example: read a object encrypted with a CSEK.
    * @snippet storage_object_csek_samples.cc read encrypted object
+   *
+   * @par Example: disable decompressive transcoding.
+   * @snippet storage_object_samples.cc read object gzip
    */
   template <typename... Options>
   ObjectReadStream ReadObject(std::string const& bucket_name,
                               std::string const& object_name,
                               Options&&... options) {
-    struct HasReadRange
-        : public absl::disjunction<std::is_same<ReadRange, Options>...> {};
-    struct HasReadFromOffset
-        : public absl::disjunction<std::is_same<ReadFromOffset, Options>...> {};
-    struct HasReadLast
-        : public absl::disjunction<std::is_same<ReadLast, Options>...> {};
-
-    struct HasIncompatibleRangeOptions
-        : public std::integral_constant<bool, HasReadLast::value &&
-                                                  (HasReadFromOffset::value ||
-                                                   HasReadRange::value)> {};
-
-    static_assert(!HasIncompatibleRangeOptions::value,
-                  "Cannot set ReadLast option with either ReadFromOffset or "
-                  "ReadRange.");
-
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ReadObjectRangeRequest request(bucket_name, object_name);
     request.set_multiple_options(std::forward<Options>(options)...);
     return ReadObjectImpl(request);
@@ -1207,6 +1145,10 @@ class Client {
    * can use either the regular `operator<<()`, or `std::ostream::write()` to
    * upload data.
    *
+   * For small uploads where all the data is contiguous in memory we recommend
+   * using `InsertObject()`. The [service documentation] has specific
+   * recommendations on object sizes and upload types.
+   *
    * This function always uses [resumable uploads][resumable-link]. The
    * application can provide a `#RestoreResumableUploadSession()` option to
    * resume a previously created upload. The returned object has accessors to
@@ -1216,9 +1158,6 @@ class Client {
    *     the session id to restart the upload later. Likewise, it is the
    *     application's responsibility to query the next expected byte and send
    *     the remaining data without gaps or duplications.
-   *
-   * For small uploads we recommend using `InsertObject`, consult
-   * [the documentation][how-to-upload-link] for details.
    *
    * If the application does not provide a `#RestoreResumableUploadSession()`
    * option, or it provides the `#NewResumableUploadSession()` option then a new
@@ -1258,13 +1197,15 @@ class Client {
    *     resumable uploads.
    *
    * [resumable-link]: https://cloud.google.com/storage/docs/resumable-uploads
-   * [how-to-upload-link]:
-   * https://cloud.google.com/storage/docs/json_api/v1/how-tos/upload
+   * [service documentation]:
+   * https://cloud.google.com/storage/docs/uploads-downloads#size
    */
   template <typename... Options>
   ObjectWriteStream WriteObject(std::string const& bucket_name,
                                 std::string const& object_name,
                                 Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ResumableUploadRequest request(bucket_name, object_name);
     request.set_multiple_options(std::forward<Options>(options)...);
     return WriteObjectImpl(request);
@@ -1331,9 +1272,11 @@ class Client {
   template <typename... Options>
   Status DeleteResumableUpload(std::string const& upload_session_url,
                                Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::DeleteResumableUploadRequest request(upload_session_url);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->DeleteResumableUpload(request).status();
+    return connection_->DeleteResumableUpload(request).status();
   }
 
   /**
@@ -1359,6 +1302,8 @@ class Client {
   Status DownloadToFile(std::string const& bucket_name,
                         std::string const& object_name,
                         std::string const& file_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ReadObjectRangeRequest request(bucket_name, object_name);
     request.set_multiple_options(std::forward<Options>(options)...);
     return DownloadFileImpl(request, file_name);
@@ -1385,9 +1330,11 @@ class Client {
   template <typename... Options>
   Status DeleteObject(std::string const& bucket_name,
                       std::string const& object_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::DeleteObjectRequest request(bucket_name, object_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->DeleteObject(request).status();
+    return connection_->DeleteObject(request).status();
   }
 
   /**
@@ -1400,10 +1347,10 @@ class Client {
    *     ignored. In particular, note that `bucket` and `name` are ignored in
    *     favor of @p bucket_name and @p object_name.
    * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `Generation`,
+   *     Valid types for this operation include `Generation`, `EncryptionKey`,
    *     `IfGenerationMatch`, `IfGenerationNotMatch`, `IfMetagenerationMatch`,
-   *     `IfMetagenerationNotMatch`, `PredefinedAcl`,
-   *     `Projection`, and `UserProject`.
+   *     `IfMetagenerationNotMatch`, `OverrideUnlockedRetention`,
+   *     `PredefinedAcl`, `Projection`, and `UserProject`.
    *
    * @par Idempotency
    * This operation is only idempotent if restricted by pre-conditions, in this
@@ -1417,10 +1364,45 @@ class Client {
                                         std::string object_name,
                                         ObjectMetadata metadata,
                                         Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::UpdateObjectRequest request(
         std::move(bucket_name), std::move(object_name), std::move(metadata));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->UpdateObject(request);
+    return connection_->UpdateObject(request);
+  }
+
+  /**
+   * Moves an existing object to a new or existing object within a HNS enabled
+   * bucket.
+   *
+   * @param bucket_name the name of the bucket in which to move the object. The
+   * bucket must be HNS enabled.
+   * @param source_object_name the name of the source object to move.
+   * @param destination_object_name the destination name of the object after the
+   * move is completed.
+   * @param options a list of optional query parameters and/or request headers.
+   *     Valid types for this operation include
+   *      `IfSourceGenerationMatch`, `IfSourceGenerationNotMatch`,
+   * `IfSourceMetagenerationMatch`, `IfSourceMetagenerationNotMatch`,
+   * `IfGenerationMatch`, `IfGenerationNotMatch`, `IfMetagenerationMatch`
+   *      `IfMetagenerationNotMatch`, `projection`.
+   *
+   * @par Idempotency
+   * This operation is only idempotent if restricted by pre-conditions.
+   */
+  template <typename... Options>
+  StatusOr<ObjectMetadata> MoveObject(std::string bucket_name,
+                                      std::string source_object_name,
+                                      std::string destination_object_name,
+                                      Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
+    internal::MoveObjectRequest request(std::move(bucket_name),
+                                        std::move(source_object_name),
+                                        std::move(destination_object_name));
+    request.set_multiple_options(std::forward<Options>(options)...);
+    return connection_->MoveObject(request);
   }
 
   /**
@@ -1437,10 +1419,10 @@ class Client {
    * @param original the initial value of the object metadata.
    * @param updated the updated value for the object metadata.
    * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `Generation`,
+   *     Valid types for this operation include `Generation`, `EncryptionKey`,
    *     `IfGenerationMatch`, `IfGenerationNotMatch`, `IfMetagenerationMatch`,
-   *     `IfMetagenerationNotMatch`, `PredefinedAcl`,
-   *     `Projection`, and `UserProject`.
+   *     `IfMetagenerationNotMatch`, `OverrideUnlockedRetention`,
+   *     `PredefinedAcl`, `Projection`, and `UserProject`.
    *
    * @par Idempotency
    * This operation is only idempotent if restricted by pre-conditions, in this
@@ -1455,10 +1437,12 @@ class Client {
                                        ObjectMetadata const& original,
                                        ObjectMetadata const& updated,
                                        Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchObjectRequest request(
         std::move(bucket_name), std::move(object_name), original, updated);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchObject(request);
+    return connection_->PatchObject(request);
   }
 
   /**
@@ -1473,10 +1457,10 @@ class Client {
    * @param object_name the object to be updated.
    * @param builder the set of updates to perform in the Object metadata.
    * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `Generation`,
+   *     Valid types for this operation include `Generation`, `EncryptionKey`,
    *     `IfGenerationMatch`, `IfGenerationNotMatch`, `IfMetagenerationMatch`,
-   *     `IfMetagenerationNotMatch`, `PredefinedAcl`, `EncryptionKey`,
-   *     `Projection`, and `UserProject`.
+   *     `IfMetagenerationNotMatch`, `OverrideUnlockedRetention`,
+   *     `PredefinedAcl`, `Projection`, and `UserProject`.
    *
    * @par Idempotency
    * This operation is only idempotent if restricted by pre-conditions, in this
@@ -1489,10 +1473,12 @@ class Client {
   StatusOr<ObjectMetadata> PatchObject(
       std::string bucket_name, std::string object_name,
       ObjectMetadataPatchBuilder const& builder, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchObjectRequest request(std::move(bucket_name),
                                          std::move(object_name), builder);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchObject(request);
+    return connection_->PatchObject(request);
   }
 
   /**
@@ -1522,11 +1508,13 @@ class Client {
   StatusOr<ObjectMetadata> ComposeObject(
       std::string bucket_name, std::vector<ComposeSourceObject> source_objects,
       std::string destination_object_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ComposeObjectRequest request(std::move(bucket_name),
                                            std::move(source_objects),
                                            std::move(destination_object_name));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->ComposeObject(request);
+    return connection_->ComposeObject(request);
   }
 
   /**
@@ -1626,12 +1614,14 @@ class Client {
                                      std::string destination_object_name,
                                      std::string rewrite_token,
                                      Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::RewriteObjectRequest request(
         std::move(source_bucket_name), std::move(source_object_name),
         std::move(destination_bucket_name), std::move(destination_object_name),
         std::move(rewrite_token));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return ObjectRewriter(raw_client_, std::move(request));
+    return ObjectRewriter(connection_, std::move(request));
   }
 
   /**
@@ -1689,9 +1679,54 @@ class Client {
                                std::string{}, std::forward<Options>(options)...)
         .Result();
   }
-  //@}
 
-  //@{
+  /**
+   * Restores a soft-deleted object.
+   *
+   * When a soft-deleted object is restored, a new copy of that object is
+   * created in the same bucket and inherits the same metadata as the
+   * soft-deleted object. The inherited metadata is the metadata that existed
+   * when the original object became soft deleted, with the following
+   * exceptions:
+   *
+   * 1. The createTime of the new object is set to the time at which the
+   * soft-deleted object was restored.
+   * 2. The softDeleteTime and hardDeleteTime values are cleared.
+   * 3. A new generation is assigned and the metageneration is reset to 1.
+   * 4. If the soft-deleted object was in a bucket that had Autoclass enabled,
+   *    the new object is restored to Standard storage.
+   *
+   * @param bucket_name name of the bucket in which the new object will be
+   * created. Must be the same bucket that contained the soft-deleted object
+   * being restored.
+   * @param object_name name of the soft-deleted object to restore.
+   * @param generation specifies the version of the soft-deleted object to
+   * restore.
+   * @param options a list of optional query parameters and/or request headers.
+   *     Valid types for this operation include `DestinationKmsKeyName`,
+   *      `IfGenerationMatch`, `IfGenerationNotMatch`, `IfMetagenerationMatch`,
+   *      `IfMetagenerationNotMatch`, `Projection`, `CopySourceAcl`
+   *
+   * @return The metadata of the restored object.
+   *
+   * @par Idempotency
+   * This operation is only idempotent if restricted by pre-conditions, in this
+   * case, `IfGenerationMatch`.
+   */
+  template <typename... Options>
+  StatusOr<ObjectMetadata> RestoreObject(std::string bucket_name,
+                                         std::string object_name,
+                                         std::int64_t generation,
+                                         Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
+    internal::RestoreObjectRequest request(
+        std::move(bucket_name), std::move(object_name), std::move(generation));
+    request.set_multiple_options(std::forward<Options>(options)...);
+    return connection_->RestoreObject(request);
+  }
+  ///@}
+
   /**
    * @name Bucket Access Control List operations.
    *
@@ -1722,6 +1757,7 @@ class Client {
    * @see https://cloud.google.com/storage/docs/access-control/lists#permissions
    *     for the format of the @p role parameters.
    */
+  ///@{
   /**
    * Retrieves the list of `BucketAccessControl` items for a bucket.
    *
@@ -1738,9 +1774,11 @@ class Client {
   template <typename... Options>
   StatusOr<std::vector<BucketAccessControl>> ListBucketAcl(
       std::string const& bucket_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ListBucketAclRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto items = raw_client_->ListBucketAcl(request);
+    auto items = connection_->ListBucketAcl(request);
     if (!items) {
       return std::move(items).status();
     }
@@ -1773,9 +1811,11 @@ class Client {
                                                 std::string const& entity,
                                                 std::string const& role,
                                                 Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::CreateBucketAclRequest request(bucket_name, entity, role);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->CreateBucketAcl(request);
+    return connection_->CreateBucketAcl(request);
   }
 
   /**
@@ -1799,9 +1839,11 @@ class Client {
   template <typename... Options>
   Status DeleteBucketAcl(std::string const& bucket_name,
                          std::string const& entity, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::DeleteBucketAclRequest request(bucket_name, entity);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->DeleteBucketAcl(request).status();
+    return connection_->DeleteBucketAcl(request).status();
   }
 
   /**
@@ -1825,9 +1867,11 @@ class Client {
   StatusOr<BucketAccessControl> GetBucketAcl(std::string const& bucket_name,
                                              std::string const& entity,
                                              Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetBucketAclRequest request(bucket_name, entity);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetBucketAcl(request);
+    return connection_->GetBucketAcl(request);
   }
 
   /**
@@ -1864,10 +1908,12 @@ class Client {
   StatusOr<BucketAccessControl> UpdateBucketAcl(std::string const& bucket_name,
                                                 BucketAccessControl const& acl,
                                                 Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::UpdateBucketAclRequest request(bucket_name, acl.entity(),
                                              acl.role());
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->UpdateBucketAcl(request);
+    return connection_->UpdateBucketAcl(request);
   }
 
   /**
@@ -1910,10 +1956,12 @@ class Client {
       std::string const& bucket_name, std::string const& entity,
       BucketAccessControl const& original_acl,
       BucketAccessControl const& new_acl, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchBucketAclRequest request(bucket_name, entity, original_acl,
                                             new_acl);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchBucketAcl(request);
+    return connection_->PatchBucketAcl(request);
   }
 
   /**
@@ -1953,13 +2001,14 @@ class Client {
   StatusOr<BucketAccessControl> PatchBucketAcl(
       std::string const& bucket_name, std::string const& entity,
       BucketAccessControlPatchBuilder const& builder, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchBucketAclRequest request(bucket_name, entity, builder);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchBucketAcl(request);
+    return connection_->PatchBucketAcl(request);
   }
-  //@}
+  ///@}
 
-  //@{
   /**
    * @name Object Access Control List operations.
    *
@@ -1983,6 +2032,7 @@ class Client {
    * @see https://cloud.google.com/storage/docs/access-control/lists#permissions
    *     for the format of the @p role parameters.
    */
+  ///@{
   /**
    * Retrieves the list of ObjectAccessControl items for an object.
    *
@@ -2001,9 +2051,11 @@ class Client {
   StatusOr<std::vector<ObjectAccessControl>> ListObjectAcl(
       std::string const& bucket_name, std::string const& object_name,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ListObjectAclRequest request(bucket_name, object_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto result = raw_client_->ListObjectAcl(request);
+    auto result = connection_->ListObjectAcl(request);
     if (!result) {
       return std::move(result).status();
     }
@@ -2038,10 +2090,12 @@ class Client {
                                                 std::string const& entity,
                                                 std::string const& role,
                                                 Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::CreateObjectAclRequest request(bucket_name, object_name, entity,
                                              role);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->CreateObjectAcl(request);
+    return connection_->CreateObjectAcl(request);
   }
 
   /**
@@ -2068,9 +2122,11 @@ class Client {
   Status DeleteObjectAcl(std::string const& bucket_name,
                          std::string const& object_name,
                          std::string const& entity, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::DeleteObjectAclRequest request(bucket_name, object_name, entity);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->DeleteObjectAcl(request).status();
+    return connection_->DeleteObjectAcl(request).status();
   }
 
   /**
@@ -2096,9 +2152,11 @@ class Client {
                                              std::string const& object_name,
                                              std::string const& entity,
                                              Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetObjectAclRequest request(bucket_name, object_name, entity);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetObjectAcl(request);
+    return connection_->GetObjectAcl(request);
   }
 
   /**
@@ -2135,10 +2193,12 @@ class Client {
                                                 std::string const& object_name,
                                                 ObjectAccessControl const& acl,
                                                 Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::UpdateObjectAclRequest request(bucket_name, object_name,
                                              acl.entity(), acl.role());
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->UpdateObjectAcl(request);
+    return connection_->UpdateObjectAcl(request);
   }
 
   /**
@@ -2182,10 +2242,12 @@ class Client {
       std::string const& bucket_name, std::string const& object_name,
       std::string const& entity, ObjectAccessControl const& original_acl,
       ObjectAccessControl const& new_acl, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchObjectAclRequest request(bucket_name, object_name, entity,
                                             original_acl, new_acl);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchObjectAcl(request);
+    return connection_->PatchObjectAcl(request);
   }
 
   /**
@@ -2227,14 +2289,15 @@ class Client {
       std::string const& bucket_name, std::string const& object_name,
       std::string const& entity, ObjectAccessControlPatchBuilder const& builder,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchObjectAclRequest request(bucket_name, object_name, entity,
                                             builder);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchObjectAcl(request);
+    return connection_->PatchObjectAcl(request);
   }
-  //@}
+  ///@}
 
-  //@{
   /**
    * @name Bucket Default Object Access Control List operations.
    *
@@ -2250,6 +2313,7 @@ class Client {
    * @see https://cloud.google.com/storage/docs/access-control/lists#permissions
    *     for the format of the @p role parameters.
    */
+  ///@{
   /**
    * Retrieves the default object ACL for a bucket as a vector of
    * `ObjectAccessControl` items.
@@ -2274,9 +2338,11 @@ class Client {
   template <typename... Options>
   StatusOr<std::vector<ObjectAccessControl>> ListDefaultObjectAcl(
       std::string const& bucket_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ListDefaultObjectAclRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto response = raw_client_->ListDefaultObjectAcl(request);
+    auto response = connection_->ListDefaultObjectAcl(request);
     if (!response) {
       return std::move(response).status();
     }
@@ -2313,9 +2379,11 @@ class Client {
   StatusOr<ObjectAccessControl> CreateDefaultObjectAcl(
       std::string const& bucket_name, std::string const& entity,
       std::string const& role, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::CreateDefaultObjectAclRequest request(bucket_name, entity, role);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->CreateDefaultObjectAcl(request);
+    return connection_->CreateDefaultObjectAcl(request);
   }
 
   /**
@@ -2345,9 +2413,11 @@ class Client {
   Status DeleteDefaultObjectAcl(std::string const& bucket_name,
                                 std::string const& entity,
                                 Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::DeleteDefaultObjectAclRequest request(bucket_name, entity);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->DeleteDefaultObjectAcl(request).status();
+    return connection_->DeleteDefaultObjectAcl(request).status();
   }
 
   /**
@@ -2376,9 +2446,11 @@ class Client {
   StatusOr<ObjectAccessControl> GetDefaultObjectAcl(
       std::string const& bucket_name, std::string const& entity,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetDefaultObjectAclRequest request(bucket_name, entity);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetDefaultObjectAcl(request);
+    return connection_->GetDefaultObjectAcl(request);
   }
 
   /**
@@ -2418,10 +2490,12 @@ class Client {
   StatusOr<ObjectAccessControl> UpdateDefaultObjectAcl(
       std::string const& bucket_name, ObjectAccessControl const& acl,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::UpdateDefaultObjectAclRequest request(bucket_name, acl.entity(),
                                                     acl.role());
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->UpdateDefaultObjectAcl(request);
+    return connection_->UpdateDefaultObjectAcl(request);
   }
 
   /**
@@ -2467,10 +2541,12 @@ class Client {
       std::string const& bucket_name, std::string const& entity,
       ObjectAccessControl const& original_acl,
       ObjectAccessControl const& new_acl, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchDefaultObjectAclRequest request(bucket_name, entity,
                                                    original_acl, new_acl);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchDefaultObjectAcl(request);
+    return connection_->PatchDefaultObjectAcl(request);
   }
 
   /**
@@ -2500,8 +2576,7 @@ class Client {
    * are no pre-conditions for this operation that can make it idempotent.
    *
    * @par Example
-   * @snippet storage_default_object_acl_samples.cc patch default object acl
-   * no-read
+   * @snippet storage_default_object_acl_samples.cc patch no-read
    *
    * @see
    * https://cloud.google.com/storage/docs/access-control/create-manage-lists#defaultobjects
@@ -2514,14 +2589,15 @@ class Client {
   StatusOr<ObjectAccessControl> PatchDefaultObjectAcl(
       std::string const& bucket_name, std::string const& entity,
       ObjectAccessControlPatchBuilder const& builder, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PatchDefaultObjectAclRequest request(bucket_name, entity,
                                                    builder);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->PatchDefaultObjectAcl(request);
+    return connection_->PatchDefaultObjectAcl(request);
   }
-  //@}
+  ///@}
 
-  //@{
   /**
    * @name Service account operations.
    *
@@ -2533,6 +2609,7 @@ class Client {
    * @see https://cloud.google.com/storage/docs/projects#service-accounts for
    *     more information on service accounts.
    */
+  ///@{
   /**
    * Gets the GCS service account for a given project.
    *
@@ -2544,6 +2621,7 @@ class Client {
    * @param project_id the project to query.
    * @param options a list of optional query parameters and/or request headers.
    *     Valid types for this operation include `UserProject`.
+   *     `OverrideDefaultProject` is accepted, but has no effect.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
@@ -2557,9 +2635,11 @@ class Client {
   template <typename... Options>
   StatusOr<ServiceAccount> GetServiceAccountForProject(
       std::string const& project_id, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetProjectServiceAccountRequest request(project_id);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetServiceAccount(request);
+    return connection_->GetServiceAccount(request);
   }
 
   /**
@@ -2570,15 +2650,18 @@ class Client {
    * behalf.  This API allows you to discover the GCS service account for the
    * default project associated with this object.
    *
-   * The default project is required to be configured in the `ClientOptions`
-   * used to construct this object. If the application does not set the project
-   * id in the `ClientOptions`, the value of the `GOOGLE_CLOUD_PROJECT` is
-   * used. If neither the environment variable is set, nor a value is set
-   * explicitly by the application, the server will reject the request and this
-   * function will return the error status.
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @param options a list of optional query parameters and/or request headers.
-   *     Valid types for this operation include `UserProject`.
+   *     Valid types for this operation include `UserProject`,
+   *     and `OverrideDefaultProject`.
    *
    * @par Idempotency
    * This is a read-only operation and is always idempotent.
@@ -2591,13 +2674,27 @@ class Client {
    */
   template <typename... Options>
   StatusOr<ServiceAccount> GetServiceAccount(Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    return GetServiceAccountForProject(project_id,
-                                       std::forward<Options>(options)...);
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) return std::move(project_id).status();
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
+    internal::GetProjectServiceAccountRequest request(*std::move(project_id));
+    request.set_multiple_options(std::forward<Options>(options)...);
+    return connection_->GetServiceAccount(request);
   }
 
   /**
    * List the available HMAC keys.
+   *
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @warning This GCS feature is not GA, it is subject to change without
    *     notice.
@@ -2605,7 +2702,7 @@ class Client {
    * @param options a list of optional query parameters and/or request headers.
    *     In addition to the options common to all requests, this operation
    *     accepts `Deleted` `MaxResults`, `OverrideDefaultProject`,
-   *     `ServiceAccountFilter`, and `UserProject`.
+   *     and `ServiceAccountFilter`.
    *
    * @return A range to iterate over the available HMAC keys.
    *
@@ -2627,14 +2724,21 @@ class Client {
    */
   template <typename... Options>
   ListHmacKeysReader ListHmacKeys(Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    internal::ListHmacKeysRequest request(project_id);
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) {
+      return google::cloud::internal::MakeErrorPaginationRange<
+          ListHmacKeysReader>(std::move(project_id).status());
+    }
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
+
+    internal::ListHmacKeysRequest request(*std::move(project_id));
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto client = raw_client_;
     return google::cloud::internal::MakePaginationRange<ListHmacKeysReader>(
         request,
-        [client](internal::ListHmacKeysRequest const& r) {
-          return client->ListHmacKeys(r);
+        [stub = connection_](internal::ListHmacKeysRequest const& r) {
+          return stub->ListHmacKeys(r);
         },
         [](internal::ListHmacKeysResponse r) { return std::move(r.items); });
   }
@@ -2642,8 +2746,14 @@ class Client {
   /**
    * Create a new HMAC key.
    *
-   * @warning This GCS feature is not GA, it is subject to change without
-   *     notice.
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @param service_account the service account email where you want to create
    *     the new HMAC key.
@@ -2675,23 +2785,32 @@ class Client {
   template <typename... Options>
   StatusOr<std::pair<HmacKeyMetadata, std::string>> CreateHmacKey(
       std::string service_account, Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    internal::CreateHmacKeyRequest request(project_id,
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) return std::move(project_id).status();
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
+
+    internal::CreateHmacKeyRequest request(*std::move(project_id),
                                            std::move(service_account));
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto result = raw_client_->CreateHmacKey(request);
-    if (!result) {
-      return result.status();
-    }
+    auto result = connection_->CreateHmacKey(request);
+    if (!result) return std::move(result).status();
     return std::make_pair(std::move(result->metadata),
                           std::move(result->secret));
   }
 
   /**
-   * Delete a HMAC key in a given project.
+   * Delete a HMAC key in the default project.
    *
-   * @warning This GCS feature is not GA, it is subject to change without
-   *     notice.
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @param access_id the HMAC key `access_id()` that you want to delete.  Each
    *     HMAC key is assigned an `access_id()` attribute at creation time.
@@ -2717,17 +2836,29 @@ class Client {
    */
   template <typename... Options>
   Status DeleteHmacKey(std::string access_id, Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    internal::DeleteHmacKeyRequest request(project_id, std::move(access_id));
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) return std::move(project_id).status();
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
+
+    internal::DeleteHmacKeyRequest request(*std::move(project_id),
+                                           std::move(access_id));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->DeleteHmacKey(request).status();
+    return connection_->DeleteHmacKey(request).status();
   }
 
   /**
-   * Get an existing HMAC key in a given project.
+   * Get an existing HMAC key in the default project.
    *
-   * @warning This GCS feature is not GA, it is subject to change without
-   *     notice.
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @param access_id the HMAC key `access_id()` that you want to delete.  Each
    *     HMAC key is assigned an `access_id()` attribute at creation time.
@@ -2753,17 +2884,29 @@ class Client {
   template <typename... Options>
   StatusOr<HmacKeyMetadata> GetHmacKey(std::string access_id,
                                        Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    internal::GetHmacKeyRequest request(project_id, std::move(access_id));
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) return std::move(project_id).status();
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
+
+    internal::GetHmacKeyRequest request(*std::move(project_id),
+                                        std::move(access_id));
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetHmacKey(request);
+    return connection_->GetHmacKey(request);
   }
 
   /**
-   * Update an existing HMAC key in a given project.
+   * Update an existing HMAC key in the default project.
    *
-   * @warning This GCS feature is not GA, it is subject to change without
-   *     notice.
+   * This function will return an error if it cannot determine the "default"
+   * project. The default project is found by looking, in order, for:
+   * - Any parameters of type `OverrideDefaultProject`, with a value.
+   * - Any `google::cloud::storage::ProjectIdOption` value in any parameters of
+   *   type `google::cloud::Options{}`.
+   * - Any `google::cloud::storage::ProjectIdOption` value provided in the
+   *   `google::cloud::Options{}` passed to the constructor.
+   * - The value from the `GOOGLE_CLOUD_PROJECT` environment variable.
    *
    * @param access_id the HMAC key `access_id()` that you want to delete.  Each
    *     HMAC key is assigned an `access_id()` attribute at creation time.
@@ -2794,16 +2937,21 @@ class Client {
   StatusOr<HmacKeyMetadata> UpdateHmacKey(std::string access_id,
                                           HmacKeyMetadata resource,
                                           Options&&... options) {
-    auto const& project_id = raw_client_->client_options().project_id();
-    internal::UpdateHmacKeyRequest request(project_id, std::move(access_id),
-                                           std::move(resource));
-    request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->UpdateHmacKey(request);
-  }
-  //@}
+    auto opts = SpanOptions(std::forward<Options>(options)...);
+    auto project_id = storage_internal::RequestProjectId(
+        GCP_ERROR_INFO(), opts, std::forward<Options>(options)...);
+    if (!project_id) return std::move(project_id).status();
+    google::cloud::internal::OptionsSpan const span(std::move(opts));
 
-  //@{
+    internal::UpdateHmacKeyRequest request(
+        *std::move(project_id), std::move(access_id), std::move(resource));
+    request.set_multiple_options(std::forward<Options>(options)...);
+    return connection_->UpdateHmacKey(request);
+  }
+  ///@}
+
   /// @name Signed URL support operations.
+  ///@{
   /**
    * Create a V2 signed URL for the given parameters.
    *
@@ -2861,6 +3009,8 @@ class Client {
                                           std::string bucket_name,
                                           std::string object_name,
                                           Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::V2SignUrlRequest request(std::move(verb), std::move(bucket_name),
                                        std::move(object_name));
     request.set_multiple_options(std::forward<Options>(options)...);
@@ -2924,12 +3074,15 @@ class Client {
                                           std::string bucket_name,
                                           std::string object_name,
                                           Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::V4SignUrlRequest request(std::move(verb), std::move(bucket_name),
-                                       std::move(object_name));
+                                       std::move(object_name),
+                                       EndpointAuthority());
     request.set_multiple_options(std::forward<Options>(options)...);
     return SignUrlV4(std::move(request));
   }
-  //@}
+  ///@}
 
   /**
    * Create a signed policy document.
@@ -2966,6 +3119,8 @@ class Client {
   template <typename... Options>
   StatusOr<PolicyDocumentResult> CreateSignedPolicyDocument(
       PolicyDocument document, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::PolicyDocumentRequest request(std::move(document));
     request.set_multiple_options(std::forward<Options>(options)...);
     return SignPolicyDocument(request);
@@ -3007,12 +3162,14 @@ class Client {
   template <typename... Options>
   StatusOr<PolicyDocumentV4Result> GenerateSignedPostPolicyV4(
       PolicyDocumentV4 document, Options&&... options) {
-    internal::PolicyDocumentV4Request request(std::move(document));
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
+    internal::PolicyDocumentV4Request request(std::move(document),
+                                              EndpointAuthority());
     request.set_multiple_options(std::forward<Options>(options)...);
     return SignPolicyDocumentV4(std::move(request));
   }
 
-  //@{
   /**
    * @name Pub/Sub operations.
    *
@@ -3023,6 +3180,7 @@ class Client {
    * @see https://cloud.google.com/storage/docs/pubsub-notifications for more
    *     information about Cloud Pub/Sub in the context of GCS.
    */
+  ///@{
   /**
    * Retrieves the list of Notifications for a Bucket.
    *
@@ -3042,9 +3200,11 @@ class Client {
   template <typename... Options>
   StatusOr<std::vector<NotificationMetadata>> ListNotifications(
       std::string const& bucket_name, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ListNotificationsRequest request(bucket_name);
     request.set_multiple_options(std::forward<Options>(options)...);
-    auto result = raw_client_->ListNotifications(request);
+    auto result = connection_->ListNotifications(request);
     if (!result) {
       return std::move(result).status();
     }
@@ -3084,6 +3244,8 @@ class Client {
   StatusOr<NotificationMetadata> CreateNotification(
       std::string const& bucket_name, std::string const& topic_name,
       NotificationMetadata metadata, Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     return CreateNotification(bucket_name, topic_name,
                               payload_format::JsonApiV1(), std::move(metadata),
                               std::forward<Options>(options)...);
@@ -3127,10 +3289,12 @@ class Client {
       std::string const& bucket_name, std::string const& topic_name,
       std::string const& payload_format, NotificationMetadata metadata,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     metadata.set_topic(topic_name).set_payload_format(payload_format);
     internal::CreateNotificationRequest request(bucket_name, metadata);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->CreateNotification(request);
+    return connection_->CreateNotification(request);
   }
 
   /**
@@ -3162,9 +3326,11 @@ class Client {
   StatusOr<NotificationMetadata> GetNotification(
       std::string const& bucket_name, std::string const& notification_id,
       Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::GetNotificationRequest request(bucket_name, notification_id);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return raw_client_->GetNotification(request);
+    return connection_->GetNotification(request);
   }
 
   /**
@@ -3198,11 +3364,110 @@ class Client {
   Status DeleteNotification(std::string const& bucket_name,
                             std::string const& notification_id,
                             Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::DeleteNotificationRequest request(bucket_name, notification_id);
     request.set_multiple_options(std::forward<Options>(options)...);
-    return std::move(raw_client_->DeleteNotification(request)).status();
+    return std::move(connection_->DeleteNotification(request)).status();
   }
-  //@}
+  ///@}
+
+  /**
+   * Creates the default client type given the options.
+   *
+   * @param options the client options, these are used to control credentials,
+   *   buffer sizes, etc.
+   * @param policies the client policies, these control the behavior of the
+   *   client, for example, how to backoff when an operation needs to be
+   *   retried, or what operations cannot be retried because they are not
+   *   idempotent.
+   *
+   * @deprecated use the constructor from `google::cloud::Options` instead.
+   */
+  template <typename... Policies>
+  explicit Client(ClientOptions options, Policies&&... policies)
+      : Client(InternalOnly{}, internal::ApplyPolicies(
+                                   internal::MakeOptions(std::move(options)),
+                                   std::forward<Policies>(policies)...)) {}
+
+  /**
+   * Creates the default client type given the credentials and policies.
+   *
+   * @param credentials a set of credentials to initialize the `ClientOptions`.
+   * @param policies the client policies, these control the behavior of the
+   *   client, for example, how to backoff when an operation needs to be
+   *   retried, or what operations cannot be retried because they are not
+   *   idempotent.
+   *
+   * @deprecated use the constructor from `google::cloud::Options` instead.
+   */
+  template <typename... Policies>
+  explicit Client(std::shared_ptr<oauth2::Credentials> credentials,
+                  Policies&&... policies)
+      : Client(InternalOnly{},
+               internal::ApplyPolicies(
+                   internal::DefaultOptions(std::move(credentials), {}),
+                   std::forward<Policies>(policies)...)) {}
+
+  /**
+   * Create a Client using ClientOptions::CreateDefaultClientOptions().
+   *
+   * @deprecated use the constructor from `google::cloud::Options` instead.
+   */
+  static StatusOr<Client> CreateDefaultClient();
+
+  /// Builds a client and maybe override the retry, idempotency, and/or backoff
+  /// policies.
+  /// @deprecated This was intended only for test code, applications should not
+  /// use it.
+  template <typename... Policies>
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+  GOOGLE_CLOUD_CPP_DEPRECATED(
+      "applications should not need this."
+      " Please use the constructors from ClientOptions instead."
+      " For mocking, please use testing::ClientFromMock() instead."
+      " Please file a bug at https://github.com/googleapis/google-cloud-cpp"
+      " if you have a use-case not covered by these.")
+#endif  // _MSC_VER
+  // We cannot `std::move(connection)` because it is used twice in the delegated
+  // constructor parameters. And we cannot just use `StorageConnection const&`
+  // because we do hold on to the `std::shared_ptr<>`.
+  explicit Client(
+      std::shared_ptr<internal::StorageConnection> const& connection,
+      Policies&&... policies)
+      : Client(InternalOnly{},
+               internal::ApplyPolicies(
+                   internal::DefaultOptions(
+                       connection->client_options().credentials(), {}),
+                   std::forward<Policies>(policies)...),
+               // We cannot std::move() because it is also used in the previous
+               // parameter.
+               connection) {
+  }
+
+  /// Define a tag to disable automatic decorations of the StorageConnection.
+  struct NoDecorations {};
+
+  /// Builds a client with a specific StorageConnection, without decorations.
+  /// @deprecated This was intended only for test code, applications should not
+  /// use it.
+  GOOGLE_CLOUD_CPP_DEPRECATED(
+      "applications should not need this."
+      " Please file a bug at https://github.com/googleapis/google-cloud-cpp"
+      " if you do.")
+  explicit Client(std::shared_ptr<internal::StorageConnection> connection,
+                  NoDecorations)
+      : Client(InternalOnlyNoDecorations{}, std::move(connection)) {}
+
+  /// Access the underlying `StorageConnection`.
+  /// @deprecated Only intended for implementors, do not use.
+  GOOGLE_CLOUD_CPP_DEPRECATED(
+      "applications should not need this."
+      " Please file a bug at https://github.com/googleapis/google-cloud-cpp"
+      " if you do.")
+  std::shared_ptr<internal::StorageConnection> raw_client() const {
+    return connection_;
+  }
 
  private:
   friend class internal::NonResumableParallelUploadState;
@@ -3212,21 +3477,27 @@ class Client {
   struct InternalOnly {};
   struct InternalOnlyNoDecorations {};
 
-  Client(InternalOnly, Options const& opts)
-      : raw_client_(CreateDefaultInternalClient(opts)) {}
-  Client(InternalOnlyNoDecorations, std::shared_ptr<internal::RawClient> c)
-      : raw_client_(std::move(c)) {}
-
-  static std::shared_ptr<internal::RawClient> CreateDefaultInternalClient(
-      Options const& opts, std::shared_ptr<internal::RawClient> client);
-  static std::shared_ptr<internal::RawClient> CreateDefaultInternalClient(
-      Options const& opts);
+  /// Assume @p connection is fully initialized and decorated as needed.
+  Client(InternalOnlyNoDecorations,
+         std::shared_ptr<internal::StorageConnection> connection)
+      : connection_(std::move(connection)) {}
+  /// Apply all decorators to @p connection, based on @p opts.
+  Client(InternalOnly, Options const& opts,
+         std::shared_ptr<internal::StorageConnection> connection);
+  /// Create a connection from @p opts, applying all decorators if needed.
+  Client(InternalOnly, Options const& opts);
 
   ObjectReadStream ReadObjectImpl(
       internal::ReadObjectRangeRequest const& request);
 
   ObjectWriteStream WriteObjectImpl(
       internal::ResumableUploadRequest const& request);
+
+  template <typename... RequestOptions>
+  google::cloud::Options SpanOptions(RequestOptions&&... o) const {
+    return google::cloud::internal::GroupOptions(
+        connection_->options(), std::forward<RequestOptions>(o)...);
+  }
 
   // The version of UploadFile() where UseResumableUploadSession is one of the
   // options. Note how this does not use InsertObjectMedia at all.
@@ -3236,6 +3507,8 @@ class Client {
                                           std::string const& object_name,
                                           std::true_type,
                                           Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     internal::ResumableUploadRequest request(bucket_name, object_name);
     request.set_multiple_options(std::forward<Options>(options)...);
     return UploadFileResumable(file_name, std::move(request));
@@ -3250,6 +3523,8 @@ class Client {
                                           std::string const& object_name,
                                           std::false_type,
                                           Options&&... options) {
+    google::cloud::internal::OptionsSpan const span(
+        SpanOptions(std::forward<Options>(options)...));
     std::size_t file_size = 0;
     if (UseSimpleUpload(file_name, file_size)) {
       internal::InsertObjectMediaRequest request(bucket_name, object_name,
@@ -3262,7 +3537,7 @@ class Client {
     return UploadFileResumable(file_name, std::move(request));
   }
 
-  bool UseSimpleUpload(std::string const& file_name, std::size_t& size) const;
+  static bool UseSimpleUpload(std::string const& file_name, std::size_t& size);
 
   StatusOr<ObjectMetadata> UploadFileSimple(
       std::string const& file_name, std::size_t file_size,
@@ -3272,13 +3547,14 @@ class Client {
       std::string const& file_name, internal::ResumableUploadRequest request);
 
   StatusOr<ObjectMetadata> UploadStreamResumable(
-      std::istream& source, internal::ResumableUploadRequest const& request);
+      std::istream& source,
+      internal::ResumableUploadRequest const& request) const;
 
   Status DownloadFileImpl(internal::ReadObjectRangeRequest const& request,
                           std::string const& file_name);
 
   /// Determine the email used to sign a blob.
-  std::string SigningEmail(SigningAccount const& signing_account);
+  std::string SigningEmail(SigningAccount const& signing_account) const;
 
   /// Represents the result of signing a blob, including the key used in the
   /// signature.
@@ -3299,7 +3575,13 @@ class Client {
   StatusOr<PolicyDocumentV4Result> SignPolicyDocumentV4(
       internal::PolicyDocumentV4Request request);
 
-  std::shared_ptr<internal::RawClient> raw_client_;
+  // The configured endpoint, including any scheme and port.
+  std::string Endpoint() const;
+
+  // The hostname:port part of the configured endpoint.
+  std::string EndpointAuthority() const;
+
+  std::shared_ptr<internal::StorageConnection> connection_;
 };
 
 /**
@@ -3322,8 +3604,8 @@ std::string CreateRandomPrefixName(std::string const& prefix = "");
 
 namespace internal {
 struct ClientImplDetails {
-  static std::shared_ptr<RawClient> GetRawClient(Client& c) {
-    return c.raw_client_;
+  static std::shared_ptr<StorageConnection> GetConnection(Client& c) {
+    return c.connection_;
   }
 
   static StatusOr<ObjectMetadata> UploadStreamResumable(
@@ -3331,20 +3613,22 @@ struct ClientImplDetails {
       internal::ResumableUploadRequest const& request) {
     return client.UploadStreamResumable(source, request);
   }
-  template <typename... Policies>
-
-  static Client CreateClient(std::shared_ptr<internal::RawClient> c,
-                             Policies&&... p) {
-    auto opts =
-        internal::ApplyPolicies(internal::MakeOptions(c->client_options()),
-                                std::forward<Policies>(p)...);
-    return Client(Client::InternalOnlyNoDecorations{},
-                  Client::CreateDefaultInternalClient(opts, std::move(c)));
-  }
 
   static Client CreateWithoutDecorations(
-      std::shared_ptr<internal::RawClient> c) {
+      std::shared_ptr<internal::StorageConnection> c) {
     return Client(Client::InternalOnlyNoDecorations{}, std::move(c));
+  }
+
+  static Client CreateWithDecorations(
+      Options const& opts, std::shared_ptr<StorageConnection> connection);
+
+  template <typename... Policies>
+  // NOLINTNEXTLINE(performance-unnecessary-value-param)
+  static Client CreateClient(std::shared_ptr<StorageConnection> c,
+                             Policies&&... p) {
+    auto opts =
+        internal::ApplyPolicies(c->options(), std::forward<Policies>(p)...);
+    return CreateWithDecorations(opts, std::move(c));
   }
 };
 
@@ -3469,8 +3753,7 @@ class ScopedDeleter {
  public:
   // The actual deletion depends on local's types in a very non-trivial way,
   // so we abstract this away by providing the function to delete one object.
-  // NOLINTNEXTLINE(google-explicit-constructor)
-  ScopedDeleter(std::function<Status(std::string, std::int64_t)> delete_fun);
+  explicit ScopedDeleter(std::function<Status(std::string, std::int64_t)> df);
   ScopedDeleter(ScopedDeleter const&) = delete;
   ScopedDeleter& operator=(ScopedDeleter const&) = delete;
   ~ScopedDeleter();
@@ -3487,7 +3770,7 @@ class ScopedDeleter {
   void Enable(bool enable) { enabled_ = enable; }
 
  private:
-  bool enabled_;
+  bool enabled_ = true;
   std::function<Status(std::string, std::int64_t)> delete_fun_;
   std::vector<std::pair<std::string, std::int64_t>> object_list_;
 };
@@ -3549,8 +3832,8 @@ StatusOr<ObjectMetadata> ComposeMany(
   std::size_t const max_num_objects = 32;
 
   if (source_objects.empty()) {
-    return Status(StatusCode::kInvalidArgument,
-                  "ComposeMany requires at least one source object.");
+    return google::cloud::internal::InvalidArgumentError(
+        "ComposeMany requires at least one source object.", GCP_ERROR_INFO());
   }
 
   auto all_options = std::make_tuple(options...);

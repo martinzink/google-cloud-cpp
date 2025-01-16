@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/datacatalog/data_catalog_client.h"
+//! [all]
+#include "google/cloud/datacatalog/v1/data_catalog_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -22,19 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace datacatalog = ::google::cloud::datacatalog;
+  auto const location = google::cloud::Location(argv[1], argv[2]);
+
+  namespace datacatalog = ::google::cloud::datacatalog_v1;
   auto client =
       datacatalog::DataCatalogClient(datacatalog::MakeDataCatalogConnection());
 
-  auto const parent =
-      std::string{"projects/"} + argv[1] + "/locations/" + argv[2];
-  for (auto r : client.ListEntryGroups(parent)) {
-    if (!r) throw std::runtime_error(r.status().message());
-    std::cout << r->DebugString() << "\n";
+  for (auto eg : client.ListEntryGroups(location.FullName())) {
+    if (!eg) throw std::move(eg).status();
+    std::cout << eg->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

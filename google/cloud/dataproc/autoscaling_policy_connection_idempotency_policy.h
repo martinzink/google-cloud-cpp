@@ -19,47 +19,23 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_AUTOSCALING_POLICY_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_AUTOSCALING_POLICY_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/dataproc/v1/autoscaling_policies.grpc.pb.h>
-#include <memory>
+#include "google/cloud/dataproc/v1/autoscaling_policy_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class AutoscalingPolicyServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~AutoscalingPolicyServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// dataproc_v1::MakeDefaultAutoscalingPolicyServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::
+    MakeDefaultAutoscalingPolicyServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<AutoscalingPolicyServiceConnectionIdempotencyPolicy>
-  clone() const = 0;
-
-  virtual google::cloud::Idempotency CreateAutoscalingPolicy(
-      google::cloud::dataproc::v1::CreateAutoscalingPolicyRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency UpdateAutoscalingPolicy(
-      google::cloud::dataproc::v1::UpdateAutoscalingPolicyRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetAutoscalingPolicy(
-      google::cloud::dataproc::v1::GetAutoscalingPolicyRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency ListAutoscalingPolicies(
-      google::cloud::dataproc::v1::ListAutoscalingPoliciesRequest request) = 0;
-
-  virtual google::cloud::Idempotency DeleteAutoscalingPolicy(
-      google::cloud::dataproc::v1::DeleteAutoscalingPolicyRequest const&
-          request) = 0;
-};
-
-std::unique_ptr<AutoscalingPolicyServiceConnectionIdempotencyPolicy>
-MakeDefaultAutoscalingPolicyServiceConnectionIdempotencyPolicy();
+/// @deprecated Use
+/// dataproc_v1::AutoscalingPolicyServiceConnectionIdempotencyPolicy directly.
+using ::google::cloud::dataproc_v1::
+    AutoscalingPolicyServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc

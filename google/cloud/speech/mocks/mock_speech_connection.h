@@ -20,32 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SPEECH_MOCKS_MOCK_SPEECH_CONNECTION_H
 
 #include "google/cloud/speech/speech_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/speech/v1/mocks/mock_speech_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in speech_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace speech_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockSpeechConnection : public speech::SpeechConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::speech::v1::RecognizeResponse>, Recognize,
-              (google::cloud::speech::v1::RecognizeRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::speech::v1::LongRunningRecognizeResponse>>,
-      LongRunningRecognize,
-      (google::cloud::speech::v1::LongRunningRecognizeRequest const& request),
-      (override));
-
-  MOCK_METHOD((std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
-                   google::cloud::speech::v1::StreamingRecognizeRequest,
-                   google::cloud::speech::v1::StreamingRecognizeResponse>>),
-              AsyncStreamingRecognize, (ExperimentalTag), (override));
-};
+/// @deprecated Use speech_v1_mocks::MockSpeechConnection directly.
+using ::google::cloud::speech_v1_mocks::MockSpeechConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace speech_mocks

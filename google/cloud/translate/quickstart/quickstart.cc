@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/translate/translation_client.h"
+//! [all]
+#include "google/cloud/translate/v3/translation_client.h"
 #include "google/cloud/project.h"
 #include <iostream>
-#include <stdexcept>
 
 auto constexpr kText = R"""(
 Four score and seven years ago our fathers brought forth on this
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace translate = ::google::cloud::translate;
+  namespace translate = ::google::cloud::translate_v3;
   auto client = translate::TranslationServiceClient(
       translate::MakeTranslationServiceConnection());
 
@@ -37,14 +37,15 @@ int main(int argc, char* argv[]) try {
   auto const target = std::string{argc >= 3 ? argv[2] : "es-419"};
   auto response =
       client.TranslateText(project.FullName(), target, {std::string{kText}});
-  if (!response) throw std::runtime_error(response.status().message());
+  if (!response) throw std::move(response).status();
 
   for (auto const& translation : response->translations()) {
     std::cout << translation.translated_text() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

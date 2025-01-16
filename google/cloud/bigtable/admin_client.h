@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ std::shared_ptr<AdminClient> MakeAdminClient(std::string project,
  * @deprecated use the `MakeAdminClient` method which accepts
  * `google::cloud::Options` instead.
  */
+GOOGLE_CLOUD_CPP_DEPRECATED("use `MakeAdminClient` instead")
 std::shared_ptr<AdminClient> CreateDefaultAdminClient(std::string project,
                                                       ClientOptions options);
 

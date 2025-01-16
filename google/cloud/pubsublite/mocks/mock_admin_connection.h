@@ -27,6 +27,21 @@ namespace cloud {
 namespace pubsublite_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+/**
+ * A class to mock `AdminServiceConnection`.
+ *
+ * Application developers may want to test their code with simulated responses,
+ * including errors, from an object of type `AdminServiceClient`. To do so,
+ * construct an object of type `AdminServiceClient` with an instance of this
+ * class. Then use the Google Test framework functions to program the behavior
+ * of this mock.
+ *
+ * @see [This example][bq-mock] for how to test your application with GoogleTest.
+ * While the example showcases types from the BigQuery library, the underlying
+ * principles apply for any pair of `*Client` and `*Connection`.
+ *
+ * [bq-mock]: @cloud_cpp_docs_link{bigquery,bigquery-read-mock}
+ */
 class MockAdminServiceConnection : public pubsublite::AdminServiceConnection {
  public:
   MOCK_METHOD(Options, options, (), (override));
@@ -46,7 +61,7 @@ class MockAdminServiceConnection : public pubsublite::AdminServiceConnection {
       (google::cloud::pubsublite::v1::GetTopicPartitionsRequest const& request),
       (override));
 
-  MOCK_METHOD(StreamRange<google::cloud::pubsublite::v1::Topic>, ListTopics,
+  MOCK_METHOD((StreamRange<google::cloud::pubsublite::v1::Topic>), ListTopics,
               (google::cloud::pubsublite::v1::ListTopicsRequest request),
               (override));
 
@@ -61,7 +76,7 @@ class MockAdminServiceConnection : public pubsublite::AdminServiceConnection {
       (override));
 
   MOCK_METHOD(
-      StreamRange<std::string>, ListTopicSubscriptions,
+      (StreamRange<std::string>), ListTopicSubscriptions,
       (google::cloud::pubsublite::v1::ListTopicSubscriptionsRequest request),
       (override));
 
@@ -75,7 +90,7 @@ class MockAdminServiceConnection : public pubsublite::AdminServiceConnection {
       (google::cloud::pubsublite::v1::GetSubscriptionRequest const& request),
       (override));
 
-  MOCK_METHOD(StreamRange<google::cloud::pubsublite::v1::Subscription>,
+  MOCK_METHOD((StreamRange<google::cloud::pubsublite::v1::Subscription>),
               ListSubscriptions,
               (google::cloud::pubsublite::v1::ListSubscriptionsRequest request),
               (override));
@@ -90,10 +105,44 @@ class MockAdminServiceConnection : public pubsublite::AdminServiceConnection {
       (google::cloud::pubsublite::v1::DeleteSubscriptionRequest const& request),
       (override));
 
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// using ::testing::Matcher;
+  /// EXPECT_CALL(*mock,
+  /// SeekSubscription(Matcher<google::cloud::pubsublite::v1::SeekSubscriptionRequest
+  /// const&>(_)))
+  /// @endcode
   MOCK_METHOD(
       future<StatusOr<google::cloud::pubsublite::v1::SeekSubscriptionResponse>>,
       SeekSubscription,
       (google::cloud::pubsublite::v1::SeekSubscriptionRequest const& request),
+      (override));
+
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// EXPECT_CALL(*mock, SeekSubscription(_, _))
+  /// @endcode
+  MOCK_METHOD(
+      StatusOr<google::longrunning::Operation>, SeekSubscription,
+      (NoAwaitTag,
+       google::cloud::pubsublite::v1::SeekSubscriptionRequest const& request),
+      (override));
+
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// using ::testing::Matcher;
+  /// EXPECT_CALL(*mock, SeekSubscription(Matcher<google::longrunning::Operation
+  /// const&>(_)))
+  /// @endcode
+  MOCK_METHOD(
+      future<StatusOr<google::cloud::pubsublite::v1::SeekSubscriptionResponse>>,
+      SeekSubscription, (google::longrunning::Operation const& operation),
       (override));
 
   MOCK_METHOD(
@@ -106,7 +155,7 @@ class MockAdminServiceConnection : public pubsublite::AdminServiceConnection {
       (google::cloud::pubsublite::v1::GetReservationRequest const& request),
       (override));
 
-  MOCK_METHOD(StreamRange<google::cloud::pubsublite::v1::Reservation>,
+  MOCK_METHOD((StreamRange<google::cloud::pubsublite::v1::Reservation>),
               ListReservations,
               (google::cloud::pubsublite::v1::ListReservationsRequest request),
               (override));
@@ -122,8 +171,29 @@ class MockAdminServiceConnection : public pubsublite::AdminServiceConnection {
       (override));
 
   MOCK_METHOD(
-      StreamRange<std::string>, ListReservationTopics,
+      (StreamRange<std::string>), ListReservationTopics,
       (google::cloud::pubsublite::v1::ListReservationTopicsRequest request),
+      (override));
+
+  MOCK_METHOD((StreamRange<google::longrunning::Operation>), ListOperations,
+              (google::longrunning::ListOperationsRequest request), (override));
+
+  MOCK_METHOD(StatusOr<google::longrunning::Operation>, GetOperation,
+              (google::longrunning::GetOperationRequest const& request),
+              (override));
+
+  MOCK_METHOD(Status, DeleteOperation,
+              (google::longrunning::DeleteOperationRequest const& request),
+              (override));
+
+  MOCK_METHOD(Status, CancelOperation,
+              (google::longrunning::CancelOperationRequest const& request),
+              (override));
+
+  MOCK_METHOD(
+      future<StatusOr<google::cloud::pubsublite::v1::TopicPartitions>>,
+      AsyncGetTopicPartitions,
+      (google::cloud::pubsublite::v1::GetTopicPartitionsRequest const& request),
       (override));
 };
 

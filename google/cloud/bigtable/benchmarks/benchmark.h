@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,8 +62,8 @@ class Benchmark {
   /// Populate the table with initial data.
   google::cloud::StatusOr<BenchmarkResult> PopulateTable();
 
-  /// Return a `bigtable::DataClient` configured for this benchmark.
-  std::shared_ptr<bigtable::DataClient> MakeDataClient();
+  /// Return a `bigtable::Table` configured for this benchmark.
+  Table MakeTable() const;
 
   /// Create a random key.
   std::string MakeRandomKey(google::cloud::internal::DefaultPRNG& gen) const;
@@ -102,7 +102,7 @@ class Benchmark {
                       std::string const& measurement,
                       BenchmarkResult& result) const;
 
-  //@{
+  ///@{
   /**
    * @name Embedded server counter accessors.
    *
@@ -117,7 +117,7 @@ class Benchmark {
   int mutate_row_count() const;
   int mutate_rows_count() const;
   int read_rows_count() const;
-  //@}
+  ///@}
 
   void DisableBackgroundThreads(CompletionQueue& cq);
 

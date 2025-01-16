@@ -1,36 +1,14 @@
 # Cloud Speech-to-Text API C++ Client Library
 
-:construction:
-
 This directory contains an idiomatic C++ client library for the
 [Cloud Speech-to-Text API][cloud-service-docs], a service which converts audio
 to text by applying powerful neural network models.
 
-<!-- TODO(#7991): verify the StreamingRecognize API is usable before GA -->
-<!-- GA delayed until (at least) 2022-03-31 -->
-This library is **experimental**. Its APIs are subject to change without notice.
+While this library is **GA**, please note that the Google Cloud C++ client
+libraries do **not** follow [Semantic Versioning](https://semver.org/).
 
 Please note that the Google Cloud C++ client libraries do **not** follow
 [Semantic Versioning](https://semver.org/).
-
-## Supported Platforms
-
-* Windows, macOS, Linux
-* C++11 (and higher) compilers (we test with GCC >= 5.4, Clang >= 6.0, and
-  MSVC >= 2017)
-* Environments with or without exceptions
-* Bazel and CMake builds
-
-## Documentation
-
-* Official documentation about the [Cloud Speech-to-Text API][cloud-service-docs] service
-* [Reference doxygen documentation][doxygen-link] for each release of this
-  client library
-* Detailed header comments in our [public `.h`][source-link] files
-
-[cloud-service-docs]: https://cloud.google.com/speech
-[doxygen-link]: https://googleapis.dev/cpp/google-cloud-speech/latest/
-[source-link]: https://github.com/googleapis/google-cloud-cpp/tree/main/google/cloud/speech
 
 ## Quickstart
 
@@ -39,61 +17,72 @@ to get started using this client library in a larger project. The following
 "Hello World" program is used in this quickstart, and should give you a taste of
 this library.
 
+For detailed instructions on how to build and install this library, see the
+top-level [README](/README.md#building-and-installing).
+
 <!-- inject-quickstart-start -->
+
 ```cc
-#include "google/cloud/speech/speech_client.h"
+#include "google/cloud/speech/v2/speech_client.h"
 #include "google/cloud/project.h"
 #include <iostream>
-#include <stdexcept>
+
+// Configure a simple recognizer for en-US.
+void ConfigureRecognizer(google::cloud::speech::v2::RecognizeRequest& request) {
+  *request.mutable_config()->add_language_codes() = "en-US";
+  request.mutable_config()->set_model("short");
+  *request.mutable_config()->mutable_auto_decoding_config() = {};
+}
 
 int main(int argc, char* argv[]) try {
   auto constexpr kDefaultUri = "gs://cloud-samples-data/speech/hello.wav";
-  if (argc > 2) {
-    std::cerr << "Usage: " << argv[0] << " [gcs-uri]\n"
+  if (argc != 3 && argc != 4) {
+    std::cerr << "Usage: " << argv[0] << " project <region>|global [gcs-uri]\n"
+              << "  Specify the region desired or \"global\"\n"
               << "  The gcs-uri must be in gs://... format. It defaults to "
               << kDefaultUri << "\n";
     return 1;
   }
-  auto uri = std::string{argc == 2 ? argv[1] : kDefaultUri};
+  std::string const project = argv[1];
+  std::string location = argv[2];
+  auto const uri = std::string{argc == 4 ? argv[3] : kDefaultUri};
+  namespace speech = ::google::cloud::speech_v2;
 
-  namespace speech = ::google::cloud::speech;
-  auto client = speech::SpeechClient(speech::MakeSpeechConnection());
+  std::shared_ptr<speech::SpeechConnection> connection;
+  google::cloud::speech::v2::RecognizeRequest request;
+  ConfigureRecognizer(request);
+  request.set_uri(uri);
+  request.set_recognizer("projects/" + project + "/locations/" + location +
+                         "/recognizers/_");
 
-  google::cloud::speech::v1::RecognitionConfig config;
-  config.set_language_code("en-US");
-  google::cloud::speech::v1::RecognitionAudio audio;
-  audio.set_uri(uri);
-  auto response = client.Recognize(config, audio);
-  if (!response) throw std::runtime_error(response.status().message());
+  if (location == "global") {
+    // An empty location string indicates that the global endpoint of the
+    // service should be used.
+    location = "";
+  }
+
+  auto client = speech::SpeechClient(speech::MakeSpeechConnection(location));
+  auto response = client.Recognize(request);
+  if (!response) throw std::move(response).status();
   std::cout << response->DebugString() << "\n";
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
 ```
+
 <!-- inject-quickstart-end -->
 
-* Packaging maintainers or developers who prefer to install the library in a
-  fixed directory (such as `/usr/local` or `/opt`) should consult the
-  [packaging guide](/doc/packaging.md).
-* Developers wanting to use the libraries as part of a larger CMake or Bazel
-  project should consult the [quickstart guides](#quickstart) for the library
-  or libraries they want to use.
-* Developers wanting to compile the library just to run some of the examples or
-  tests should read the current document.
-* Contributors and developers to `google-cloud-cpp` should consult the guide to
-  [setup a development workstation][howto-setup-dev-workstation].
+## More Information
 
-[howto-setup-dev-workstation]: /doc/contributor/howto-guide-setup-development-workstation.md
+- Official documentation about the
+  [Cloud Speech-to-Text API][cloud-service-docs] service
+- [Reference doxygen documentation][doxygen-link] for each release of this
+  client library
+- Detailed header comments in our [public `.h`][source-link] files
 
-## Contributing changes
-
-See [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) for details on how to
-contribute to this project, including how to build and test your changes
-as well as how to properly format your code.
-
-## Licensing
-
-Apache 2.0; see [`LICENSE`](../../../LICENSE) for details.
+[cloud-service-docs]: https://cloud.google.com/speech
+[doxygen-link]: https://cloud.google.com/cpp/docs/reference/speech/latest/
+[source-link]: https://github.com/googleapis/google-cloud-cpp/tree/main/google/cloud/speech

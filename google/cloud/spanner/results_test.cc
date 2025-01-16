@@ -14,10 +14,10 @@
 
 #include "google/cloud/spanner/results.h"
 #include "google/cloud/spanner/mocks/mock_spanner_connection.h"
+#include "google/cloud/spanner/mocks/row.h"
 #include "google/cloud/spanner/timestamp.h"
 #include "google/cloud/testing_util/is_proto_equal.h"
 #include "google/cloud/testing_util/status_matchers.h"
-#include "absl/memory/memory.h"
 #include <google/protobuf/text_format.h>
 #include <gmock/gmock.h>
 #include <chrono>
@@ -30,8 +30,6 @@ namespace spanner {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
-namespace spanner_proto = ::google::spanner::v1;
-
 using ::google::cloud::spanner_mocks::MockResultSetSource;
 using ::google::cloud::testing_util::IsProtoEqual;
 using ::google::cloud::testing_util::StatusIs;
@@ -41,7 +39,7 @@ using ::testing::Return;
 using ::testing::UnorderedPointwise;
 
 TEST(RowStream, IterateNoRows) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   EXPECT_CALL(*mock_source, NextRow()).WillOnce(Return(Row()));
 
   RowStream rows(std::move(mock_source));
@@ -54,10 +52,10 @@ TEST(RowStream, IterateNoRows) {
 }
 
 TEST(RowStream, IterateOverRows) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   EXPECT_CALL(*mock_source, NextRow())
-      .WillOnce(Return(MakeTestRow(5, true, "foo")))
-      .WillOnce(Return(MakeTestRow(10, false, "bar")))
+      .WillOnce(Return(spanner_mocks::MakeRow(5, true, "foo")))
+      .WillOnce(Return(spanner_mocks::MakeRow(10, false, "bar")))
       .WillOnce(Return(Row()));
 
   RowStream rows(std::move(mock_source));
@@ -87,9 +85,9 @@ TEST(RowStream, IterateOverRows) {
 }
 
 TEST(RowStream, IterateError) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   EXPECT_CALL(*mock_source, NextRow())
-      .WillOnce(Return(MakeTestRow(5, true, "foo")))
+      .WillOnce(Return(spanner_mocks::MakeRow(5, true, "foo")))
       .WillOnce(Return(Status(StatusCode::kUnknown, "oops")));
 
   RowStream rows(std::move(mock_source));
@@ -118,8 +116,8 @@ TEST(RowStream, IterateError) {
 }
 
 TEST(RowStream, TimestampNoTransaction) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
-  spanner_proto::ResultSetMetadata no_transaction;
+  auto mock_source = std::make_unique<MockResultSetSource>();
+  google::spanner::v1::ResultSetMetadata no_transaction;
   EXPECT_CALL(*mock_source, Metadata()).WillOnce(Return(no_transaction));
 
   RowStream rows(std::move(mock_source));
@@ -127,8 +125,8 @@ TEST(RowStream, TimestampNoTransaction) {
 }
 
 TEST(RowStream, TimestampNotPresent) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
-  spanner_proto::ResultSetMetadata transaction_no_timestamp;
+  auto mock_source = std::make_unique<MockResultSetSource>();
+  google::spanner::v1::ResultSetMetadata transaction_no_timestamp;
   transaction_no_timestamp.mutable_transaction()->set_id("placeholder");
   EXPECT_CALL(*mock_source, Metadata())
       .WillOnce(Return(transaction_no_timestamp));
@@ -138,8 +136,8 @@ TEST(RowStream, TimestampNotPresent) {
 }
 
 TEST(RowStream, TimestampPresent) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
-  spanner_proto::ResultSetMetadata transaction_with_timestamp;
+  auto mock_source = std::make_unique<MockResultSetSource>();
+  google::spanner::v1::ResultSetMetadata transaction_with_timestamp;
   transaction_with_timestamp.mutable_transaction()->set_id("placeholder2");
   Timestamp timestamp = MakeTimestamp(std::chrono::system_clock::now()).value();
   *transaction_with_timestamp.mutable_transaction()->mutable_read_timestamp() =
@@ -151,9 +149,22 @@ TEST(RowStream, TimestampPresent) {
   EXPECT_EQ(*rows.ReadTimestamp(), timestamp);
 }
 
+TEST(RowStream, RowsModified) {
+  auto mock_source = std::make_unique<MockResultSetSource>();
+  auto constexpr kText = R"pb(
+    row_count_exact: 42
+  )pb";
+  google::spanner::v1::ResultSetStats stats;
+  ASSERT_TRUE(TextFormat::ParseFromString(kText, &stats));
+  EXPECT_CALL(*mock_source, Stats()).WillOnce(Return(stats));
+
+  RowStream rows(std::move(mock_source));
+  EXPECT_EQ(rows.RowsModified(), 42);
+}
+
 TEST(ProfileQueryResult, TimestampPresent) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
-  spanner_proto::ResultSetMetadata transaction_with_timestamp;
+  auto mock_source = std::make_unique<MockResultSetSource>();
+  google::spanner::v1::ResultSetMetadata transaction_with_timestamp;
   transaction_with_timestamp.mutable_transaction()->set_id("placeholder2");
   Timestamp timestamp = MakeTimestamp(std::chrono::system_clock::now()).value();
   *transaction_with_timestamp.mutable_transaction()->mutable_read_timestamp() =
@@ -166,7 +177,7 @@ TEST(ProfileQueryResult, TimestampPresent) {
 }
 
 TEST(ProfileQueryResult, ExecutionStats) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   auto constexpr kText = R"pb(
     query_stats {
       fields {
@@ -179,7 +190,7 @@ TEST(ProfileQueryResult, ExecutionStats) {
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &stats));
   EXPECT_CALL(*mock_source, Stats()).WillOnce(Return(stats));
 
-  std::vector<std::pair<const std::string, std::string>> expected;
+  std::vector<std::pair<std::string const, std::string>> expected;
   expected.emplace_back("elapsed_time", "42 secs");
   ProfileQueryResult query_result(std::move(mock_source));
   EXPECT_THAT(*query_result.ExecutionStats(),
@@ -187,7 +198,7 @@ TEST(ProfileQueryResult, ExecutionStats) {
 }
 
 TEST(ProfileQueryResult, ExecutionPlan) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   auto constexpr kText = R"pb(
     query_plan { plan_nodes: { index: 42 } }
   )pb";
@@ -200,7 +211,7 @@ TEST(ProfileQueryResult, ExecutionPlan) {
 }
 
 TEST(DmlResult, RowsModified) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   auto constexpr kText = R"pb(
     row_count_exact: 42
   )pb";
@@ -213,7 +224,7 @@ TEST(DmlResult, RowsModified) {
 }
 
 TEST(ProfileDmlResult, RowsModified) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   auto constexpr kText = R"pb(
     row_count_exact: 42
   )pb";
@@ -226,7 +237,7 @@ TEST(ProfileDmlResult, RowsModified) {
 }
 
 TEST(ProfileDmlResult, ExecutionStats) {
-  auto mock_source = absl::make_unique<MockResultSetSource>();
+  auto mock_source = std::make_unique<MockResultSetSource>();
   auto constexpr kText =
       R"pb(
     query_stats {
@@ -239,7 +250,7 @@ TEST(ProfileDmlResult, ExecutionStats) {
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &stats));
   EXPECT_CALL(*mock_source, Stats()).WillOnce(Return(stats));
 
-  std::vector<std::pair<const std::string, std::string>> expected;
+  std::vector<std::pair<std::string const, std::string>> expected;
   expected.emplace_back("elapsed_time", "42 secs");
   ProfileDmlResult dml_result(std::move(mock_source));
   EXPECT_THAT(*dml_result.ExecutionStats(), UnorderedPointwise(Eq(), expected));

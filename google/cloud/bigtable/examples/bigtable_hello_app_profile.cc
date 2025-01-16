@@ -37,16 +37,17 @@ void HelloWorldAppProfile(std::vector<std::string> const& argv) {
         "hello-world-app-profile <project-id> <instance-id>"
         " <table-id> <profile-id>"};
   }
-  std::string const project_id = argv[0];
-  std::string const instance_id = argv[1];
-  std::string const table_id = argv[2];
-  std::string const profile_id = argv[3];
+  std::string const& project_id = argv[0];
+  std::string const& instance_id = argv[1];
+  std::string const& table_id = argv[2];
+  std::string const& profile_id = argv[3];
 
   // Create an object to access the Cloud Bigtable Data API.
-  auto data_client = cbt::MakeDataClient(project_id, instance_id);
+  auto connection = cbt::MakeDataConnection();
 
   // Use the default profile to write some data.
-  cbt::Table write(data_client, table_id);
+  cbt::Table write(connection,
+                   cbt::TableResource(project_id, instance_id, table_id));
 
   // Modify (and create if necessary) a row.
   std::vector<std::string> greetings{"Hello World!", "Hello Cloud Bigtable!",
@@ -75,11 +76,15 @@ void HelloWorldAppProfile(std::vector<std::string> const& argv) {
 
   // Access Cloud Bigtable using a different profile
   //! [read with app profile]
-  cbt::Table read(data_client, profile_id, table_id);
+  auto options =
+      google::cloud::Options{}.set<cbt::AppProfileIdOption>(profile_id);
+  cbt::Table read(connection,
+                  cbt::TableResource(project_id, instance_id, table_id),
+                  options);
 
   google::cloud::StatusOr<std::pair<bool, cbt::Row>> result =
       read.ReadRow("key-0", cbt::Filter::ColumnRangeClosed("fam", "c0", "c0"));
-  if (!result) throw std::runtime_error(result.status().message());
+  if (!result) throw std::move(result).status();
   if (!result->first) throw std::runtime_error("missing row with key = key-0");
   cbt::Cell const& cell = result->second.cells().front();
   std::cout << cell.family_name() << ":" << cell.column_qualifier() << "    @ "
@@ -92,7 +97,7 @@ void HelloWorldAppProfile(std::vector<std::string> const& argv) {
   std::cout << "Scanning all the data from " << table_id << "\n";
   for (google::cloud::StatusOr<cbt::Row>& row : read.ReadRows(
            cbt::RowRange::InfiniteRange(), cbt::Filter::PassAllFilter())) {
-    if (!row) throw std::runtime_error(row.status().message());
+    if (!row) throw std::move(row).status();
     std::cout << row->row_key() << ":\n";
     for (cbt::Cell const& c : row->cells()) {
       std::cout << "\t" << c.family_name() << ":" << c.column_qualifier()
@@ -128,14 +133,12 @@ void RunAll(std::vector<std::string> const& argv) {
   auto table_id = cbt::testing::RandomTableId(generator);
 
   // Create a table to run the tests on
-  google::bigtable::admin::v2::GcRule gc;
-  gc.set_max_num_versions(10);
   google::bigtable::admin::v2::Table t;
   auto& families = *t.mutable_column_families();
-  *families["fam"].mutable_gc_rule() = std::move(gc);
+  families["fam"].mutable_gc_rule()->set_max_num_versions(10);
   auto schema = admin.CreateTable(cbt::InstanceName(project_id, instance_id),
                                   table_id, std::move(t));
-  if (!schema) throw std::runtime_error(schema.status().message());
+  if (!schema) throw std::move(schema).status();
 
   auto profile_id = "hw-app-profile-" +
                     google::cloud::internal::Sample(
@@ -147,7 +150,7 @@ void RunAll(std::vector<std::string> const& argv) {
   ap.mutable_multi_cluster_routing_use_any()->Clear();
   auto profile = instance_admin.CreateAppProfile(
       cbt::InstanceName(project_id, instance_id), profile_id, std::move(ap));
-  if (!profile) throw std::runtime_error(profile.status().message());
+  if (!profile) throw std::move(profile).status();
 
   std::cout << "\nRunning the AppProfile hello world example" << std::endl;
   HelloWorldAppProfile({project_id, instance_id, table_id, profile_id});

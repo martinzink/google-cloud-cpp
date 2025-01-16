@@ -20,26 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TRACE_MOCKS_MOCK_TRACE_CONNECTION_H
 
 #include "google/cloud/trace/trace_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/trace/v2/mocks/mock_trace_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in trace_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace trace_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockTraceServiceConnection : public trace::TraceServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      Status, BatchWriteSpans,
-      (google::devtools::cloudtrace::v2::BatchWriteSpansRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::devtools::cloudtrace::v2::Span>, CreateSpan,
-              (google::devtools::cloudtrace::v2::Span const& request),
-              (override));
-};
+/// @deprecated Use trace_v2_mocks::MockTraceServiceConnection directly.
+using ::google::cloud::trace_v2_mocks::MockTraceServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace trace_mocks

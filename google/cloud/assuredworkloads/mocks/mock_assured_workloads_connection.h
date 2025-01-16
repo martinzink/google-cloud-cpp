@@ -20,45 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ASSUREDWORKLOADS_MOCKS_MOCK_ASSURED_WORKLOADS_CONNECTION_H
 
 #include "google/cloud/assuredworkloads/assured_workloads_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/assuredworkloads/v1/mocks/mock_assured_workloads_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in assuredworkloads_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace assuredworkloads_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockAssuredWorkloadsServiceConnection
-    : public assuredworkloads::AssuredWorkloadsServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::assuredworkloads::v1::Workload>>,
-              CreateWorkload,
-              (google::cloud::assuredworkloads::v1::CreateWorkloadRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::assuredworkloads::v1::Workload>,
-              UpdateWorkload,
-              (google::cloud::assuredworkloads::v1::UpdateWorkloadRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(Status, DeleteWorkload,
-              (google::cloud::assuredworkloads::v1::DeleteWorkloadRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::assuredworkloads::v1::Workload>, GetWorkload,
-      (google::cloud::assuredworkloads::v1::GetWorkloadRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StreamRange<google::cloud::assuredworkloads::v1::Workload>, ListWorkloads,
-      (google::cloud::assuredworkloads::v1::ListWorkloadsRequest request),
-      (override));
-};
+/// @deprecated Use
+/// assuredworkloads_v1_mocks::MockAssuredWorkloadsServiceConnection directly.
+using ::google::cloud::assuredworkloads_v1_mocks::
+    MockAssuredWorkloadsServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace assuredworkloads_mocks

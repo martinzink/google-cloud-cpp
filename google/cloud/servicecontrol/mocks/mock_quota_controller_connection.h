@@ -20,24 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICECONTROL_MOCKS_MOCK_QUOTA_CONTROLLER_CONNECTION_H
 
 #include "google/cloud/servicecontrol/quota_controller_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/servicecontrol/v1/mocks/mock_quota_controller_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in servicecontrol_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace servicecontrol_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockQuotaControllerConnection
-    : public servicecontrol::QuotaControllerConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::api::servicecontrol::v1::AllocateQuotaResponse>,
-      AllocateQuota,
-      (google::api::servicecontrol::v1::AllocateQuotaRequest const& request),
-      (override));
-};
+/// @deprecated Use servicecontrol_v1_mocks::MockQuotaControllerConnection
+/// directly.
+using ::google::cloud::servicecontrol_v1_mocks::MockQuotaControllerConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicecontrol_mocks

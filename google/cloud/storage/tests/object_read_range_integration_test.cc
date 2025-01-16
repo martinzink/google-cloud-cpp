@@ -18,6 +18,8 @@
 #include "google/cloud/testing_util/scoped_environment.h"
 #include "google/cloud/testing_util/status_matchers.h"
 #include <gmock/gmock.h>
+#include <string>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -27,6 +29,7 @@ namespace {
 
 using ::google::cloud::internal::GetEnv;
 using ::google::cloud::testing_util::IsOk;
+using ::google::cloud::testing_util::StatusIs;
 
 class ObjectReadRangeIntegrationTest
     : public ::google::cloud::storage::testing::StorageIntegrationTest {
@@ -47,15 +50,176 @@ class ObjectReadRangeIntegrationTest
   std::string bucket_name_;
 };
 
+TEST_F(ObjectReadRangeIntegrationTest, ReadRanges) {
+  auto client = MakeIntegrationTestClient();
+
+  auto constexpr kChunk = 1000;
+  auto constexpr kObjectSize = 10 * kChunk;
+  auto const contents = MakeRandomData(kObjectSize);
+  // Read different ranges in the object, expecting specific results.
+  struct Test {
+    std::int64_t begin;
+    std::int64_t end;
+    std::string expected;
+  } cases[] = {
+      {0, kChunk, contents.substr(0, kChunk)},
+      {kChunk, 2 * kChunk, contents.substr(kChunk, kChunk)},
+      {0, 20 * kChunk, contents},
+      {8 * kChunk, 12 * kChunk, contents.substr(8 * kChunk)},
+  };
+
+  auto const object_name = MakeRandomObjectName();
+  auto insert = client.InsertObject(bucket_name(), object_name, contents,
+                                    IfGenerationMatch(0));
+  ASSERT_THAT(insert, IsOk());
+  ScheduleForDelete(*insert);
+  EXPECT_THAT(contents.size(), insert->size());
+
+  for (auto const& test : cases) {
+    SCOPED_TRACE("Testing range [" + std::to_string(test.begin) + "," +
+                 std::to_string(test.end) + ")");
+    auto reader = client.ReadObject(bucket_name(), object_name,
+                                    ReadRange(test.begin, test.end));
+    EXPECT_FALSE(reader.bad());
+    EXPECT_FALSE(reader.eof());
+    EXPECT_FALSE(reader.fail());
+    EXPECT_TRUE(reader.good());
+
+    auto buffer = std::vector<char>(2 * kObjectSize);
+    reader.read(buffer.data(), buffer.size());
+    EXPECT_FALSE(reader.bad());
+    EXPECT_TRUE(reader.eof());
+    EXPECT_TRUE(reader.fail());
+    EXPECT_FALSE(reader.good());
+    EXPECT_THAT(reader.status(), IsOk());
+
+    auto actual =
+        std::string{buffer.begin(),
+                    std::next(buffer.begin(),
+                              static_cast<std::ptrdiff_t>(reader.gcount()))};
+    EXPECT_EQ(test.expected, actual);
+  }
+
+  if (UsingEmulator()) return;
+  auto reader = client.ReadObject(
+      bucket_name(), object_name,
+      ReadRange(kObjectSize + kChunk, kObjectSize + 2 * kChunk));
+  EXPECT_TRUE(reader.bad());
+  EXPECT_THAT(reader.status(), StatusIs(StatusCode::kOutOfRange));
+}
+
+TEST_F(ObjectReadRangeIntegrationTest, ReadFromOffset) {
+  auto client = MakeIntegrationTestClient();
+
+  auto constexpr kChunk = 1000;
+  auto constexpr kObjectSize = 10 * kChunk;
+  auto const contents = MakeRandomData(kObjectSize);
+  // Read from different offsets in the object, expecting specific results.
+  struct Test {
+    std::int64_t begin;
+    std::string expected;
+  } cases[] = {
+      {0, contents},
+      {kChunk, contents.substr(kChunk)},
+      {8 * kChunk, contents.substr(8 * kChunk)},
+  };
+
+  auto const object_name = MakeRandomObjectName();
+  auto insert = client.InsertObject(bucket_name(), object_name, contents,
+                                    IfGenerationMatch(0));
+  ASSERT_THAT(insert, IsOk());
+  ScheduleForDelete(*insert);
+  EXPECT_THAT(contents.size(), insert->size());
+
+  for (auto const& test : cases) {
+    SCOPED_TRACE("Testing from offset " + std::to_string(test.begin));
+    auto reader = client.ReadObject(bucket_name(), object_name,
+                                    ReadFromOffset(test.begin));
+    EXPECT_FALSE(reader.bad());
+    EXPECT_FALSE(reader.eof());
+    EXPECT_FALSE(reader.fail());
+    EXPECT_TRUE(reader.good());
+
+    auto buffer = std::vector<char>(2 * kObjectSize);
+    reader.read(buffer.data(), buffer.size());
+    EXPECT_FALSE(reader.bad());
+    EXPECT_TRUE(reader.eof());
+    EXPECT_TRUE(reader.fail());
+    EXPECT_FALSE(reader.good());
+    EXPECT_THAT(reader.status(), IsOk());
+
+    auto actual =
+        std::string{buffer.begin(),
+                    std::next(buffer.begin(),
+                              static_cast<std::ptrdiff_t>(reader.gcount()))};
+    EXPECT_EQ(test.expected, actual);
+  }
+
+  if (UsingEmulator()) return;
+  auto reader = client.ReadObject(bucket_name(), object_name,
+                                  ReadFromOffset(kObjectSize + kChunk));
+  EXPECT_TRUE(reader.bad());
+  EXPECT_THAT(reader.status(), StatusIs(StatusCode::kOutOfRange));
+}
+
+TEST_F(ObjectReadRangeIntegrationTest, ReadLast) {
+  auto client = MakeIntegrationTestClient();
+
+  auto constexpr kChunk = 1000;
+  auto constexpr kObjectSize = 10 * kChunk;
+  auto const contents = MakeRandomData(kObjectSize);
+  // Read the last part(s) of the object, expecting specific results.
+  struct Test {
+    std::int64_t count;
+    std::string expected;
+  } cases[] = {
+      {kObjectSize, contents},
+      {kChunk, contents.substr(contents.size() - kChunk)},
+      {2 * kChunk, contents.substr(contents.size() - 2 * kChunk)},
+      // GCS returns the minimum of "the last N bytes" or "all the bytes".
+      {kObjectSize + kChunk, contents},
+  };
+
+  auto const object_name = MakeRandomObjectName();
+  auto insert = client.InsertObject(bucket_name(), object_name, contents,
+                                    IfGenerationMatch(0));
+  ASSERT_THAT(insert, IsOk());
+  ScheduleForDelete(*insert);
+  EXPECT_THAT(contents.size(), insert->size());
+
+  for (auto const& test : cases) {
+    SCOPED_TRACE("Testing last " + std::to_string(test.count));
+    auto reader =
+        client.ReadObject(bucket_name(), object_name, ReadLast(test.count));
+    EXPECT_FALSE(reader.bad());
+    EXPECT_FALSE(reader.eof());
+    EXPECT_FALSE(reader.fail());
+    EXPECT_TRUE(reader.good());
+
+    auto buffer = std::vector<char>(2 * kObjectSize);
+    reader.read(buffer.data(), buffer.size());
+    EXPECT_FALSE(reader.bad());
+    EXPECT_TRUE(reader.eof());
+    EXPECT_TRUE(reader.fail());
+    EXPECT_FALSE(reader.good());
+    EXPECT_THAT(reader.status(), IsOk());
+
+    auto actual =
+        std::string{buffer.begin(),
+                    std::next(buffer.begin(),
+                              static_cast<std::ptrdiff_t>(reader.gcount()))};
+    EXPECT_EQ(test.expected, actual);
+  }
+}
+
 TEST_F(ObjectReadRangeIntegrationTest, ReadRangeSmall) {
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
+  auto client = MakeIntegrationTestClient();
 
   auto const contents = LoremIpsum();
   auto const object_name = MakeRandomObjectName();
 
-  auto insert = client->InsertObject(bucket_name(), object_name, contents,
-                                     IfGenerationMatch(0));
+  auto insert = client.InsertObject(bucket_name(), object_name, contents,
+                                    IfGenerationMatch(0));
   ASSERT_THAT(insert, IsOk());
   ScheduleForDelete(*insert);
   EXPECT_THAT(contents.size(), insert->size());
@@ -76,23 +240,22 @@ TEST_F(ObjectReadRangeIntegrationTest, ReadRangeSmall) {
   for (auto const& test : cases) {
     SCOPED_TRACE("Testing range [" + std::to_string(test.begin) + "," +
                  std::to_string(test.end) + ")");
-    auto reader = client->ReadObject(bucket_name(), object_name,
-                                     ReadRange(test.begin, test.end));
+    auto reader = client.ReadObject(bucket_name(), object_name,
+                                    ReadRange(test.begin, test.end));
     auto actual = std::string{std::istreambuf_iterator<char>(reader), {}};
     EXPECT_THAT(reader.status(), IsOk());
     EXPECT_EQ(test.expected, actual);
   }
 }
 
-TEST_F(ObjectReadRangeIntegrationTest, ReadFromOffset) {
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
+TEST_F(ObjectReadRangeIntegrationTest, ReadFromOffsetSmall) {
+  auto client = MakeIntegrationTestClient();
 
   auto const contents = LoremIpsum();
   auto const object_name = MakeRandomObjectName();
 
-  auto insert = client->InsertObject(bucket_name(), object_name, contents,
-                                     IfGenerationMatch(0));
+  auto insert = client.InsertObject(bucket_name(), object_name, contents,
+                                    IfGenerationMatch(0));
   ASSERT_THAT(insert, IsOk());
   ScheduleForDelete(*insert);
   EXPECT_THAT(contents.size(), insert->size());
@@ -111,23 +274,22 @@ TEST_F(ObjectReadRangeIntegrationTest, ReadFromOffset) {
 
   for (auto const& test : cases) {
     SCOPED_TRACE("Testing range [" + std::to_string(test.offset) + ",end)");
-    auto reader = client->ReadObject(bucket_name(), object_name,
-                                     ReadFromOffset(test.offset));
+    auto reader = client.ReadObject(bucket_name(), object_name,
+                                    ReadFromOffset(test.offset));
     auto actual = std::string{std::istreambuf_iterator<char>(reader), {}};
     EXPECT_THAT(reader.status(), IsOk());
     EXPECT_EQ(test.expected, actual);
   }
 }
 
-TEST_F(ObjectReadRangeIntegrationTest, ReadLast) {
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
+TEST_F(ObjectReadRangeIntegrationTest, ReadLastSmall) {
+  auto client = MakeIntegrationTestClient();
 
   auto const contents = LoremIpsum();
   auto const object_name = MakeRandomObjectName();
 
-  auto insert = client->InsertObject(bucket_name(), object_name, contents,
-                                     IfGenerationMatch(0));
+  auto insert = client.InsertObject(bucket_name(), object_name, contents,
+                                    IfGenerationMatch(0));
   ASSERT_THAT(insert, IsOk());
   ScheduleForDelete(*insert);
   EXPECT_THAT(contents.size(), insert->size());
@@ -147,7 +309,7 @@ TEST_F(ObjectReadRangeIntegrationTest, ReadLast) {
   for (auto const& test : cases) {
     SCOPED_TRACE("Testing range [-" + std::to_string(test.offset) + ",end)");
     auto reader =
-        client->ReadObject(bucket_name(), object_name, ReadLast(test.offset));
+        client.ReadObject(bucket_name(), object_name, ReadLast(test.offset));
     auto actual = std::string{std::istreambuf_iterator<char>(reader), {}};
     EXPECT_THAT(reader.status(), IsOk());
     EXPECT_EQ(test.expected, actual);

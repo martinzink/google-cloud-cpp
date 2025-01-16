@@ -14,9 +14,9 @@ will be running on different machines.
 
 In the publisher role the benchmark creates a single `pubsub::Publisher` object,
 and then creates a configurable number of threads to publish messages to this
-object. A simple flow-control loop is used to avoid unbounded memory usage:
-the publishing threads stop publishing if the number of pending messages (that
-is, not acked by Cloud Pub/Sub) goes over some high watermark value. The threads
+object. A simple flow-control loop is used to avoid unbounded memory usage: the
+publishing threads stop publishing if the number of pending messages (that is,
+not acked by Cloud Pub/Sub) goes over some high watermark value. The threads
 resume publishing once the number of pending messages goes below a low
 watermark.
 
@@ -52,13 +52,11 @@ subscription while manual execution will use pre-existing Pub/Sub resources.
 The main audience for this guide are `google-cloud-cpp` developers who want to
 reproduce the benchmark results. This document assumes that you are familiar
 with the steps to compile the code in this repository, please check the
-top-level [README](../../../../README.md) if necessary.
+top-level [README](/README.md) if necessary.
 
 :warning: Running these benchmarks can easily exceed the free tier for Cloud
 Pub/Sub, generating hundreds of dollars in charges may take only a few minutes.
 Please consult the [pricing guide][pubsub-pricing].
-
-[pubsub-pricing]: https://cloud.google.com/pubsub/pricing
 
 In this example we assume that `GOOGLE_CLOUD_PROJECT` is an environment variable
 set to the GCP project you want to use. We also assume you have compiled the
@@ -89,8 +87,6 @@ ENDPOINT=us-central1-pubsub.googleapis.com  # example, change as needed
 Then start the publisher, note that these settings far exceed the
 [default quota][pubsub-quota] for a topic (which was 200MB/s when we wrote this
 document):
-
-[pubsub-quota]: https://cloud.google.com/pubsub/quotas#quotas
 
 ```sh
 /usr/bin/time ${BINARY_DIR}/google/cloud/pubsub/benchmarks/throughput \
@@ -148,7 +144,10 @@ The test proceeds as follows:
 - Create N randomly-named subscriptions to the test.
 - The test will keep a pool of publishers and a pool of subscribers.
 - As the test executes, it may randomly replace one of the publishers.
-- As the test executes, it may randomly replace one of the subscribers.
-  The subscription associated with this subscriber is selected at random.
+- As the test executes, it may randomly replace one of the subscribers. The
+  subscription associated with this subscriber is selected at random.
 
 After running for T seconds or capturing N samples the test stops.
+
+[pubsub-pricing]: https://cloud.google.com/pubsub/pricing
+[pubsub-quota]: https://cloud.google.com/pubsub/quotas#quotas

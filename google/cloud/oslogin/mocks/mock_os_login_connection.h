@@ -20,49 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_OSLOGIN_MOCKS_MOCK_OS_LOGIN_CONNECTION_H
 
 #include "google/cloud/oslogin/os_login_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/oslogin/v1/mocks/mock_os_login_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in oslogin_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace oslogin_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockOsLoginServiceConnection : public oslogin::OsLoginServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      Status, DeletePosixAccount,
-      (google::cloud::oslogin::v1::DeletePosixAccountRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      Status, DeleteSshPublicKey,
-      (google::cloud::oslogin::v1::DeleteSshPublicKeyRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::oslogin::v1::LoginProfile>, GetLoginProfile,
-      (google::cloud::oslogin::v1::GetLoginProfileRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::oslogin::common::SshPublicKey>, GetSshPublicKey,
-      (google::cloud::oslogin::v1::GetSshPublicKeyRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::oslogin::v1::ImportSshPublicKeyResponse>,
-      ImportSshPublicKey,
-      (google::cloud::oslogin::v1::ImportSshPublicKeyRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::oslogin::common::SshPublicKey>,
-      UpdateSshPublicKey,
-      (google::cloud::oslogin::v1::UpdateSshPublicKeyRequest const& request),
-      (override));
-};
+/// @deprecated Use oslogin_v1_mocks::MockOsLoginServiceConnection directly.
+using ::google::cloud::oslogin_v1_mocks::MockOsLoginServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace oslogin_mocks

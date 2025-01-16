@@ -29,8 +29,11 @@ namespace {
 
 using ::google::cloud::internal::GetEnv;
 using ::google::cloud::testing_util::IsOk;
+using ::testing::_;
+using ::testing::AnyOf;
 using ::testing::Contains;
 using ::testing::IsSupersetOf;
+using ::testing::Pair;
 
 class ObjectReadHeadersIntegrationTest
     : public ::google::cloud::storage::testing::StorageIntegrationTest {
@@ -51,44 +54,17 @@ class ObjectReadHeadersIntegrationTest
   std::string bucket_name_;
 };
 
-TEST_F(ObjectReadHeadersIntegrationTest, CaptureMetadataXml) {
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
-
-  auto const object_name = MakeRandomObjectName();
-
-  auto insert = client->InsertObject(bucket_name(), object_name, LoremIpsum(),
-                                     IfGenerationMatch(0));
-  ASSERT_THAT(insert, IsOk());
-  ScheduleForDelete(*insert);
-
-  auto is = client->ReadObject(bucket_name(), object_name,
-                               Generation(insert->generation()));
-  EXPECT_EQ(insert->generation(), is.generation().value_or(0));
-  EXPECT_EQ(insert->metageneration(), is.metageneration().value_or(0));
-  EXPECT_EQ(insert->storage_class(), is.storage_class().value_or(""));
-  EXPECT_EQ(insert->size(), is.size().value_or(0));
-
-  auto const actual = std::string{std::istreambuf_iterator<char>(is), {}};
-  is.Close();
-  EXPECT_THAT(is.status(), IsOk());
-}
-
 TEST_F(ObjectReadHeadersIntegrationTest, CaptureMetadataJson) {
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
-
+  auto client = MakeIntegrationTestClient();
   auto const object_name = MakeRandomObjectName();
 
-  auto insert = client->InsertObject(bucket_name(), object_name, LoremIpsum(),
-                                     IfGenerationMatch(0));
+  auto insert = client.InsertObject(bucket_name(), object_name, LoremIpsum(),
+                                    IfGenerationMatch(0));
   ASSERT_THAT(insert, IsOk());
   ScheduleForDelete(*insert);
 
-  auto is = client->ReadObject(
-      bucket_name(), object_name, Generation(insert->generation()),
-      // Force JSON (if using REST) as this is not supported by the XML API.
-      IfMetagenerationNotMatch(0));
+  auto is = client.ReadObject(bucket_name(), object_name,
+                              Generation(insert->generation()));
   EXPECT_EQ(insert->generation(), is.generation().value_or(0));
   EXPECT_EQ(insert->metageneration(), is.metageneration().value_or(0));
   EXPECT_EQ(insert->storage_class(), is.storage_class().value_or(""));
@@ -100,20 +76,16 @@ TEST_F(ObjectReadHeadersIntegrationTest, CaptureMetadataJson) {
 }
 
 TEST_F(ObjectReadHeadersIntegrationTest, CaptureMetadataJsonRanged) {
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
-
+  auto client = MakeIntegrationTestClient();
   auto const object_name = MakeRandomObjectName();
 
-  auto insert = client->InsertObject(bucket_name(), object_name, LoremIpsum(),
-                                     IfGenerationMatch(0));
+  auto insert = client.InsertObject(bucket_name(), object_name, LoremIpsum(),
+                                    IfGenerationMatch(0));
   ASSERT_THAT(insert, IsOk());
   ScheduleForDelete(*insert);
 
-  auto is = client->ReadObject(
-      bucket_name(), object_name, Generation(insert->generation()),
-      // Force JSON (if using REST) as this is not supported by the XML API.
-      IfMetagenerationNotMatch(0), ReadFromOffset(4));
+  auto is = client.ReadObject(bucket_name(), object_name,
+                              Generation(insert->generation()));
   EXPECT_EQ(insert->generation(), is.generation().value_or(0));
   EXPECT_EQ(insert->metageneration(), is.metageneration().value_or(0));
   EXPECT_EQ(insert->storage_class(), is.storage_class().value_or(""));
@@ -125,18 +97,16 @@ TEST_F(ObjectReadHeadersIntegrationTest, CaptureMetadataJsonRanged) {
 }
 
 TEST_F(ObjectReadHeadersIntegrationTest, SmokeTest) {
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
-
+  auto client = MakeIntegrationTestClient();
   auto const object_name = MakeRandomObjectName();
 
-  auto insert = client->InsertObject(bucket_name(), object_name, LoremIpsum(),
-                                     IfGenerationMatch(0));
+  auto insert = client.InsertObject(bucket_name(), object_name, LoremIpsum(),
+                                    IfGenerationMatch(0));
   ASSERT_THAT(insert, IsOk());
   ScheduleForDelete(*insert);
 
-  auto is = client->ReadObject(bucket_name(), object_name,
-                               Generation(insert->generation()));
+  auto is = client.ReadObject(bucket_name(), object_name,
+                              Generation(insert->generation()));
   auto const actual = std::string{std::istreambuf_iterator<char>(is), {}};
   is.Close();
   EXPECT_THAT(is.status(), IsOk());
@@ -150,15 +120,48 @@ TEST_F(ObjectReadHeadersIntegrationTest, SmokeTest) {
                    [](HeadersMap::value_type const& p) { return p.first; });
     return keys;
   };
+  auto const header_keys = keys(is.headers());
   if (UsingGrpc()) {
-    EXPECT_THAT(keys(is.headers()), Contains(":grpc-context-peer"));
+    EXPECT_THAT(header_keys, Contains(":grpc-context-peer"));
   } else if (UsingEmulator()) {
-    EXPECT_THAT(keys(is.headers()), Contains("x-goog-hash"));
+    EXPECT_THAT(header_keys, Contains("x-goog-hash"));
   } else {
-    EXPECT_THAT(keys(is.headers()),
+    EXPECT_THAT(header_keys,
                 IsSupersetOf({"x-guploader-uploadid", "x-goog-hash",
                               "x-goog-generation", ":curl-peer"}));
   }
+}
+
+TEST_F(ObjectReadHeadersIntegrationTest, NoDuplicatePeers) {
+  auto client = MakeIntegrationTestClient();
+  auto const object_name = MakeRandomObjectName();
+  auto const block = MakeRandomData(1024 * 1024L);
+  auto constexpr kBlockCount = 128;
+  // Read in small increments to maximize the errors.
+  auto constexpr kBufferSize = 16 * 1024L;
+
+  auto writer =
+      client.WriteObject(bucket_name(), object_name, IfGenerationMatch(0));
+  for (int i = 0; i != kBlockCount; ++i) {
+    writer.write(block.data(), block.size());
+  }
+  writer.Close();
+  auto object = writer.metadata();
+  ASSERT_THAT(object, IsOk());
+  ScheduleForDelete(*object);
+
+  auto is = client.ReadObject(bucket_name(), object_name,
+                              Generation(object->generation()));
+  std::vector<char> buffer(kBufferSize);
+  while (is) {
+    is.read(buffer.data(), buffer.size());
+  }
+  is.Close();
+  EXPECT_THAT(is.status(), IsOk());
+
+  auto const headers = is.headers();
+  EXPECT_THAT(headers, AnyOf(Contains(Pair(":curl-peer", _)).Times(1),
+                             Contains(Pair(":grpc-context-peer", _)).Times(1)));
 }
 
 }  // namespace

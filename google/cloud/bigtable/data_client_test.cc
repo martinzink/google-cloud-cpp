@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ namespace cloud {
 namespace bigtable {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
+
+// TODO(#8800) - remove after `DataClient` deprecation is complete
+#include "google/cloud/internal/disable_deprecation_warnings.inc"
 
 TEST(DataClientTest, Default) {
   auto data_client =
@@ -61,6 +64,9 @@ TEST(DataClientTest, MakeClient) {
   EXPECT_TRUE(channel1);
   EXPECT_NE(channel0.get(), channel1.get());
 }
+
+// TODO(#8800) - remove after `DataClient` deprecation is complete
+#include "google/cloud/internal/diagnostics_pop.inc"
 
 TEST(DataClientTest, Logging) {
   testing_util::ScopedEnvironment env("GOOGLE_CLOUD_CPP_ENABLE_TRACING", "rpc");

@@ -19,7 +19,9 @@
 #include "google/cloud/pubsub/internal/subscription_batch_source.h"
 #include "google/cloud/pubsub/internal/subscription_message_source.h"
 #include "google/cloud/pubsub/version.h"
+#include "google/cloud/future.h"
 #include "google/cloud/internal/random.h"
+#include "google/cloud/status.h"
 #include <google/pubsub/v1/pubsub.pb.h>
 #include <deque>
 #include <functional>
@@ -69,11 +71,11 @@ class SubscriptionMessageQueue
                                      std::move(source)));
   }
 
-  void Start(MessageCallback cb) override;
+  void Start(std::shared_ptr<BatchCallback> cb) override;
   void Shutdown() override;
   void Read(std::size_t max_callbacks) override;
-  void AckMessage(std::string const& ack_id) override;
-  void NackMessage(std::string const& ack_id) override;
+  future<Status> AckMessage(std::string const& ack_id) override;
+  future<Status> NackMessage(std::string const& ack_id) override;
 
  private:
   explicit SubscriptionMessageQueue(
@@ -99,7 +101,7 @@ class SubscriptionMessageQueue
                          std::deque<google::pubsub::v1::ReceivedMessage>>;
 
   std::mutex mu_;
-  MessageCallback callback_;
+  std::shared_ptr<BatchCallback> callback_;
   bool shutdown_ = false;
   std::size_t available_slots_ = 0;
   std::deque<google::pubsub::v1::ReceivedMessage> runnable_messages_;

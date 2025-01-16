@@ -19,36 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_EXECUTIONS_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_EXECUTIONS_OPTIONS_H
 
+#include "google/cloud/workflows/executions/v1/executions_options.h"
 #include "google/cloud/workflows/executions_connection.h"
 #include "google/cloud/workflows/executions_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace workflows {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ExecutionsRetryPolicyOption {
-  using Type = std::shared_ptr<ExecutionsRetryPolicy>;
-};
+/// @deprecated Use workflows_executions_v1::ExecutionsBackoffPolicyOption
+/// directly.
+using ::google::cloud::workflows_executions_v1::ExecutionsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ExecutionsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// workflows_executions_v1::ExecutionsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::workflows_executions_v1::
+    ExecutionsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ExecutionsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ExecutionsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use workflows_executions_v1::ExecutionsPolicyOptionList
+/// directly.
+using ::google::cloud::workflows_executions_v1::ExecutionsPolicyOptionList;
 
-using ExecutionsPolicyOptionList =
-    OptionList<ExecutionsRetryPolicyOption, ExecutionsBackoffPolicyOption,
-               ExecutionsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use workflows_executions_v1::ExecutionsRetryPolicyOption
+/// directly.
+using ::google::cloud::workflows_executions_v1::ExecutionsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace workflows

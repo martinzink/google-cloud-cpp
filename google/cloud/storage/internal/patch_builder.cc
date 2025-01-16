@@ -15,11 +15,11 @@
 #include "google/cloud/storage/internal/patch_builder.h"
 #include "google/cloud/storage/internal/patch_builder_details.h"
 #include "google/cloud/storage/version.h"
-#include "absl/memory/memory.h"
 #include "absl/types/optional.h"
 #include <nlohmann/json.hpp>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace google {
@@ -29,6 +29,8 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
 
 struct PatchBuilder::Impl {
+  Impl() = default;  // NOLINT(bugprone-exception-escape)
+
   std::string ToString() const {
     if (empty()) {
       return "{}";
@@ -118,7 +120,7 @@ struct PatchBuilder::Impl {
   nlohmann::json patch_;
 };
 
-PatchBuilder::PatchBuilder() : pimpl_(absl::make_unique<Impl>()) {}
+PatchBuilder::PatchBuilder() : pimpl_(std::make_unique<Impl>()) {}
 PatchBuilder::~PatchBuilder() = default;
 
 PatchBuilder::PatchBuilder(PatchBuilder const& other)
@@ -138,6 +140,14 @@ PatchBuilder::PatchBuilder(PatchBuilder&& rhs) noexcept
 PatchBuilder& PatchBuilder::operator=(PatchBuilder&& rhs) noexcept {
   pimpl_ = std::move(rhs.pimpl_);
   return *this;
+}
+
+bool operator==(PatchBuilder const& a, PatchBuilder const& b) noexcept {
+  return a.pimpl_->patch_ == b.pimpl_->patch_;
+}
+
+bool operator!=(PatchBuilder const& a, PatchBuilder const& b) noexcept {
+  return !(a == b);
 }
 
 std::string PatchBuilder::ToString() const { return pimpl_->ToString(); }

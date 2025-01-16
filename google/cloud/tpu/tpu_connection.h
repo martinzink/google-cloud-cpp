@@ -19,95 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TPU_TPU_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TPU_TPU_CONNECTION_H
 
-#include "google/cloud/tpu/internal/tpu_retry_traits.h"
-#include "google/cloud/tpu/internal/tpu_stub.h"
 #include "google/cloud/tpu/tpu_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/tpu/v1/tpu_connection.h"
 
 namespace google {
 namespace cloud {
 namespace tpu {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using TpuRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    tpu_internal::TpuRetryTraits>;
+/// @deprecated Use tpu_v1::MakeTpuConnection directly.
+using ::google::cloud::tpu_v1::MakeTpuConnection;
 
-using TpuLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        tpu_internal::TpuRetryTraits>;
+/// @deprecated Use tpu_v1::TpuConnection directly.
+using ::google::cloud::tpu_v1::TpuConnection;
 
-using TpuLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        tpu_internal::TpuRetryTraits>;
+/// @deprecated Use tpu_v1::TpuLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::tpu_v1::TpuLimitedErrorCountRetryPolicy;
 
-class TpuConnection {
- public:
-  virtual ~TpuConnection() = 0;
+/// @deprecated Use tpu_v1::TpuLimitedTimeRetryPolicy directly.
+using ::google::cloud::tpu_v1::TpuLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::tpu::v1::Node> ListNodes(
-      google::cloud::tpu::v1::ListNodesRequest request);
-
-  virtual StatusOr<google::cloud::tpu::v1::Node> GetNode(
-      google::cloud::tpu::v1::GetNodeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::tpu::v1::Node>> CreateNode(
-      google::cloud::tpu::v1::CreateNodeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::tpu::v1::Node>> DeleteNode(
-      google::cloud::tpu::v1::DeleteNodeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::tpu::v1::Node>> ReimageNode(
-      google::cloud::tpu::v1::ReimageNodeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::tpu::v1::Node>> StopNode(
-      google::cloud::tpu::v1::StopNodeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::tpu::v1::Node>> StartNode(
-      google::cloud::tpu::v1::StartNodeRequest const& request);
-
-  virtual StreamRange<google::cloud::tpu::v1::TensorFlowVersion>
-  ListTensorFlowVersions(
-      google::cloud::tpu::v1::ListTensorFlowVersionsRequest request);
-
-  virtual StatusOr<google::cloud::tpu::v1::TensorFlowVersion>
-  GetTensorFlowVersion(
-      google::cloud::tpu::v1::GetTensorFlowVersionRequest const& request);
-
-  virtual StreamRange<google::cloud::tpu::v1::AcceleratorType>
-  ListAcceleratorTypes(
-      google::cloud::tpu::v1::ListAcceleratorTypesRequest request);
-
-  virtual StatusOr<google::cloud::tpu::v1::AcceleratorType> GetAcceleratorType(
-      google::cloud::tpu::v1::GetAcceleratorTypeRequest const& request);
-};
-
-std::shared_ptr<TpuConnection> MakeTpuConnection(Options options = {});
+/// @deprecated Use tpu_v1::TpuRetryPolicy directly.
+using ::google::cloud::tpu_v1::TpuRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace tpu
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace tpu_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<tpu::TpuConnection> MakeTpuConnection(
-    std::shared_ptr<TpuStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace tpu_internal
 }  // namespace cloud
 }  // namespace google
 

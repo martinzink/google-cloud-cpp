@@ -21,40 +21,29 @@
 
 #include "google/cloud/cloudbuild/cloud_build_connection.h"
 #include "google/cloud/cloudbuild/cloud_build_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/cloudbuild/v1/cloud_build_options.h"
 
 namespace google {
 namespace cloud {
 namespace cloudbuild {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CloudBuildRetryPolicyOption {
-  using Type = std::shared_ptr<CloudBuildRetryPolicy>;
-};
+/// @deprecated Use cloudbuild_v1::CloudBuildPollingPolicyOption directly.
+using ::google::cloud::cloudbuild_v1::CloudBuildPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudBuildBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use cloudbuild_v1::CloudBuildBackoffPolicyOption directly.
+using ::google::cloud::cloudbuild_v1::CloudBuildBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudBuildPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use cloudbuild_v1::CloudBuildConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::cloudbuild_v1::
+    CloudBuildConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudBuildConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CloudBuildConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use cloudbuild_v1::CloudBuildPolicyOptionList directly.
+using ::google::cloud::cloudbuild_v1::CloudBuildPolicyOptionList;
 
-using CloudBuildPolicyOptionList =
-    OptionList<CloudBuildRetryPolicyOption, CloudBuildBackoffPolicyOption,
-               CloudBuildPollingPolicyOption,
-               CloudBuildConnectionIdempotencyPolicyOption>;
+/// @deprecated Use cloudbuild_v1::CloudBuildRetryPolicyOption directly.
+using ::google::cloud::cloudbuild_v1::CloudBuildRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace cloudbuild

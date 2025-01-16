@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,6 @@
 #include "google/cloud/bigtable/version.h"
 #include "google/cloud/future.h"
 #include "google/cloud/grpc_error_delegate.h"
-#include "google/cloud/iam_policy.h"
-#include "google/cloud/internal/attributes.h"
 #include "google/cloud/options.h"
 #include "google/cloud/status_or.h"
 #include "absl/types/optional.h"
@@ -117,6 +115,12 @@ enum class Consistency {
  *
  * [backoff-link]: https://cloud.google.com/storage/docs/exponential-backoff
  *
+ * @par Equality
+ * `TableAdmin` objects will compare equal iff they were created with the
+ * same `DataClient` and target the same Instance resource. Note that
+ * `TableAdmin` objects can compare equal with different retry/backoff/polling
+ * policies.
+ *
  * @see https://cloud.google.com/bigtable/ for an overview of Cloud Bigtable.
  *
  * @see https://cloud.google.com/bigtable/docs/overview for an overview of the
@@ -162,8 +166,10 @@ class TableAdmin {
             DefaultRPCBackoffPolicy(internal::kBigtableTableAdminLimits)),
         polling_prototype_(
             DefaultPollingPolicy(internal::kBigtableTableAdminLimits)),
-        policies_(bigtable_internal::MakeTableAdminOptions(
-            retry_prototype_, backoff_prototype_, polling_prototype_)) {}
+        options_(google::cloud::internal::MergeOptions(
+            bigtable_internal::MakeTableAdminOptions(
+                retry_prototype_, backoff_prototype_, polling_prototype_),
+            connection_->options())) {}
 
   /**
    * Create a new TableAdmin using explicit policies to handle RPC errors.
@@ -208,14 +214,24 @@ class TableAdmin {
         polling_prototype_(
             DefaultPollingPolicy(internal::kBigtableTableAdminLimits)) {
     ChangePolicies(std::forward<Policies>(policies)...);
-    policies_ = bigtable_internal::MakeTableAdminOptions(
-        retry_prototype_, backoff_prototype_, polling_prototype_);
+    options_ = google::cloud::internal::MergeOptions(
+        bigtable_internal::MakeTableAdminOptions(
+            retry_prototype_, backoff_prototype_, polling_prototype_),
+        connection_->options());
   }
 
   TableAdmin(TableAdmin const&) = default;
   TableAdmin& operator=(TableAdmin const&) = default;
 
-  //@{
+  friend bool operator==(TableAdmin const& a, TableAdmin const& b) noexcept {
+    return a.connection_ == b.connection_ &&
+           a.instance_name_ == b.instance_name_;
+  }
+  friend bool operator!=(TableAdmin const& a, TableAdmin const& b) noexcept {
+    return !(a == b);
+  }
+
+  ///@{
   /// @name Convenience shorthands for the schema views.
   using TableView = ::google::bigtable::admin::v2::Table::View;
   /// Only populate 'name' and fields related to the table's encryption state.
@@ -237,7 +253,7 @@ class TableAdmin {
   /// Use the default view as defined for each function.
   static auto constexpr VIEW_UNSPECIFIED =  // NOLINT(readability-identifier-naming)
       google::bigtable::admin::v2::Table::VIEW_UNSPECIFIED;
-  //@}
+  ///@}
 
   std::string const& project() const { return project_id_; }
   std::string const& instance_id() const { return instance_id_; }
@@ -544,8 +560,6 @@ class TableAdmin {
    * Parameters for `ListBackups`.
    */
   struct ListBackupsParams {
-    ListBackupsParams() = default;
-
     /**
      * Sets the cluster_id.
      *
@@ -593,7 +607,7 @@ class TableAdmin {
      *       * `table:prod` --> The table's name contains the string "prod".
      *       * `state:CREATING` --> The backup is pending creation.
      *       * `state:READY` --> The backup is fully created and ready for use.
-     *       * `(name:howl) AND (start_time < \"2018-03-28T14:50:00Z\")`
+     *       * `(name:howl) AND (start_time < "2018-03-28T14:50:00Z")`
      *          --> The backup name contains the string "howl" and start_time
      *              of the backup is before `2018-03-28T14:50:00Z`.
      *       * `size_bytes > 10000000000` --> The backup's size is greater than
@@ -1061,10 +1075,12 @@ class TableAdmin {
             DefaultRPCBackoffPolicy(internal::kBigtableTableAdminLimits)),
         polling_prototype_(
             DefaultPollingPolicy(internal::kBigtableTableAdminLimits)),
-        policies_(bigtable_internal::MakeTableAdminOptions(
-            retry_prototype_, backoff_prototype_, polling_prototype_)) {}
+        options_(google::cloud::internal::MergeOptions(
+            bigtable_internal::MakeTableAdminOptions(
+                retry_prototype_, backoff_prototype_, polling_prototype_),
+            connection_->options())) {}
 
-  //@{
+  ///@{
   /// @name Helper functions to implement constructors with changed policies.
   void ChangePolicy(RPCRetryPolicy const& policy) {
     retry_prototype_ = policy.clone();
@@ -1084,7 +1100,7 @@ class TableAdmin {
     ChangePolicies(std::forward<Policies>(policies)...);
   }
   void ChangePolicies() {}
-  //@}
+  ///@}
 
   /// Compute the fully qualified instance name.
   std::string InstanceName() const;
@@ -1103,10 +1119,14 @@ class TableAdmin {
   std::string project_id_;
   std::string instance_id_;
   std::string instance_name_;
+  ///@{
+  /// These prototypes are only used as temporary storage during construction of
+  /// the class, where they are consolidated as common policies in `options_`.
   std::shared_ptr<RPCRetryPolicy> retry_prototype_;
   std::shared_ptr<RPCBackoffPolicy> backoff_prototype_;
   std::shared_ptr<PollingPolicy> polling_prototype_;
-  Options policies_;
+  ///@}
+  Options options_;
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

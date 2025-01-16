@@ -19,69 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PROFILER_PROFILER_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PROFILER_PROFILER_CONNECTION_H
 
-#include "google/cloud/profiler/internal/profiler_retry_traits.h"
-#include "google/cloud/profiler/internal/profiler_stub.h"
 #include "google/cloud/profiler/profiler_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/profiler/v2/profiler_connection.h"
 
 namespace google {
 namespace cloud {
 namespace profiler {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ProfilerServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        profiler_internal::ProfilerServiceRetryTraits>;
+/// @deprecated Use profiler_v2::MakeProfilerServiceConnection directly.
+using ::google::cloud::profiler_v2::MakeProfilerServiceConnection;
 
-using ProfilerServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        profiler_internal::ProfilerServiceRetryTraits>;
+/// @deprecated Use profiler_v2::ProfilerServiceConnection directly.
+using ::google::cloud::profiler_v2::ProfilerServiceConnection;
 
-using ProfilerServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        profiler_internal::ProfilerServiceRetryTraits>;
+/// @deprecated Use profiler_v2::ProfilerServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::profiler_v2::ProfilerServiceLimitedErrorCountRetryPolicy;
 
-class ProfilerServiceConnection {
- public:
-  virtual ~ProfilerServiceConnection() = 0;
+/// @deprecated Use profiler_v2::ProfilerServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::profiler_v2::ProfilerServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::devtools::cloudprofiler::v2::Profile> CreateProfile(
-      google::devtools::cloudprofiler::v2::CreateProfileRequest const& request);
-
-  virtual StatusOr<google::devtools::cloudprofiler::v2::Profile>
-  CreateOfflineProfile(
-      google::devtools::cloudprofiler::v2::CreateOfflineProfileRequest const&
-          request);
-
-  virtual StatusOr<google::devtools::cloudprofiler::v2::Profile> UpdateProfile(
-      google::devtools::cloudprofiler::v2::UpdateProfileRequest const& request);
-};
-
-std::shared_ptr<ProfilerServiceConnection> MakeProfilerServiceConnection(
-    Options options = {});
+/// @deprecated Use profiler_v2::ProfilerServiceRetryPolicy directly.
+using ::google::cloud::profiler_v2::ProfilerServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace profiler
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace profiler_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<profiler::ProfilerServiceConnection>
-MakeProfilerServiceConnection(std::shared_ptr<ProfilerServiceStub> stub,
-                              Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace profiler_internal
 }  // namespace cloud
 }  // namespace google
 

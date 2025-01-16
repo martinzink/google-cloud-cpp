@@ -21,41 +21,29 @@
 
 #include "google/cloud/notebooks/notebook_connection.h"
 #include "google/cloud/notebooks/notebook_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/notebooks/v1/notebook_options.h"
 
 namespace google {
 namespace cloud {
 namespace notebooks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct NotebookServiceRetryPolicyOption {
-  using Type = std::shared_ptr<NotebookServiceRetryPolicy>;
-};
+/// @deprecated Use notebooks_v1::NotebookServicePollingPolicyOption directly.
+using ::google::cloud::notebooks_v1::NotebookServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct NotebookServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use notebooks_v1::NotebookServiceBackoffPolicyOption directly.
+using ::google::cloud::notebooks_v1::NotebookServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct NotebookServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// notebooks_v1::NotebookServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::notebooks_v1::
+    NotebookServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct NotebookServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<NotebookServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use notebooks_v1::NotebookServicePolicyOptionList directly.
+using ::google::cloud::notebooks_v1::NotebookServicePolicyOptionList;
 
-using NotebookServicePolicyOptionList =
-    OptionList<NotebookServiceRetryPolicyOption,
-               NotebookServiceBackoffPolicyOption,
-               NotebookServicePollingPolicyOption,
-               NotebookServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use notebooks_v1::NotebookServiceRetryPolicyOption directly.
+using ::google::cloud::notebooks_v1::NotebookServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace notebooks

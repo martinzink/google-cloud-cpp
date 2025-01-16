@@ -20,25 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_COMPOSER_MOCKS_MOCK_IMAGE_VERSIONS_CONNECTION_H
 
 #include "google/cloud/composer/image_versions_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/composer/v1/mocks/mock_image_versions_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in composer_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace composer_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockImageVersionsConnection : public composer::ImageVersionsConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StreamRange<
-          google::cloud::orchestration::airflow::service::v1::ImageVersion>,
-      ListImageVersions,
-      (google::cloud::orchestration::airflow::service::v1::
-           ListImageVersionsRequest request),
-      (override));
-};
+/// @deprecated Use composer_v1_mocks::MockImageVersionsConnection directly.
+using ::google::cloud::composer_v1_mocks::MockImageVersionsConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace composer_mocks

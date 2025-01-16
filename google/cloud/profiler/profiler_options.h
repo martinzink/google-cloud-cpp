@@ -21,35 +21,26 @@
 
 #include "google/cloud/profiler/profiler_connection.h"
 #include "google/cloud/profiler/profiler_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/profiler/v2/profiler_options.h"
 
 namespace google {
 namespace cloud {
 namespace profiler {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ProfilerServiceRetryPolicyOption {
-  using Type = std::shared_ptr<ProfilerServiceRetryPolicy>;
-};
+/// @deprecated Use profiler_v2::ProfilerServiceBackoffPolicyOption directly.
+using ::google::cloud::profiler_v2::ProfilerServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProfilerServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// profiler_v2::ProfilerServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::profiler_v2::
+    ProfilerServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProfilerServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ProfilerServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use profiler_v2::ProfilerServicePolicyOptionList directly.
+using ::google::cloud::profiler_v2::ProfilerServicePolicyOptionList;
 
-using ProfilerServicePolicyOptionList =
-    OptionList<ProfilerServiceRetryPolicyOption,
-               ProfilerServiceBackoffPolicyOption,
-               ProfilerServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use profiler_v2::ProfilerServiceRetryPolicyOption directly.
+using ::google::cloud::profiler_v2::ProfilerServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace profiler

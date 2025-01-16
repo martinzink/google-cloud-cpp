@@ -19,56 +19,23 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_NOTEBOOKS_MANAGED_NOTEBOOK_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_NOTEBOOKS_MANAGED_NOTEBOOK_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/notebooks/v1/managed_service.grpc.pb.h>
-#include <memory>
+#include "google/cloud/notebooks/v1/managed_notebook_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace notebooks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class ManagedNotebookServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~ManagedNotebookServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// notebooks_v1::MakeDefaultManagedNotebookServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::notebooks_v1::
+    MakeDefaultManagedNotebookServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<ManagedNotebookServiceConnectionIdempotencyPolicy>
-  clone() const = 0;
-
-  virtual google::cloud::Idempotency ListRuntimes(
-      google::cloud::notebooks::v1::ListRuntimesRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetRuntime(
-      google::cloud::notebooks::v1::GetRuntimeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency CreateRuntime(
-      google::cloud::notebooks::v1::CreateRuntimeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteRuntime(
-      google::cloud::notebooks::v1::DeleteRuntimeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency StartRuntime(
-      google::cloud::notebooks::v1::StartRuntimeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency StopRuntime(
-      google::cloud::notebooks::v1::StopRuntimeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency SwitchRuntime(
-      google::cloud::notebooks::v1::SwitchRuntimeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ResetRuntime(
-      google::cloud::notebooks::v1::ResetRuntimeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ReportRuntimeEvent(
-      google::cloud::notebooks::v1::ReportRuntimeEventRequest const&
-          request) = 0;
-};
-
-std::unique_ptr<ManagedNotebookServiceConnectionIdempotencyPolicy>
-MakeDefaultManagedNotebookServiceConnectionIdempotencyPolicy();
+/// @deprecated Use
+/// notebooks_v1::ManagedNotebookServiceConnectionIdempotencyPolicy directly.
+using ::google::cloud::notebooks_v1::
+    ManagedNotebookServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace notebooks

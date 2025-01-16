@@ -19,48 +19,22 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICEUSAGE_SERVICE_USAGE_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICEUSAGE_SERVICE_USAGE_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/api/serviceusage/v1/serviceusage.grpc.pb.h>
-#include <memory>
+#include "google/cloud/serviceusage/v1/service_usage_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace serviceusage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class ServiceUsageConnectionIdempotencyPolicy {
- public:
-  virtual ~ServiceUsageConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// serviceusage_v1::MakeDefaultServiceUsageConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::serviceusage_v1::
+    MakeDefaultServiceUsageConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<ServiceUsageConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency EnableService(
-      google::api::serviceusage::v1::EnableServiceRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DisableService(
-      google::api::serviceusage::v1::DisableServiceRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency GetService(
-      google::api::serviceusage::v1::GetServiceRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ListServices(
-      google::api::serviceusage::v1::ListServicesRequest request) = 0;
-
-  virtual google::cloud::Idempotency BatchEnableServices(
-      google::api::serviceusage::v1::BatchEnableServicesRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency BatchGetServices(
-      google::api::serviceusage::v1::BatchGetServicesRequest const&
-          request) = 0;
-};
-
-std::unique_ptr<ServiceUsageConnectionIdempotencyPolicy>
-MakeDefaultServiceUsageConnectionIdempotencyPolicy();
+/// @deprecated Use serviceusage_v1::ServiceUsageConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::serviceusage_v1::ServiceUsageConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace serviceusage

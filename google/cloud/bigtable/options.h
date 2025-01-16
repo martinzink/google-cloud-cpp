@@ -38,7 +38,11 @@
  * @see `google::cloud::GrpcOptionList`
  */
 
+#include "google/cloud/bigtable/idempotent_mutation_policy.h"
+#include "google/cloud/bigtable/retry_policy.h"
+#include "google/cloud/bigtable/rpc_retry_policy.h"
 #include "google/cloud/bigtable/version.h"
+#include "google/cloud/backoff_policy.h"
 #include "google/cloud/options.h"
 #include <chrono>
 #include <string>
@@ -48,12 +52,67 @@ namespace cloud {
 namespace bigtable {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// The endpoint for data operations.
+/**
+ * The application profile id.
+ *
+ * An application profile, or app profile, stores settings that tell your Cloud
+ * Bigtable instance how to handle incoming requests from an application. When
+ * an applications connects to a Bigtable instance, it can specify an app
+ * profile, and Bigtable uses that app profile for requests that the application
+ * sends over that connection.
+ *
+ * This option is always used in conjunction with a `bigtable::Table`. The app
+ * profile belongs to the table's instance, with an id given by the value of
+ * this option.
+ *
+ * @see https://cloud.google.com/bigtable/docs/app-profiles for an overview of
+ *     app profiles.
+ *
+ * @see https://cloud.google.com/bigtable/docs/replication-overview#app-profiles
+ *     for how app profiles are used to achieve replication.
+ *
+ * @ingroup google-cloud-bigtable-options
+ */
+struct AppProfileIdOption {
+  using Type = std::string;
+};
+
+/**
+ * Read rows in reverse order.
+ *
+ * The rows will be streamed in reverse lexicographic order of the keys. This is
+ * particularly useful to get the last N records before a key.
+ *
+ * This option does not affect the contents of the rows, just the order that
+ * the rows are returned.
+ *
+ * @note When using this option, the order of row keys in a `bigtable::RowRange`
+ * does not change. The row keys still must be supplied in lexicographic order.
+ *
+ * @snippet read_snippets.cc reverse scan
+ *
+ * @see https://cloud.google.com/bigtable/docs/reads#reverse-scan
+ *
+ * @ingroup google-cloud-bigtable-options
+ */
+struct ReverseScanOption {
+  using Type = bool;
+};
+
+/**
+ * The endpoint for data operations.
+ *
+ * @deprecated Please use `google::cloud::EndpointOption` instead.
+ */
 struct DataEndpointOption {
   using Type = std::string;
 };
 
-/// The endpoint for table admin operations.
+/**
+ * The endpoint for table admin operations.
+ *
+ * @deprecated Please use `google::cloud::EndpointOption` instead.
+ */
 struct AdminEndpointOption {
   using Type = std::string;
 };
@@ -64,6 +123,8 @@ struct AdminEndpointOption {
  * In most scenarios this should have the same value as `AdminEndpointOption`.
  * The most common exception is testing, where the emulator for instance admin
  * operations may be different than the emulator for admin and data operations.
+ *
+ * @deprecated Please use `google::cloud::EndpointOption` instead.
  */
 struct InstanceAdminEndpointOption {
   using Type = std::string;
@@ -73,6 +134,8 @@ struct InstanceAdminEndpointOption {
  * Minimum time in ms to refresh connections.
  *
  * The server will not disconnect idle connections before this time.
+ *
+ * @ingroup google-cloud-bigtable-options
  */
 struct MinConnectionRefreshOption {
   using Type = std::chrono::milliseconds;
@@ -87,16 +150,81 @@ struct MinConnectionRefreshOption {
  *
  * @note If this value is less than the value of `MinConnectionRefreshOption`,
  * it will be set to the value of `MinConnectionRefreshOption`.
+ *
+ * @ingroup google-cloud-bigtable-options
  */
 struct MaxConnectionRefreshOption {
   using Type = std::chrono::milliseconds;
 };
+
+namespace experimental {
+
+/**
+ * If set, the client will throttle mutations in batch write jobs.
+ *
+ * This option is for batch write jobs where the goal is to avoid cluster
+ * overload and prevent job failure more than it is to minimize latency or
+ * maximize throughput.
+ *
+ * With this option set, the server rate-limits traffic to avoid overloading
+ * your Bigtable cluster, while ensuring the cluster is under enough load to
+ * trigger Bigtable [autoscaling] (if enabled).
+ *
+ * The [app profile] associated with these requests must be configured for
+ * [single-cluster routing]. See #google::cloud::bigtable::AppProfileIdOption.
+ *
+ * @note This option must be supplied to `MakeDataConnection()` in order to take
+ * effect.
+ *
+ * @see https://cloud.google.com/bigtable/docs/writes#flow-control
+ *
+ * [autoscaling]: https://cloud.google.com/bigtable/docs/autoscaling
+ * [app profile]: https://cloud.google.com/bigtable/docs/app-profiles
+ * [single-cluster routing]:
+ * https://cloud.google.com/bigtable/docs/routing#single-cluster
+ */
+struct BulkApplyThrottlingOption {
+  using Type = bool;
+};
+
+}  // namespace experimental
 
 /// The complete list of options accepted by `bigtable::*Client`
 using ClientOptionList =
     OptionList<DataEndpointOption, AdminEndpointOption,
                InstanceAdminEndpointOption, MinConnectionRefreshOption,
                MaxConnectionRefreshOption>;
+
+/**
+ * Option to configure the retry policy used by `Table`.
+ *
+ * @ingroup google-cloud-bigtable-options
+ */
+struct DataRetryPolicyOption {
+  using Type = std::shared_ptr<DataRetryPolicy>;
+};
+
+/**
+ * Option to configure the backoff policy used by `Table`.
+ *
+ * @ingroup google-cloud-bigtable-options
+ */
+struct DataBackoffPolicyOption {
+  using Type = std::shared_ptr<BackoffPolicy>;
+};
+
+/**
+ * Option to configure the idempotency policy used by `Table`.
+ *
+ * @ingroup google-cloud-bigtable-options
+ */
+struct IdempotentMutationPolicyOption {
+  using Type = std::shared_ptr<bigtable::IdempotentMutationPolicy>;
+};
+
+using DataPolicyOptionList =
+    OptionList<DataRetryPolicyOption, DataBackoffPolicyOption,
+               IdempotentMutationPolicyOption>;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigtable

@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/managedidentities/managed_identities_client.h"
+//! [all]
+#include "google/cloud/managedidentities/v1/managed_identities_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -22,18 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace managedidentities = ::google::cloud::managedidentities;
+  auto const location = google::cloud::Location(argv[1], "global");
+
+  namespace managedidentities = ::google::cloud::managedidentities_v1;
   auto client = managedidentities::ManagedIdentitiesServiceClient(
       managedidentities::MakeManagedIdentitiesServiceConnection());
 
-  auto const parent = std::string{"projects/"} + argv[1] + "/locations/global";
-  for (auto d : client.ListDomains(parent)) {
-    if (!d) throw std::runtime_error(d.status().message());
+  for (auto d : client.ListDomains(location.FullName())) {
+    if (!d) throw std::move(d).status();
     std::cout << d->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

@@ -18,6 +18,7 @@
 #include "google/cloud/storage/storage_class.h"
 #include "google/cloud/testing_util/status_matchers.h"
 #include <gmock/gmock.h>
+#include <string>
 
 namespace google {
 namespace cloud {
@@ -41,7 +42,9 @@ LifecycleRule CreateLifecycleRuleForTest() {
         "daysSinceNoncurrentTime": 3,
         "noncurrentTimeBefore": "2020-07-22",
         "daysSinceCustomTime": 30,
-        "customTimeBefore": "2020-07-23"
+        "customTimeBefore": "2020-07-23",
+        "matchesPrefix": [ "foo/", "bar/" ],
+        "matchesSuffix": [ ".lz4", ".gz" ]
       },
       "action": {
         "type": "SetStorageClass",
@@ -310,6 +313,34 @@ TEST(LifecycleRuleTest, CustomTimeBefore) {
   EXPECT_NE(c1, empty);
 }
 
+/// @test Verify that LifecycleRule::MatchesPrefix works as expected.
+TEST(LifecycleRuleTest, MatchesPrefix) {
+  auto condition = LifecycleRule::MatchesPrefix("foo");
+  ASSERT_TRUE(condition.matches_prefix.has_value());
+  EXPECT_THAT(*condition.matches_prefix, ElementsAre("foo"));
+}
+
+/// @test Verify that LifecycleRule::MatchesPrefixes works as expected.
+TEST(LifecycleRuleTest, MatchesPrefixes) {
+  auto condition = LifecycleRule::MatchesPrefixes({"foo", "bar"});
+  ASSERT_TRUE(condition.matches_prefix.has_value());
+  EXPECT_THAT(*condition.matches_prefix, ElementsAre("foo", "bar"));
+}
+
+/// @test Verify that LifecycleRule::MatchesSuffix works as expected.
+TEST(LifecycleRuleTest, MatchesSuffix) {
+  auto condition = LifecycleRule::MatchesSuffix("foo");
+  ASSERT_TRUE(condition.matches_suffix.has_value());
+  EXPECT_THAT(*condition.matches_suffix, ElementsAre("foo"));
+}
+
+/// @test Verify that LifecycleRule::MatchesSuffixes works as expected.
+TEST(LifecycleRuleTest, MatchesSuffixes) {
+  auto condition = LifecycleRule::MatchesSuffixes({"foo", "bar"});
+  ASSERT_TRUE(condition.matches_suffix.has_value());
+  EXPECT_THAT(*condition.matches_suffix, ElementsAre("foo", "bar"));
+}
+
 /// @test Verify that LifecycleRule::ConditionConjunction() works as expected.
 TEST(LifecycleRuleTest, ConditionConjunctionAge) {
   auto c1 = LifecycleRule::MaxAge(7);
@@ -427,13 +458,33 @@ TEST(LifecycleRuleTest, ConditionConjunctionCustomTimeBefore) {
 }
 
 /// @test Verify that LifecycleRule::ConditionConjunction() works as expected.
+TEST(LifecycleRuleTest, ConditionConjunctionMatchesPrefix) {
+  auto c1 = LifecycleRule::MatchesPrefixes({"foo/", "bar/", "baz/"});
+  auto c2 = LifecycleRule::MatchesPrefixes({"foo/", "bar/", "quux/"});
+  auto condition = LifecycleRule::ConditionConjunction(c1, c2);
+  ASSERT_TRUE(condition.matches_prefix.has_value());
+  EXPECT_THAT(*condition.matches_prefix, UnorderedElementsAre("foo/", "bar/"));
+}
+
+/// @test Verify that LifecycleRule::ConditionConjunction() works as expected.
+TEST(LifecycleRuleTest, ConditionConjunctionMatchesSuffix) {
+  auto c1 = LifecycleRule::MatchesSuffixes({".foo", ".bar", ".baz"});
+  auto c2 = LifecycleRule::MatchesSuffixes({".foo", ".bar", ".quux"});
+  auto condition = LifecycleRule::ConditionConjunction(c1, c2);
+  ASSERT_TRUE(condition.matches_suffix.has_value());
+  EXPECT_THAT(*condition.matches_suffix, UnorderedElementsAre(".foo", ".bar"));
+}
+
+/// @test Verify that LifecycleRule::ConditionConjunction() works as expected.
 TEST(LifecycleRuleTest, ConditionConjunctionMultiple) {
   auto c1 = LifecycleRule::NumNewerVersions(7);
   auto c2 = LifecycleRule::MaxAge(42);
   auto c3 = LifecycleRule::MatchesStorageClasses({storage_class::Nearline(),
                                                   storage_class::Standard(),
                                                   storage_class::Regional()});
-  auto condition = LifecycleRule::ConditionConjunction(c1, c2, c3);
+  auto c4 = LifecycleRule::MatchesPrefixes({"foo/", "bar/"});
+  auto c5 = LifecycleRule::MatchesSuffixes({".lz4", ".gz"});
+  auto condition = LifecycleRule::ConditionConjunction(c1, c2, c3, c4, c5);
   ASSERT_TRUE(condition.age.has_value());
   EXPECT_EQ(42, *condition.age);
   EXPECT_FALSE(condition.created_before.has_value());
@@ -445,6 +496,10 @@ TEST(LifecycleRuleTest, ConditionConjunctionMultiple) {
       *condition.matches_storage_class,
       UnorderedElementsAre(storage_class::Nearline(), storage_class::Standard(),
                            storage_class::Regional()));
+  ASSERT_TRUE(condition.matches_prefix.has_value());
+  EXPECT_THAT(*condition.matches_prefix, UnorderedElementsAre("foo/", "bar/"));
+  ASSERT_TRUE(condition.matches_suffix.has_value());
+  EXPECT_THAT(*condition.matches_suffix, UnorderedElementsAre(".lz4", ".gz"));
 }
 
 /// @test Verify that LifecycleRule parsing works as expected.
@@ -461,7 +516,9 @@ TEST(LifecycleRuleTest, Parsing) {
           LifecycleRule::DaysSinceNoncurrentTime(3),
           LifecycleRule::NoncurrentTimeBefore(absl::CivilDay(2020, 7, 22)),
           LifecycleRule::DaysSinceCustomTime(30),
-          LifecycleRule::CustomTimeBefore(absl::CivilDay(2020, 7, 23)));
+          LifecycleRule::CustomTimeBefore(absl::CivilDay(2020, 7, 23)),
+          LifecycleRule::MatchesPrefixes({"foo/", "bar/"}),
+          LifecycleRule::MatchesSuffixes({".lz4", ".gz"}));
   EXPECT_EQ(expected_condition, actual.condition());
 
   LifecycleRuleAction expected_action =
@@ -479,6 +536,8 @@ TEST(LifecycleRuleTest, LifecycleRuleStream) {
   EXPECT_THAT(actual, HasSubstr("NEARLINE"));
   EXPECT_THAT(actual, HasSubstr("days_since_custom_time="));
   EXPECT_THAT(actual, HasSubstr("custom_time_before="));
+  EXPECT_THAT(actual, HasSubstr("matches_prefix=[foo/, bar/]"));
+  EXPECT_THAT(actual, HasSubstr("matches_suffix=[.lz4, .gz]"));
 }
 
 }  // namespace

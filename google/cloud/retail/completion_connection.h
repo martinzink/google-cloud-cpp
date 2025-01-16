@@ -20,68 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_COMPLETION_CONNECTION_H
 
 #include "google/cloud/retail/completion_connection_idempotency_policy.h"
-#include "google/cloud/retail/internal/completion_retry_traits.h"
-#include "google/cloud/retail/internal/completion_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/retail/v2/completion_connection.h"
 
 namespace google {
 namespace cloud {
 namespace retail {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CompletionServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        retail_internal::CompletionServiceRetryTraits>;
+/// @deprecated Use retail_v2::MakeCompletionServiceConnection directly.
+using ::google::cloud::retail_v2::MakeCompletionServiceConnection;
 
-using CompletionServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        retail_internal::CompletionServiceRetryTraits>;
+/// @deprecated Use retail_v2::CompletionServiceConnection directly.
+using ::google::cloud::retail_v2::CompletionServiceConnection;
 
-using CompletionServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        retail_internal::CompletionServiceRetryTraits>;
+/// @deprecated Use retail_v2::CompletionServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::retail_v2::CompletionServiceLimitedErrorCountRetryPolicy;
 
-class CompletionServiceConnection {
- public:
-  virtual ~CompletionServiceConnection() = 0;
+/// @deprecated Use retail_v2::CompletionServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::retail_v2::CompletionServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::retail::v2::CompleteQueryResponse>
-  CompleteQuery(google::cloud::retail::v2::CompleteQueryRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::retail::v2::ImportCompletionDataResponse>>
-  ImportCompletionData(
-      google::cloud::retail::v2::ImportCompletionDataRequest const& request);
-};
-
-std::shared_ptr<CompletionServiceConnection> MakeCompletionServiceConnection(
-    Options options = {});
+/// @deprecated Use retail_v2::CompletionServiceRetryPolicy directly.
+using ::google::cloud::retail_v2::CompletionServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace retail_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<retail::CompletionServiceConnection>
-MakeCompletionServiceConnection(std::shared_ptr<CompletionServiceStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace retail_internal
 }  // namespace cloud
 }  // namespace google
 

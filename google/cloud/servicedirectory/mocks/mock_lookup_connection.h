@@ -20,25 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICEDIRECTORY_MOCKS_MOCK_LOOKUP_CONNECTION_H
 
 #include "google/cloud/servicedirectory/lookup_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/servicedirectory/v1/mocks/mock_lookup_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in servicedirectory_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace servicedirectory_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockLookupServiceConnection
-    : public servicedirectory::LookupServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::servicedirectory::v1::ResolveServiceResponse>,
-      ResolveService,
-      (google::cloud::servicedirectory::v1::ResolveServiceRequest const&
-           request),
-      (override));
-};
+/// @deprecated Use servicedirectory_v1_mocks::MockLookupServiceConnection
+/// directly.
+using ::google::cloud::servicedirectory_v1_mocks::MockLookupServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicedirectory_mocks

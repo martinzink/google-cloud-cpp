@@ -19,61 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_QUERY_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_QUERY_CONNECTION_H
 
-#include "google/cloud/monitoring/internal/query_retry_traits.h"
-#include "google/cloud/monitoring/internal/query_stub.h"
 #include "google/cloud/monitoring/query_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/query_connection.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using QueryServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        monitoring_internal::QueryServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MakeQueryServiceConnection directly.
+using ::google::cloud::monitoring_v3::MakeQueryServiceConnection;
 
-using QueryServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        monitoring_internal::QueryServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::QueryServiceConnection directly.
+using ::google::cloud::monitoring_v3::QueryServiceConnection;
 
-using QueryServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        monitoring_internal::QueryServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::QueryServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_v3::QueryServiceLimitedErrorCountRetryPolicy;
 
-class QueryServiceConnection {
- public:
-  virtual ~QueryServiceConnection() = 0;
+/// @deprecated Use monitoring_v3::QueryServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::monitoring_v3::QueryServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::monitoring::v3::TimeSeriesData> QueryTimeSeries(
-      google::monitoring::v3::QueryTimeSeriesRequest request);
-};
-
-std::shared_ptr<QueryServiceConnection> MakeQueryServiceConnection(
-    Options options = {});
+/// @deprecated Use monitoring_v3::QueryServiceRetryPolicy directly.
+using ::google::cloud::monitoring_v3::QueryServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace monitoring_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<monitoring::QueryServiceConnection> MakeQueryServiceConnection(
-    std::shared_ptr<QueryServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace monitoring_internal
 }  // namespace cloud
 }  // namespace google
 

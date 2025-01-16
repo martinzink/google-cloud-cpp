@@ -20,24 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APIGEECONNECT_MOCKS_MOCK_CONNECTION_CONNECTION_H
 
 #include "google/cloud/apigeeconnect/connection_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/apigeeconnect/v1/mocks/mock_connection_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in apigeeconnect_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace apigeeconnect_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockConnectionServiceConnection
-    : public apigeeconnect::ConnectionServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StreamRange<google::cloud::apigeeconnect::v1::Connection>,
-      ListConnections,
-      (google::cloud::apigeeconnect::v1::ListConnectionsRequest request),
-      (override));
-};
+/// @deprecated Use apigeeconnect_v1_mocks::MockConnectionServiceConnection
+/// directly.
+using ::google::cloud::apigeeconnect_v1_mocks::MockConnectionServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace apigeeconnect_mocks

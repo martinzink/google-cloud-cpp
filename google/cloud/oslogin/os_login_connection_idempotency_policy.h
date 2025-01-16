@@ -19,46 +19,21 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_OSLOGIN_OS_LOGIN_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_OSLOGIN_OS_LOGIN_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/oslogin/v1/oslogin.grpc.pb.h>
-#include <memory>
+#include "google/cloud/oslogin/v1/os_login_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace oslogin {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class OsLoginServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~OsLoginServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// oslogin_v1::MakeDefaultOsLoginServiceConnectionIdempotencyPolicy directly.
+using ::google::cloud::oslogin_v1::
+    MakeDefaultOsLoginServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<OsLoginServiceConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency DeletePosixAccount(
-      google::cloud::oslogin::v1::DeletePosixAccountRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteSshPublicKey(
-      google::cloud::oslogin::v1::DeleteSshPublicKeyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency GetLoginProfile(
-      google::cloud::oslogin::v1::GetLoginProfileRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency GetSshPublicKey(
-      google::cloud::oslogin::v1::GetSshPublicKeyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ImportSshPublicKey(
-      google::cloud::oslogin::v1::ImportSshPublicKeyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency UpdateSshPublicKey(
-      google::cloud::oslogin::v1::UpdateSshPublicKeyRequest const& request) = 0;
-};
-
-std::unique_ptr<OsLoginServiceConnectionIdempotencyPolicy>
-MakeDefaultOsLoginServiceConnectionIdempotencyPolicy();
+/// @deprecated Use oslogin_v1::OsLoginServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::oslogin_v1::OsLoginServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace oslogin

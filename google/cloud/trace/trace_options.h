@@ -21,34 +21,25 @@
 
 #include "google/cloud/trace/trace_connection.h"
 #include "google/cloud/trace/trace_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/trace/v2/trace_options.h"
 
 namespace google {
 namespace cloud {
 namespace trace {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct TraceServiceRetryPolicyOption {
-  using Type = std::shared_ptr<TraceServiceRetryPolicy>;
-};
+/// @deprecated Use trace_v2::TraceServiceBackoffPolicyOption directly.
+using ::google::cloud::trace_v2::TraceServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TraceServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use trace_v2::TraceServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::trace_v2::TraceServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TraceServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<TraceServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use trace_v2::TraceServicePolicyOptionList directly.
+using ::google::cloud::trace_v2::TraceServicePolicyOptionList;
 
-using TraceServicePolicyOptionList =
-    OptionList<TraceServiceRetryPolicyOption, TraceServiceBackoffPolicyOption,
-               TraceServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use trace_v2::TraceServiceRetryPolicyOption directly.
+using ::google::cloud::trace_v2::TraceServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace trace

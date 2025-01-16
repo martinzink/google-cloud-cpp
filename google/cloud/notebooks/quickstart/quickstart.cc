@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/notebooks/managed_notebook_client.h"
+//! [all]
+#include "google/cloud/notebooks/v2/notebook_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -22,19 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace notebooks = ::google::cloud::notebooks;
-  auto client = notebooks::ManagedNotebookServiceClient(
-      notebooks::MakeManagedNotebookServiceConnection());
+  auto const location = google::cloud::Location(argv[1], argv[2]);
 
-  auto const parent =
-      std::string{"projects/"} + argv[1] + "/locations/" + argv[2];
-  for (auto r : client.ListRuntimes(parent)) {
-    if (!r) throw std::runtime_error(r.status().message());
-    std::cout << r->DebugString() << "\n";
+  namespace notebooks = ::google::cloud::notebooks_v2;
+  auto client = notebooks::NotebookServiceClient(
+      notebooks::MakeNotebookServiceConnection());
+
+  for (auto i : client.ListInstances(location.FullName())) {
+    if (!i) throw std::move(i).status();
+    std::cout << i->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

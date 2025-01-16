@@ -20,22 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TALENT_MOCKS_MOCK_COMPLETION_CONNECTION_H
 
 #include "google/cloud/talent/completion_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/talent/v4/mocks/mock_completion_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in talent_v4_mocks instead of the aliases
+///     defined in this namespace.
 namespace talent_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockCompletionConnection : public talent::CompletionConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::talent::v4::CompleteQueryResponse>,
-              CompleteQuery,
-              (google::cloud::talent::v4::CompleteQueryRequest const& request),
-              (override));
-};
+/// @deprecated Use talent_v4_mocks::MockCompletionConnection directly.
+using ::google::cloud::talent_v4_mocks::MockCompletionConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent_mocks

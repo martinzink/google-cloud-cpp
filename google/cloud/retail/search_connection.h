@@ -19,61 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_SEARCH_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_SEARCH_CONNECTION_H
 
-#include "google/cloud/retail/internal/search_retry_traits.h"
-#include "google/cloud/retail/internal/search_stub.h"
 #include "google/cloud/retail/search_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/retail/v2/search_connection.h"
 
 namespace google {
 namespace cloud {
 namespace retail {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using SearchServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        retail_internal::SearchServiceRetryTraits>;
+/// @deprecated Use retail_v2::MakeSearchServiceConnection directly.
+using ::google::cloud::retail_v2::MakeSearchServiceConnection;
 
-using SearchServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        retail_internal::SearchServiceRetryTraits>;
+/// @deprecated Use retail_v2::SearchServiceConnection directly.
+using ::google::cloud::retail_v2::SearchServiceConnection;
 
-using SearchServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        retail_internal::SearchServiceRetryTraits>;
+/// @deprecated Use retail_v2::SearchServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::retail_v2::SearchServiceLimitedErrorCountRetryPolicy;
 
-class SearchServiceConnection {
- public:
-  virtual ~SearchServiceConnection() = 0;
+/// @deprecated Use retail_v2::SearchServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::retail_v2::SearchServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::retail::v2::SearchResponse::SearchResult>
-  Search(google::cloud::retail::v2::SearchRequest request);
-};
-
-std::shared_ptr<SearchServiceConnection> MakeSearchServiceConnection(
-    Options options = {});
+/// @deprecated Use retail_v2::SearchServiceRetryPolicy directly.
+using ::google::cloud::retail_v2::SearchServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace retail_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<retail::SearchServiceConnection> MakeSearchServiceConnection(
-    std::shared_ptr<SearchServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace retail_internal
 }  // namespace cloud
 }  // namespace google
 

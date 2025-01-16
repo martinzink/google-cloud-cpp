@@ -22,6 +22,7 @@
 #include "google/cloud/storage/version.h"
 #include <iosfwd>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace google {
@@ -31,35 +32,15 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
 
 template <typename Derived, typename... Options>
-class GenericHmacKeyRequest : public GenericRequest<Derived, Options...> {
+class GenericHmacKeyRequest
+    : public GenericRequest<Derived, UserProject, OverrideDefaultProject,
+                            Options...> {
  public:
   GenericHmacKeyRequest() = default;
   explicit GenericHmacKeyRequest(std::string project_id)
       : project_id_(std::move(project_id)) {}
 
   std::string const& project_id() const { return project_id_; }
-
-  //@{
-  /**
-   * @name Handle request options.
-   *
-   * Modify the default implementation from GenericRequest. We want to set the
-   * `project_id_` member variable when the option is `OverrideDefaultProject`.
-   */
-  template <typename H, typename... T>
-  Derived& set_multiple_options(H&& h, T&&... tail) {
-    set_option(std::forward<H>(h));
-    return set_multiple_options(std::forward<T>(tail)...);
-  }
-
-  Derived& set_multiple_options() { return *static_cast<Derived*>(this); }
-
-  using GenericRequest<Derived, Options...>::set_option;
-  void set_option(OverrideDefaultProject const& o) {
-    if (o.has_value()) {
-      project_id_ = o.value();
-    }
-  }
 
  private:
   std::string project_id_;
@@ -86,6 +67,8 @@ std::ostream& operator<<(std::ostream& os, CreateHmacKeyRequest const& r);
 struct CreateHmacKeyResponse {
   static StatusOr<CreateHmacKeyResponse> FromHttpResponse(
       std::string const& payload);
+  static StatusOr<CreateHmacKeyResponse> FromHttpResponse(
+      HttpResponse const& response);
 
   std::string kind;
   HmacKeyMetadata metadata;
@@ -97,8 +80,9 @@ std::ostream& operator<<(std::ostream& os, CreateHmacKeyResponse const& r);
 /// Represents a request to call the `HmacKeys: list` API.
 class ListHmacKeysRequest
     : public GenericHmacKeyRequest<ListHmacKeysRequest, Deleted, MaxResults,
-                                   ServiceAccountFilter, UserProject> {
+                                   ServiceAccountFilter> {
  public:
+  ListHmacKeysRequest() = default;
   explicit ListHmacKeysRequest(std::string project_id)
       : GenericHmacKeyRequest(std::move(project_id)) {}
 
@@ -118,6 +102,8 @@ std::ostream& operator<<(std::ostream& os, ListHmacKeysRequest const& r);
 struct ListHmacKeysResponse {
   static StatusOr<ListHmacKeysResponse> FromHttpResponse(
       std::string const& payload);
+  static StatusOr<ListHmacKeysResponse> FromHttpResponse(
+      HttpResponse const& response);
 
   std::string next_page_token;
   std::vector<HmacKeyMetadata> items;
@@ -129,6 +115,7 @@ std::ostream& operator<<(std::ostream& os, ListHmacKeysResponse const& r);
 class DeleteHmacKeyRequest
     : public GenericHmacKeyRequest<DeleteHmacKeyRequest> {
  public:
+  DeleteHmacKeyRequest() = default;
   explicit DeleteHmacKeyRequest(std::string project_id, std::string access_id)
       : GenericHmacKeyRequest(std::move(project_id)),
         access_id_(std::move(access_id)) {}
@@ -144,6 +131,7 @@ std::ostream& operator<<(std::ostream& os, DeleteHmacKeyRequest const& r);
 /// Represents a request to call the `HmacKeys: get` API.
 class GetHmacKeyRequest : public GenericHmacKeyRequest<GetHmacKeyRequest> {
  public:
+  GetHmacKeyRequest() = default;
   explicit GetHmacKeyRequest(std::string project_id, std::string access_id)
       : GenericHmacKeyRequest(std::move(project_id)),
         access_id_(std::move(access_id)) {}
@@ -160,6 +148,7 @@ std::ostream& operator<<(std::ostream& os, GetHmacKeyRequest const& r);
 class UpdateHmacKeyRequest
     : public GenericHmacKeyRequest<UpdateHmacKeyRequest> {
  public:
+  UpdateHmacKeyRequest() = default;
   explicit UpdateHmacKeyRequest(std::string project_id, std::string access_id,
                                 HmacKeyMetadata resource)
       : GenericHmacKeyRequest(std::move(project_id)),

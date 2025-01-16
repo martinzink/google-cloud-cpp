@@ -20,87 +20,42 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BINARYAUTHORIZATION_BINAUTHZ_MANAGEMENT_SERVICE_V1_CONNECTION_H
 
 #include "google/cloud/binaryauthorization/binauthz_management_service_v1_connection_idempotency_policy.h"
-#include "google/cloud/binaryauthorization/internal/binauthz_management_service_v1_retry_traits.h"
-#include "google/cloud/binaryauthorization/internal/binauthz_management_service_v1_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/binaryauthorization/v1/binauthz_management_service_v1_connection.h"
 
 namespace google {
 namespace cloud {
 namespace binaryauthorization {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using BinauthzManagementServiceV1RetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        binaryauthorization_internal::BinauthzManagementServiceV1RetryTraits>;
+/// @deprecated Use
+/// binaryauthorization_v1::MakeBinauthzManagementServiceV1Connection directly.
+using ::google::cloud::binaryauthorization_v1::
+    MakeBinauthzManagementServiceV1Connection;
 
-using BinauthzManagementServiceV1LimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        binaryauthorization_internal::BinauthzManagementServiceV1RetryTraits>;
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1Connection directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1Connection;
 
-using BinauthzManagementServiceV1LimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        binaryauthorization_internal::BinauthzManagementServiceV1RetryTraits>;
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1LimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1LimitedErrorCountRetryPolicy;
 
-class BinauthzManagementServiceV1Connection {
- public:
-  virtual ~BinauthzManagementServiceV1Connection() = 0;
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1LimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1LimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::binaryauthorization::v1::Policy> GetPolicy(
-      google::cloud::binaryauthorization::v1::GetPolicyRequest const& request);
-
-  virtual StatusOr<google::cloud::binaryauthorization::v1::Policy> UpdatePolicy(
-      google::cloud::binaryauthorization::v1::UpdatePolicyRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::binaryauthorization::v1::Attestor>
-  CreateAttestor(
-      google::cloud::binaryauthorization::v1::CreateAttestorRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::binaryauthorization::v1::Attestor>
-  GetAttestor(google::cloud::binaryauthorization::v1::GetAttestorRequest const&
-                  request);
-
-  virtual StatusOr<google::cloud::binaryauthorization::v1::Attestor>
-  UpdateAttestor(
-      google::cloud::binaryauthorization::v1::UpdateAttestorRequest const&
-          request);
-
-  virtual StreamRange<google::cloud::binaryauthorization::v1::Attestor>
-  ListAttestors(
-      google::cloud::binaryauthorization::v1::ListAttestorsRequest request);
-
-  virtual Status DeleteAttestor(
-      google::cloud::binaryauthorization::v1::DeleteAttestorRequest const&
-          request);
-};
-
-std::shared_ptr<BinauthzManagementServiceV1Connection>
-MakeBinauthzManagementServiceV1Connection(Options options = {});
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1RetryPolicy directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1RetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace binaryauthorization
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace binaryauthorization_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<binaryauthorization::BinauthzManagementServiceV1Connection>
-MakeBinauthzManagementServiceV1Connection(
-    std::shared_ptr<BinauthzManagementServiceV1Stub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace binaryauthorization_internal
 }  // namespace cloud
 }  // namespace google
 

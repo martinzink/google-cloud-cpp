@@ -15,37 +15,25 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_STORAGE_INTERNAL_GENERIC_REQUEST_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_STORAGE_INTERNAL_GENERIC_REQUEST_H
 
-#include "google/cloud/storage/internal/complex_option.h"
+#include "google/cloud/storage/override_default_project.h"
+#include "google/cloud/storage/user_ip_option.h"
 #include "google/cloud/storage/version.h"
 #include "google/cloud/storage/well_known_headers.h"
 #include "google/cloud/storage/well_known_parameters.h"
+#include "google/cloud/internal/type_traits.h"
 #include <iostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace google {
 namespace cloud {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+// Forward declare google::cloud::Options, a dynamic container of options.
+class Options;
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 namespace storage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-/**
- * Sets the user IP on an operation for quota enforcement purposes.
- *
- * This parameter lets you enforce per-user quotas when calling the API from a
- * server-side application. This parameter is overridden by `UserQuota` if both
- * are set.
- *
- * If you set this parameter to an empty string, the client library will
- * automatically select one of the user IP addresses of your server to include
- * in the request.
- *
- * @see https://cloud.google.com/apis/docs/capping-api-usage for an introduction
- *     to quotas in Google Cloud Platform.
- */
-struct UserIp : public internal::ComplexOption<UserIp, std::string> {
-  using ComplexOption<UserIp, std::string>::ComplexOption;
-  static char const* name() { return "userIp"; }
-};
-
 namespace internal {
 // Forward declare the template so we can specialize it first. Defining the
 // specialization first, which is the base class, should be more readable.
@@ -94,7 +82,7 @@ class GenericRequestBase<Derived, Option> {
   }
 
   template <typename Callable>
-  void ForEachOption(Callable& c) const {
+  void ForEachOption(Callable&& c) const {
     c(option_);
   }
 
@@ -117,14 +105,53 @@ class GenericRequestBase<Derived, Option> {
     return false;
   }
 
-  template <typename O, typename std::enable_if<std::is_same<O, Option>::value,
-                                                int>::type = 0>
+  template <typename O,
+            std::enable_if_t<std::is_same<O, Option>::value, int> = 0>
   O GetOption() const {
     return option_;
   }
 
  private:
   Option option_;
+};
+
+/**
+ * Specialize for `OverrideDefaultProject` as a no-op class.
+ *
+ * Historically some `*Request` types had a `OverrideDefaultProject` option
+ * which would override the `project_id_` field. The field was initialized
+ * from the `storage::Client` defaults. With the introduction of per-call
+ * `google::cloud::Options` there were too many ways to initialize these
+ * values. We decided to initialize the `project_id_` field once, using a
+ * common function to merge the `Options...` parameters, the per-call
+ * `google::cloud::Options` and the client default `google::cloud::Options`.
+ */
+template <typename Derived>
+class GenericRequestBase<Derived, OverrideDefaultProject> {
+ public:
+  Derived& set_option(OverrideDefaultProject const&) {
+    return *static_cast<Derived*>(this);
+  }
+
+  template <typename Callable>
+  void ForEachOption(Callable&& /*c*/) const {}
+
+  template <typename HttpRequest>
+  void AddOptionsToHttpRequest(HttpRequest& /*request*/) const {}
+
+  void DumpOptions(std::ostream& /*os*/, char const* /*sep*/) const {}
+
+  template <typename /* O */>
+  bool HasOption() const {
+    return false;
+  }
+
+  template <
+      typename O,
+      std::enable_if_t<std::is_same<O, OverrideDefaultProject>::value, int> = 0>
+  OverrideDefaultProject GetOption() const {
+    return OverrideDefaultProject{};
+  }
 };
 
 /**
@@ -144,7 +171,7 @@ class GenericRequestBase : public GenericRequestBase<Derived, Options...> {
   }
 
   template <typename Callable>
-  void ForEachOption(Callable& c) const {
+  void ForEachOption(Callable&& c) const {
     c(option_);
     GenericRequestBase<Derived, Options...>::ForEachOption(c);
   }
@@ -172,20 +199,77 @@ class GenericRequestBase : public GenericRequestBase<Derived, Options...> {
     return GenericRequestBase<Derived, Options...>::template HasOption<O>();
   }
 
-  template <typename O, typename std::enable_if<std::is_same<O, Option>::value,
-                                                int>::type = 0>
+  template <typename O,
+            std::enable_if_t<std::is_same<O, Option>::value, int> = 0>
   O GetOption() const {
     return option_;
   }
 
-  template <typename O, typename std::enable_if<!std::is_same<O, Option>::value,
-                                                int>::type = 0>
+  template <typename O,
+            std::enable_if_t<!std::is_same<O, Option>::value, int> = 0>
   O GetOption() const {
     return GenericRequestBase<Derived, Options...>::template GetOption<O>();
   }
 
  private:
   Option option_;
+};
+
+/**
+ * Specialize for `OverrideDefaultProject` as a no-op class.
+ *
+ * Historically some `*Request` types had a `OverrideDefaultProject` option
+ * which would override the `project_id_` field. The field was initialized
+ * from the `storage::Client` defaults. With the introduction of per-call
+ * `google::cloud::Options` there were too many ways to initialize these
+ * values. We decided to initialize the `project_id_` field once, using a
+ * common function to merge the `Options...` parameters, the per-call
+ * `google::cloud::Options` and the client default `google::cloud::Options`.
+ */
+template <typename Derived, typename... Options>
+class GenericRequestBase<Derived, OverrideDefaultProject, Options...>
+    : public GenericRequestBase<Derived, Options...> {
+ public:
+  using GenericRequestBase<Derived, Options...>::set_option;
+
+  Derived& set_option(OverrideDefaultProject const&) {
+    return *static_cast<Derived*>(this);
+  }
+
+  template <typename Callable>
+  void ForEachOption(Callable&& c) const {
+    GenericRequestBase<Derived, Options...>::ForEachOption(c);
+  }
+
+  template <typename HttpRequest>
+  void AddOptionsToHttpRequest(HttpRequest& request) const {
+    AddOptionsToBuilder<HttpRequest> add{request};
+    ForEachOption(add);
+  }
+
+  void DumpOptions(std::ostream& os, char const* sep) const {
+    GenericRequestBase<Derived, Options...>::DumpOptions(os, sep);
+  }
+
+  template <typename O>
+  bool HasOption() const {
+    if (std::is_same<O, OverrideDefaultProject>::value) return false;
+    return GenericRequestBase<Derived, Options...>::template HasOption<O>();
+  }
+
+  template <
+      typename O,
+      std::enable_if_t<std::is_same<O, OverrideDefaultProject>::value, int> = 0>
+  OverrideDefaultProject GetOption() const {
+    return OverrideDefaultProject{};
+  }
+
+  template <typename O,
+            std::enable_if_t<!std::is_same<O, OverrideDefaultProject>::value,
+                             int> = 0>
+  O GetOption() const {
+    return GenericRequestBase<Derived, Options...>::template GetOption<O>();
+  }
 };
 
 /**
@@ -247,6 +331,23 @@ class GenericRequest
     return set_multiple_options(std::forward<T>(tail)...);
   }
 
+  template <typename... T>
+  Derived& set_multiple_options(google::cloud::Options const&&, T&&... tail) {
+    return set_multiple_options(std::forward<T>(tail)...);
+  }
+  template <typename... T>
+  Derived& set_multiple_options(google::cloud::Options const&, T&&... tail) {
+    return set_multiple_options(std::forward<T>(tail)...);
+  }
+  template <typename... T>
+  Derived& set_multiple_options(google::cloud::Options&&, T&&... tail) {
+    return set_multiple_options(std::forward<T>(tail)...);
+  }
+  template <typename... T>
+  Derived& set_multiple_options(google::cloud::Options&, T&&... tail) {
+    return set_multiple_options(std::forward<T>(tail)...);
+  }
+
   Derived& set_multiple_options() { return *static_cast<Derived*>(this); }
 
   template <typename Option>
@@ -259,6 +360,43 @@ class GenericRequest
     return Super::template GetOption<Option>();
   }
 };
+
+template <typename Request, typename Option, typename AlwaysVoid = void>
+struct SupportsOption {
+  using type = std::false_type;
+};
+
+template <typename Request, typename Option>
+struct SupportsOption<
+    Request, Option,
+    google::cloud::internal::void_t<decltype(std::declval<Request>().set_option(
+        std::declval<Option>()))>> {
+  using type = std::true_type;
+};
+
+template <typename Destination>
+struct CopyCommonOptionsFunctor {
+  Destination& destination;
+
+  template <typename Option>
+  void impl(std::false_type, Option const&) {}
+
+  template <typename Option>
+  void impl(std::true_type, Option const& o) {
+    destination.set_option(o);
+  }
+
+  template <typename Option>
+  void operator()(Option const& o) {
+    using supported = typename SupportsOption<Destination, Option>::type;
+    impl(supported{}, o);
+  }
+};
+
+template <typename Destination>
+CopyCommonOptionsFunctor<Destination> CopyCommonOptions(Destination& d) {
+  return CopyCommonOptionsFunctor<Destination>{d};
+}
 
 }  // namespace internal
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

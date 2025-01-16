@@ -20,37 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ARTIFACTREGISTRY_MOCKS_MOCK_ARTIFACT_REGISTRY_CONNECTION_H
 
 #include "google/cloud/artifactregistry/artifact_registry_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/artifactregistry/v1/mocks/mock_artifact_registry_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in artifactregistry_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace artifactregistry_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockArtifactRegistryConnection
-    : public artifactregistry::ArtifactRegistryConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StreamRange<google::devtools::artifactregistry::v1::DockerImage>,
-      ListDockerImages,
-      (google::devtools::artifactregistry::v1::ListDockerImagesRequest request),
-      (override));
-
-  MOCK_METHOD(
-      StreamRange<google::devtools::artifactregistry::v1::Repository>,
-      ListRepositories,
-      (google::devtools::artifactregistry::v1::ListRepositoriesRequest request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::devtools::artifactregistry::v1::Repository>,
-      GetRepository,
-      (google::devtools::artifactregistry::v1::GetRepositoryRequest const&
-           request),
-      (override));
-};
+/// @deprecated Use artifactregistry_v1_mocks::MockArtifactRegistryConnection
+/// directly.
+using ::google::cloud::artifactregistry_v1_mocks::
+    MockArtifactRegistryConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace artifactregistry_mocks

@@ -21,35 +21,31 @@
 
 #include "google/cloud/containeranalysis/container_analysis_connection.h"
 #include "google/cloud/containeranalysis/container_analysis_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/containeranalysis/v1/container_analysis_options.h"
 
 namespace google {
 namespace cloud {
 namespace containeranalysis {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ContainerAnalysisRetryPolicyOption {
-  using Type = std::shared_ptr<ContainerAnalysisRetryPolicy>;
-};
+/// @deprecated Use containeranalysis_v1::ContainerAnalysisBackoffPolicyOption
+/// directly.
+using ::google::cloud::containeranalysis_v1::
+    ContainerAnalysisBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ContainerAnalysisBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// containeranalysis_v1::ContainerAnalysisConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::containeranalysis_v1::
+    ContainerAnalysisConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ContainerAnalysisConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ContainerAnalysisConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use containeranalysis_v1::ContainerAnalysisPolicyOptionList
+/// directly.
+using ::google::cloud::containeranalysis_v1::ContainerAnalysisPolicyOptionList;
 
-using ContainerAnalysisPolicyOptionList =
-    OptionList<ContainerAnalysisRetryPolicyOption,
-               ContainerAnalysisBackoffPolicyOption,
-               ContainerAnalysisConnectionIdempotencyPolicyOption>;
+/// @deprecated Use containeranalysis_v1::ContainerAnalysisRetryPolicyOption
+/// directly.
+using ::google::cloud::containeranalysis_v1::ContainerAnalysisRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace containeranalysis

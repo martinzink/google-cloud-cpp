@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/orgpolicy/org_policy_client.h"
+//! [all]
+#include "google/cloud/orgpolicy/v2/org_policy_client.h"
 #include "google/cloud/project.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -23,18 +23,19 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace orgpolicy = ::google::cloud::orgpolicy;
+  namespace orgpolicy = ::google::cloud::orgpolicy_v2;
   auto client =
       orgpolicy::OrgPolicyClient(orgpolicy::MakeOrgPolicyConnection());
 
   auto const project = google::cloud::Project(argv[1]);
   for (auto p : client.ListPolicies(project.FullName())) {
-    if (!p) throw std::runtime_error(p.status().message());
+    if (!p) throw std::move(p).status();
     std::cout << p->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

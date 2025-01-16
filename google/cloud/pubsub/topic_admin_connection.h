@@ -73,6 +73,9 @@ using ListTopicSnapshotsRange =
 /**
  * A connection to Cloud Pub/Sub for topic-related administrative operations.
  *
+ * @deprecated Please use #google::cloud::pubsub_admin::SubscriptionAdminClient
+ *     and #google::cloud::pubsub_admin::SubscriptionAdminClient instead.
+ *
  * This interface defines pure-virtual functions for each of the user-facing
  * overload sets in `TopicAdminClient`. That is, all of `TopicAdminClient`'s
  * overloads will forward to the one pure-virtual function declared in this
@@ -171,6 +174,7 @@ class TopicAdminConnection {
  *
  * @deprecated Please use `MakeTopicAdminConnection()` instead.
  */
+GOOGLE_CLOUD_CPP_DEPRECATED("use MakeTopicAdminConnection() instead")
 std::shared_ptr<TopicAdminConnection> MakeTopicAdminConnection(
     std::initializer_list<internal::NonConstructible>);
 
@@ -198,6 +202,7 @@ std::shared_ptr<TopicAdminConnection> MakeTopicAdminConnection(
  *       - `google::cloud::GrpcOptionList`
  *       - `google::cloud::pubsub::PolicyOptionList`
  */
+GOOGLE_CLOUD_CPP_PUBSUB_ADMIN_API_DEPRECATED("MakeTopicAdminConnection")
 std::shared_ptr<TopicAdminConnection> MakeTopicAdminConnection(
     Options opts = {});
 
@@ -214,7 +219,7 @@ std::shared_ptr<TopicAdminConnection> MakeTopicAdminConnection(
  * shared and reused when possible. Note that gRPC reuses existing OS resources
  * (sockets) whenever possible, so applications may experience better
  * performance on the second (and subsequent) calls to this function with the
- * same `ConnectionOptions` parameters. However, this behavior is not guaranteed
+ * identical values for @p options. However, this behavior is not guaranteed
  * and applications should not rely on it.
  *
  * @see `TopicAdminClient`
@@ -229,6 +234,8 @@ std::shared_ptr<TopicAdminConnection> MakeTopicAdminConnection(
  * @deprecated Please use the `MakeTopicAdminConnection` function that accepts
  *     `google::cloud::Options` instead.
  */
+GOOGLE_CLOUD_CPP_DEPRECATED(
+    "use the overload consuming google::cloud::Options instead")
 std::shared_ptr<TopicAdminConnection> MakeTopicAdminConnection(
     ConnectionOptions const& options,
     std::unique_ptr<pubsub::RetryPolicy const> retry_policy = {},

@@ -19,91 +19,35 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_NOTEBOOKS_MANAGED_NOTEBOOK_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_NOTEBOOKS_MANAGED_NOTEBOOK_CONNECTION_H
 
-#include "google/cloud/notebooks/internal/managed_notebook_retry_traits.h"
-#include "google/cloud/notebooks/internal/managed_notebook_stub.h"
 #include "google/cloud/notebooks/managed_notebook_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/notebooks/v1/managed_notebook_connection.h"
 
 namespace google {
 namespace cloud {
 namespace notebooks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ManagedNotebookServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        notebooks_internal::ManagedNotebookServiceRetryTraits>;
+/// @deprecated Use notebooks_v1::MakeManagedNotebookServiceConnection directly.
+using ::google::cloud::notebooks_v1::MakeManagedNotebookServiceConnection;
 
-using ManagedNotebookServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        notebooks_internal::ManagedNotebookServiceRetryTraits>;
+/// @deprecated Use notebooks_v1::ManagedNotebookServiceConnection directly.
+using ::google::cloud::notebooks_v1::ManagedNotebookServiceConnection;
 
-using ManagedNotebookServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        notebooks_internal::ManagedNotebookServiceRetryTraits>;
+/// @deprecated Use
+/// notebooks_v1::ManagedNotebookServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::notebooks_v1::
+    ManagedNotebookServiceLimitedErrorCountRetryPolicy;
 
-class ManagedNotebookServiceConnection {
- public:
-  virtual ~ManagedNotebookServiceConnection() = 0;
+/// @deprecated Use notebooks_v1::ManagedNotebookServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::notebooks_v1::
+    ManagedNotebookServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::notebooks::v1::Runtime> ListRuntimes(
-      google::cloud::notebooks::v1::ListRuntimesRequest request);
-
-  virtual StatusOr<google::cloud::notebooks::v1::Runtime> GetRuntime(
-      google::cloud::notebooks::v1::GetRuntimeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::notebooks::v1::Runtime>> CreateRuntime(
-      google::cloud::notebooks::v1::CreateRuntimeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::notebooks::v1::OperationMetadata>>
-  DeleteRuntime(
-      google::cloud::notebooks::v1::DeleteRuntimeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::notebooks::v1::Runtime>> StartRuntime(
-      google::cloud::notebooks::v1::StartRuntimeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::notebooks::v1::Runtime>> StopRuntime(
-      google::cloud::notebooks::v1::StopRuntimeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::notebooks::v1::Runtime>> SwitchRuntime(
-      google::cloud::notebooks::v1::SwitchRuntimeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::notebooks::v1::Runtime>> ResetRuntime(
-      google::cloud::notebooks::v1::ResetRuntimeRequest const& request);
-
-  virtual future<StatusOr<google::cloud::notebooks::v1::Runtime>>
-  ReportRuntimeEvent(
-      google::cloud::notebooks::v1::ReportRuntimeEventRequest const& request);
-};
-
-std::shared_ptr<ManagedNotebookServiceConnection>
-MakeManagedNotebookServiceConnection(Options options = {});
+/// @deprecated Use notebooks_v1::ManagedNotebookServiceRetryPolicy directly.
+using ::google::cloud::notebooks_v1::ManagedNotebookServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace notebooks
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace notebooks_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<notebooks::ManagedNotebookServiceConnection>
-MakeManagedNotebookServiceConnection(
-    std::shared_ptr<ManagedNotebookServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace notebooks_internal
 }  // namespace cloud
 }  // namespace google
 

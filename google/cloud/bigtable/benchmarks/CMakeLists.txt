@@ -1,5 +1,5 @@
 # ~~~
-# Copyright 2018 Google Inc.
+# Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ if (BUILD_TESTING)
                          "bigtable_benchmarks_unit_tests" YEAR "2020")
 
     foreach (fname ${bigtable_benchmarks_unit_tests})
-        google_cloud_cpp_add_executable(target "bigtable_benchmarks" "${fname}")
+        google_cloud_cpp_add_executable(target "bigtable" "${fname}")
         target_link_libraries(
             ${target}
             PRIVATE bigtable_benchmark_common
@@ -75,9 +75,6 @@ if (BUILD_TESTING)
                     gRPC::grpc
                     protobuf::libprotobuf)
         google_cloud_cpp_add_common_options(${target})
-        if (MSVC)
-            target_compile_options(${target} PRIVATE "/bigobj")
-        endif ()
         add_test(NAME ${target} COMMAND ${target})
     endforeach ()
 endif ()

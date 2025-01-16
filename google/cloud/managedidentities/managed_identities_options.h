@@ -21,42 +21,38 @@
 
 #include "google/cloud/managedidentities/managed_identities_connection.h"
 #include "google/cloud/managedidentities/managed_identities_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/managedidentities/v1/managed_identities_options.h"
 
 namespace google {
 namespace cloud {
 namespace managedidentities {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ManagedIdentitiesServiceRetryPolicyOption {
-  using Type = std::shared_ptr<ManagedIdentitiesServiceRetryPolicy>;
-};
+/// @deprecated Use
+/// managedidentities_v1::ManagedIdentitiesServicePollingPolicyOption directly.
+using ::google::cloud::managedidentities_v1::
+    ManagedIdentitiesServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ManagedIdentitiesServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// managedidentities_v1::ManagedIdentitiesServiceBackoffPolicyOption directly.
+using ::google::cloud::managedidentities_v1::
+    ManagedIdentitiesServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ManagedIdentitiesServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// managedidentities_v1::ManagedIdentitiesServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::managedidentities_v1::
+    ManagedIdentitiesServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ManagedIdentitiesServiceConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<ManagedIdentitiesServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use
+/// managedidentities_v1::ManagedIdentitiesServicePolicyOptionList directly.
+using ::google::cloud::managedidentities_v1::
+    ManagedIdentitiesServicePolicyOptionList;
 
-using ManagedIdentitiesServicePolicyOptionList =
-    OptionList<ManagedIdentitiesServiceRetryPolicyOption,
-               ManagedIdentitiesServiceBackoffPolicyOption,
-               ManagedIdentitiesServicePollingPolicyOption,
-               ManagedIdentitiesServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use
+/// managedidentities_v1::ManagedIdentitiesServiceRetryPolicyOption directly.
+using ::google::cloud::managedidentities_v1::
+    ManagedIdentitiesServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace managedidentities

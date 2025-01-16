@@ -16,6 +16,7 @@
 #include "google/cloud/pubsub/options.h"
 #include "google/cloud/common_options.h"
 #include "google/cloud/connection_options.h"
+#include "google/cloud/credentials.h"
 #include "google/cloud/grpc_options.h"
 #include "google/cloud/internal/user_agent_prefix.h"
 #include "google/cloud/testing_util/scoped_environment.h"
@@ -61,12 +62,11 @@ TEST(OptionsTest, UnsetEmulatorEnv) {
 TEST(OptionsTest, CommonDefaults) {
   auto opts = DefaultCommonOptions(Options{});
   EXPECT_EQ("pubsub.googleapis.com", opts.get<EndpointOption>());
-  EXPECT_EQ(typeid(grpc::GoogleDefaultCredentials()),
-            typeid(opts.get<GrpcCredentialOption>()));
+  EXPECT_TRUE(opts.has<UnifiedCredentialsOption>());
   EXPECT_EQ(static_cast<int>(DefaultThreadCount()),
             opts.get<GrpcNumChannelsOption>());
   EXPECT_EQ(internal::DefaultTracingComponents(),
-            opts.get<TracingComponentsOption>());
+            opts.get<LoggingComponentsOption>());
   EXPECT_EQ(internal::DefaultTracingOptions(),
             opts.get<GrpcTracingOptionsOption>());
   EXPECT_TRUE(opts.has<pubsub::RetryPolicyOption>());
@@ -94,7 +94,7 @@ TEST(OptionsTest, UserSetCommonOptions) {
           .set<GrpcCredentialOption>(grpc::InsecureChannelCredentials())
           .set<GrpcTracingOptionsOption>(
               TracingOptions{}.SetOptions("single_line_mode=F"))
-          .set<TracingComponentsOption>({"test-component"})
+          .set<LoggingComponentsOption>({"test-component"})
           .set<GrpcNumChannelsOption>(3)
           .set<GrpcBackgroundThreadPoolSizeOption>(5)
           .set<GrpcChannelArgumentsNativeOption>(channel_args)
@@ -104,7 +104,7 @@ TEST(OptionsTest, UserSetCommonOptions) {
   EXPECT_EQ(typeid(grpc::InsecureChannelCredentials()),
             typeid(opts.get<GrpcCredentialOption>()));
   EXPECT_FALSE(opts.get<GrpcTracingOptionsOption>().single_line_mode());
-  EXPECT_THAT(opts.get<TracingComponentsOption>(), Contains("test-component"));
+  EXPECT_THAT(opts.get<LoggingComponentsOption>(), Contains("test-component"));
   EXPECT_EQ(3U, opts.get<GrpcNumChannelsOption>());
   EXPECT_EQ(5U, opts.get<GrpcBackgroundThreadPoolSizeOption>());
 
@@ -121,6 +121,26 @@ TEST(OptionsTest, UserSetCommonOptions) {
   EXPECT_THAT(*s, HasSubstr("test-prefix"));
 }
 
+TEST(OptionsTest, SetOtelLinkLimitEnvOverrides) {
+  ScopedEnvironment env("OTEL_SPAN_LINK_COUNT_LIMIT", "5");
+  auto opts =
+      DefaultPublisherOptions(Options{}.set<pubsub::MaxOtelLinkCountOption>(1));
+  EXPECT_EQ(5U, opts.get<pubsub::MaxOtelLinkCountOption>());
+}
+
+TEST(OptionsTest, UnsetOtelLinkLimitEnv) {
+  ScopedEnvironment env("OTEL_SPAN_LINK_COUNT_LIMIT", absl::nullopt);
+  auto opts =
+      DefaultPublisherOptions(Options{}.set<pubsub::MaxOtelLinkCountOption>(1));
+  EXPECT_EQ(1U, opts.get<pubsub::MaxOtelLinkCountOption>());
+}
+
+TEST(OptionsTest, UnsetOtelLinkLimitEnvNoUserOption) {
+  ScopedEnvironment env("OTEL_SPAN_LINK_COUNT_LIMIT", absl::nullopt);
+  auto opts = DefaultPublisherOptions(Options{});
+  EXPECT_EQ(128U, opts.get<pubsub::MaxOtelLinkCountOption>());
+}
+
 TEST(OptionsTest, PublisherDefaults) {
   auto opts = DefaultPublisherOptions(Options{});
   EXPECT_EQ(ms(10), opts.get<pubsub::MaxHoldTimeOption>());
@@ -133,6 +153,10 @@ TEST(OptionsTest, PublisherDefaults) {
   EXPECT_FALSE(opts.get<pubsub::MessageOrderingOption>());
   EXPECT_EQ(pubsub::FullPublisherAction::kBlocks,
             opts.get<pubsub::FullPublisherActionOption>());
+  EXPECT_EQ(GRPC_COMPRESS_DEFLATE,
+            opts.get<pubsub::CompressionAlgorithmOption>());
+  EXPECT_FALSE(opts.has<pubsub::CompressionThresholdOption>());
+  EXPECT_EQ(128, opts.get<pubsub::MaxOtelLinkCountOption>());
 }
 
 TEST(OptionsTest, UserSetPublisherOptions) {
@@ -145,7 +169,8 @@ TEST(OptionsTest, UserSetPublisherOptions) {
                                   .set<pubsub::MaxPendingMessagesOption>(4)
                                   .set<pubsub::MessageOrderingOption>(true)
                                   .set<pubsub::FullPublisherActionOption>(
-                                      pubsub::FullPublisherAction::kIgnored));
+                                      pubsub::FullPublisherAction::kIgnored)
+                                  .set<pubsub::MaxOtelLinkCountOption>(1));
 
   EXPECT_EQ(ms(100), opts.get<pubsub::MaxHoldTimeOption>());
   EXPECT_EQ(1U, opts.get<pubsub::MaxBatchMessagesOption>());
@@ -155,12 +180,14 @@ TEST(OptionsTest, UserSetPublisherOptions) {
   EXPECT_TRUE(opts.get<pubsub::MessageOrderingOption>());
   EXPECT_EQ(pubsub::FullPublisherAction::kIgnored,
             opts.get<pubsub::FullPublisherActionOption>());
+  EXPECT_EQ(1U, opts.get<pubsub::MaxOtelLinkCountOption>());
 }
 
 TEST(OptionsTest, SubscriberDefaults) {
   auto opts = DefaultSubscriberOptions(Options{});
   EXPECT_EQ(seconds(0), opts.get<pubsub::MaxDeadlineTimeOption>());
   EXPECT_EQ(seconds(600), opts.get<pubsub::MaxDeadlineExtensionOption>());
+  EXPECT_EQ(seconds(60), opts.get<pubsub::MinDeadlineExtensionOption>());
   EXPECT_EQ(1000, opts.get<pubsub::MaxOutstandingMessagesOption>());
   EXPECT_EQ(100 * 1024 * 1024L, opts.get<pubsub::MaxOutstandingBytesOption>());
   EXPECT_EQ(DefaultThreadCount(), opts.get<pubsub::MaxConcurrencyOption>());
@@ -189,6 +216,28 @@ TEST(OptionsTest, SubscriberConstraints) {
   opts = DefaultSubscriberOptions(
       Options{}.set<pubsub::MaxDeadlineExtensionOption>(seconds(5000)));
   EXPECT_EQ(seconds(600), opts.get<pubsub::MaxDeadlineExtensionOption>());
+
+  opts = DefaultSubscriberOptions(
+      Options{}.set<pubsub::MinDeadlineExtensionOption>(seconds(5000)));
+  EXPECT_EQ(seconds(600), opts.get<pubsub::MinDeadlineExtensionOption>());
+
+  opts = DefaultSubscriberOptions(
+      Options{}.set<pubsub::MinDeadlineExtensionOption>(seconds(5)));
+  EXPECT_EQ(seconds(10), opts.get<pubsub::MinDeadlineExtensionOption>());
+
+  opts = DefaultSubscriberOptions(
+      Options{}.set<pubsub::MaxDeadlineExtensionOption>(seconds(30)));
+  EXPECT_EQ(seconds(30), opts.get<pubsub::MinDeadlineExtensionOption>());
+
+  opts = DefaultSubscriberOptions(
+      Options{}.set<pubsub::MaxDeadlineExtensionOption>(seconds(120)));
+  EXPECT_EQ(seconds(60), opts.get<pubsub::MinDeadlineExtensionOption>());
+
+  opts = DefaultSubscriberOptions(
+      Options{}
+          .set<pubsub::MinDeadlineExtensionOption>(seconds(5000))
+          .set<pubsub::MaxDeadlineExtensionOption>(seconds(500)));
+  EXPECT_EQ(seconds(500), opts.get<pubsub::MinDeadlineExtensionOption>());
 }
 
 TEST(OptionsTest, UserSetSubscriberOptions) {
@@ -211,10 +260,10 @@ TEST(OptionsTest, DefaultSubscriberOnly) {
   // Ensure that we do not set common options
   auto opts = DefaultSubscriberOptionsOnly(Options{});
   EXPECT_FALSE(opts.has<GrpcCredentialOption>());
+  EXPECT_FALSE(opts.has<UnifiedCredentialsOption>());
   EXPECT_FALSE(opts.has<EndpointOption>());
-  EXPECT_FALSE(opts.has<GrpcCredentialOption>());
   EXPECT_FALSE(opts.has<GrpcNumChannelsOption>());
-  EXPECT_FALSE(opts.has<TracingComponentsOption>());
+  EXPECT_FALSE(opts.has<LoggingComponentsOption>());
   EXPECT_FALSE(opts.has<GrpcTracingOptionsOption>());
   EXPECT_FALSE(opts.has<pubsub::BackoffPolicyOption>());
   EXPECT_FALSE(opts.has<GrpcBackgroundThreadPoolSizeOption>());
@@ -222,11 +271,10 @@ TEST(OptionsTest, DefaultSubscriberOnly) {
 
   // Ensure that we do set common options
   opts = DefaultSubscriberOptions(Options{});
-  EXPECT_TRUE(opts.has<GrpcCredentialOption>());
+  EXPECT_TRUE(opts.has<UnifiedCredentialsOption>());
   EXPECT_TRUE(opts.has<EndpointOption>());
-  EXPECT_TRUE(opts.has<GrpcCredentialOption>());
   EXPECT_TRUE(opts.has<GrpcNumChannelsOption>());
-  EXPECT_TRUE(opts.has<TracingComponentsOption>());
+  EXPECT_TRUE(opts.has<LoggingComponentsOption>());
   EXPECT_TRUE(opts.has<GrpcTracingOptionsOption>());
   EXPECT_TRUE(opts.has<GrpcBackgroundThreadPoolSizeOption>());
   EXPECT_TRUE(opts.has<UserAgentProductsOption>());
@@ -236,21 +284,20 @@ TEST(OptionsTest, DefaultPublisherOnly) {
   // Ensure that we do not set common options
   auto opts = DefaultPublisherOptionsOnly(Options{});
   EXPECT_FALSE(opts.has<GrpcCredentialOption>());
+  EXPECT_FALSE(opts.has<UnifiedCredentialsOption>());
   EXPECT_FALSE(opts.has<EndpointOption>());
-  EXPECT_FALSE(opts.has<GrpcCredentialOption>());
   EXPECT_FALSE(opts.has<GrpcNumChannelsOption>());
-  EXPECT_FALSE(opts.has<TracingComponentsOption>());
+  EXPECT_FALSE(opts.has<LoggingComponentsOption>());
   EXPECT_FALSE(opts.has<GrpcTracingOptionsOption>());
   EXPECT_FALSE(opts.has<GrpcBackgroundThreadPoolSizeOption>());
   EXPECT_FALSE(opts.has<UserAgentProductsOption>());
 
   // Ensure that we do set common options
   opts = DefaultPublisherOptions(Options{});
-  EXPECT_TRUE(opts.has<GrpcCredentialOption>());
+  EXPECT_TRUE(opts.has<UnifiedCredentialsOption>());
   EXPECT_TRUE(opts.has<EndpointOption>());
-  EXPECT_TRUE(opts.has<GrpcCredentialOption>());
   EXPECT_TRUE(opts.has<GrpcNumChannelsOption>());
-  EXPECT_TRUE(opts.has<TracingComponentsOption>());
+  EXPECT_TRUE(opts.has<LoggingComponentsOption>());
   EXPECT_TRUE(opts.has<GrpcTracingOptionsOption>());
   EXPECT_TRUE(opts.has<GrpcBackgroundThreadPoolSizeOption>());
   EXPECT_TRUE(opts.has<UserAgentProductsOption>());

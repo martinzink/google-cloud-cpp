@@ -20,71 +20,35 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ARTIFACTREGISTRY_ARTIFACT_REGISTRY_CONNECTION_H
 
 #include "google/cloud/artifactregistry/artifact_registry_connection_idempotency_policy.h"
-#include "google/cloud/artifactregistry/internal/artifact_registry_retry_traits.h"
-#include "google/cloud/artifactregistry/internal/artifact_registry_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/artifactregistry/v1/artifact_registry_connection.h"
 
 namespace google {
 namespace cloud {
 namespace artifactregistry {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ArtifactRegistryRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        artifactregistry_internal::ArtifactRegistryRetryTraits>;
+/// @deprecated Use artifactregistry_v1::MakeArtifactRegistryConnection
+/// directly.
+using ::google::cloud::artifactregistry_v1::MakeArtifactRegistryConnection;
 
-using ArtifactRegistryLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        artifactregistry_internal::ArtifactRegistryRetryTraits>;
+/// @deprecated Use artifactregistry_v1::ArtifactRegistryConnection directly.
+using ::google::cloud::artifactregistry_v1::ArtifactRegistryConnection;
 
-using ArtifactRegistryLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        artifactregistry_internal::ArtifactRegistryRetryTraits>;
+/// @deprecated Use
+/// artifactregistry_v1::ArtifactRegistryLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::artifactregistry_v1::
+    ArtifactRegistryLimitedErrorCountRetryPolicy;
 
-class ArtifactRegistryConnection {
- public:
-  virtual ~ArtifactRegistryConnection() = 0;
+/// @deprecated Use artifactregistry_v1::ArtifactRegistryLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::artifactregistry_v1::
+    ArtifactRegistryLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::devtools::artifactregistry::v1::DockerImage>
-  ListDockerImages(
-      google::devtools::artifactregistry::v1::ListDockerImagesRequest request);
-
-  virtual StreamRange<google::devtools::artifactregistry::v1::Repository>
-  ListRepositories(
-      google::devtools::artifactregistry::v1::ListRepositoriesRequest request);
-
-  virtual StatusOr<google::devtools::artifactregistry::v1::Repository>
-  GetRepository(
-      google::devtools::artifactregistry::v1::GetRepositoryRequest const&
-          request);
-};
-
-std::shared_ptr<ArtifactRegistryConnection> MakeArtifactRegistryConnection(
-    Options options = {});
+/// @deprecated Use artifactregistry_v1::ArtifactRegistryRetryPolicy directly.
+using ::google::cloud::artifactregistry_v1::ArtifactRegistryRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace artifactregistry
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace artifactregistry_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<artifactregistry::ArtifactRegistryConnection>
-MakeArtifactRegistryConnection(std::shared_ptr<ArtifactRegistryStub> stub,
-                               Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace artifactregistry_internal
 }  // namespace cloud
 }  // namespace google
 

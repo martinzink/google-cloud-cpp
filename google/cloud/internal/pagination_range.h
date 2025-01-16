@@ -16,6 +16,7 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_PAGINATION_RANGE_H
 
 #include "google/cloud/internal/invoke_result.h"
+#include "google/cloud/internal/type_traits.h"
 #include "google/cloud/status_or.h"
 #include "google/cloud/stream_range.h"
 #include "google/cloud/version.h"
@@ -66,6 +67,8 @@ using PaginationRange = StreamRange<T>;
 template <typename T, typename Request, typename Response>
 class PagedStreamReader {
  public:
+  using Loader =
+      std::function<StatusOr<Response>(Options const&, Request const&)>;
   /**
    * Create a new object.
    *
@@ -75,13 +78,11 @@ class PagedStreamReader {
    * @param extractor extracts the items from the response using native C++
    *     types (as opposed to the proto types used in `Response`).
    */
-  PagedStreamReader(Request request,
-                    std::function<StatusOr<Response>(Request const&)> loader,
+  PagedStreamReader(Request request, Loader loader,
                     std::function<std::vector<T>(Response)> extractor)
       : request_(std::move(request)),
         loader_(std::move(loader)),
-        extractor_(std::move(extractor)),
-        last_page_(false) {
+        extractor_(std::move(extractor)) {
     current_ = page_.begin();
   }
 
@@ -92,47 +93,107 @@ class PagedStreamReader {
    *   a non-OK `Status` to indicate an error, and an OK `Status` to indicate a
    *   successful end of stream.
    */
-  typename StreamReader<T>::result_type GetNext() {
-    if (current_ == page_.end()) {
-      if (last_page_) return Status{};
+  typename StreamReader<T>::result_type GetNext(Options const& options) {
+    while (current_ == page_.end() && !last_page_) {
       request_.set_page_token(std::move(token_));
-      auto response = loader_(request_);
+      auto response = loader_(options, request_);
       if (!response.ok()) return std::move(response).status();
       token_ = ExtractPageToken(*response);
       if (token_.empty()) last_page_ = true;
       page_ = extractor_(*std::move(response));
       current_ = page_.begin();
-      if (current_ == page_.end()) return Status{};
     }
+    if (current_ == page_.end()) return Status{};
     return std::move(*current_++);
   }
 
  private:
+  template <typename U, typename AlwaysVoid = void>
+  struct HasMutableNextPageToken : public std::false_type {};
+  template <typename U>
+  struct HasMutableNextPageToken<
+      U,
+      void_t<decltype(std::move(*std::declval<U>().mutable_next_page_token()))>>
+      : public std::true_type {};
+
+  template <typename U, typename AlwaysVoid = void>
+  struct HasNextPageToken : public std::false_type {};
+  template <typename U>
+  struct HasNextPageToken<
+      U, void_t<decltype(std::move(std::declval<U>().next_page_token))>>
+      : public std::true_type {};
+
   /**
    * ExtractPageToken() extracts (i.e., "moves") the page token out of the
-   * given response object. This function is overloaded based on whether the
-   * response object has a `.mutable_next_page_token()` member function (e.g.,
-   * a protobuf), or a `.next_page_token` field (e.g., a regular struct such as
-   * is used in GCS).
+   * given response object. This function dispatches to the right function
+   * to extract the value using either a `.mutable_next_page_token()` member
+   * function (e.g., a protobuf), or a `.next_page_token` field (e.g., a regular
+   * struct such as is used in GCS).
+   *
+   * The code is more complicated than we would wish. It used to be (this
+   * comment uses C++17 for exposition purposes, we used the C++11 equivalent):
+   *
+   * @code
+   * template <typename U>
+   * static auto constexpr E(U& u) {
+   *   return std::move(*u.mutable_next_page_token());
+   * }
+   * template <typename U>
+   * static auto constexpr E(U& u) {
+   *   return std::move(u.next_page_token);
+   * }
+   * @endcode
+   *
+   * For better or worse some versions of GCC called that ambiguous, even though
+   * only one would work under SFINAE.
    */
+  static std::string ExtractPageToken(Response& r) {
+    static_assert(
+        HasMutableNextPageToken<Response>::value ||
+            HasNextPageToken<Response>::value,
+        "The Response type does not meet the requirements for PaginationRange");
+    // This may seem expensive, but the value is known at compile type, the
+    // optimizer should know what to do.
+    if (HasMutableNextPageToken<Response>::value) {
+      return UsingMutableNextPageToken<Response>(
+          HasMutableNextPageToken<Response>{}, r);
+    }
+    return UsingNextPageToken<Response>(HasMutableNextPageToken<Response>{},
+                                        HasNextPageToken<Response>{}, r);
+  }
+
   template <typename U>
-  static constexpr auto ExtractPageToken(U& u)
+  static auto constexpr UsingMutableNextPageToken(std::true_type, U& u)
       -> decltype(std::move(*u.mutable_next_page_token())) {
     return std::move(*u.mutable_next_page_token());
   }
+  // This overload is unused, it is here just to compile when
+  // HasMutableNextPageToken<Response>::value is `false`
   template <typename U>
-  static constexpr auto ExtractPageToken(U& u)
+  static std::string UsingMutableNextPageToken(std::false_type, U&) {
+    return {};
+  }
+
+  template <typename U>
+  static auto constexpr UsingNextPageToken(std::false_type, std::true_type,
+                                           U& u)
       -> decltype(std::move(u.next_page_token)) {
     return std::move(u.next_page_token);
   }
+  // This overload is unused, it is here just to compile when
+  // HasNextPageToken<Response>::value is `false`
+  template <typename U, typename D>
+  static std::string UsingNextPageToken(std::true_type, D, U&) {
+    return {};
+  }
 
   Request request_;
-  std::function<StatusOr<Response>(Request const&)> loader_;
+  Loader loader_;
   std::function<std::vector<T>(Response)> extractor_;
   std::vector<T> page_;
   typename std::vector<T>::iterator current_;
   std::string token_;
-  bool last_page_;
+  bool last_page_ = false;
 };
 
 /**
@@ -155,10 +216,14 @@ class PagedStreamReader {
  *      MyRequestProto{}, std::move(loader), std::move(extractor));
  * @endcode
  */
-template <typename Range, typename Request, typename Loader, typename Extractor>
-Range MakePaginationRange(Request request, Loader loader, Extractor extractor) {
+template <
+    typename Range, typename Request, typename Loader, typename Extractor,
+    std::enable_if_t<
+        is_invocable<Loader, Options const&, Request const&>::value, int> = 0>
+Range MakePaginationRange(ImmutableOptions options, Request request,
+                          Loader loader, Extractor extractor) {
   using ValueType = typename Range::value_type::value_type;
-  using LoaderResult = invoke_result_t<Loader, Request>;
+  using LoaderResult = invoke_result_t<Loader, Options const&, Request const&>;
   using Response = typename LoaderResult::value_type;
   using ExtractorResult = invoke_result_t<Extractor, Response>;
   // Some static asserts to make compiler errors easier to diagnose.
@@ -171,8 +236,33 @@ Range MakePaginationRange(Request request, Loader loader, Extractor extractor) {
   using ReaderType = PagedStreamReader<ValueType, Request, Response>;
   auto reader = std::make_shared<ReaderType>(
       std::move(request), std::move(loader), std::move(extractor));
+  return MakeStreamRange<ValueType>(std::move(options),
+                                    [reader](Options const& options) mutable {
+                                      return reader->GetNext(options);
+                                    });
+}
+
+template <
+    typename Range, typename Request, typename Loader, typename Extractor,
+    std::enable_if_t<is_invocable<Loader, Request const&>::value, int> = 0>
+Range MakePaginationRange(Request request, Loader&& loader,
+                          Extractor&& extractor) {
+  auto wrapper = [loader = std::forward<Loader>(loader)](
+                     Options const&, Request const& request) {
+    return loader(request);
+  };
+  return MakePaginationRange<Range>(SaveCurrentOptions(), std::move(request),
+                                    std::move(wrapper),
+                                    std::forward<Extractor>(extractor));
+}
+
+template <typename Range>
+Range MakeErrorPaginationRange(Status status) {
+  using ValueType = typename Range::value_type::value_type;
   return MakeStreamRange<ValueType>(
-      {[reader]() mutable { return reader->GetNext(); }});
+      MakeImmutableOptions(Options{}),
+      [s = std::move(status)](Options const&) ->
+      typename StreamReaderExplicit<ValueType>::result_type { return s; });
 }
 
 /**
@@ -181,11 +271,8 @@ Range MakePaginationRange(Request request, Loader loader, Extractor extractor) {
  */
 template <typename Range>
 Range MakeUnimplementedPaginationRange() {
-  using ValueType = typename Range::value_type::value_type;
-  return MakeStreamRange<ValueType>(
-      []() -> typename StreamReader<ValueType>::result_type {
-        return Status{StatusCode::kUnimplemented, "not implemented"};
-      });
+  return MakeErrorPaginationRange<Range>(
+      Status{StatusCode::kUnimplemented, "not implemented"});
 }
 
 }  // namespace internal

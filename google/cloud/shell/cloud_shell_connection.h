@@ -20,79 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SHELL_CLOUD_SHELL_CONNECTION_H
 
 #include "google/cloud/shell/cloud_shell_connection_idempotency_policy.h"
-#include "google/cloud/shell/internal/cloud_shell_retry_traits.h"
-#include "google/cloud/shell/internal/cloud_shell_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/shell/v1/cloud_shell_connection.h"
 
 namespace google {
 namespace cloud {
 namespace shell {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CloudShellServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        shell_internal::CloudShellServiceRetryTraits>;
+/// @deprecated Use shell_v1::MakeCloudShellServiceConnection directly.
+using ::google::cloud::shell_v1::MakeCloudShellServiceConnection;
 
-using CloudShellServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        shell_internal::CloudShellServiceRetryTraits>;
+/// @deprecated Use shell_v1::CloudShellServiceConnection directly.
+using ::google::cloud::shell_v1::CloudShellServiceConnection;
 
-using CloudShellServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        shell_internal::CloudShellServiceRetryTraits>;
+/// @deprecated Use shell_v1::CloudShellServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::shell_v1::CloudShellServiceLimitedErrorCountRetryPolicy;
 
-class CloudShellServiceConnection {
- public:
-  virtual ~CloudShellServiceConnection() = 0;
+/// @deprecated Use shell_v1::CloudShellServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::shell_v1::CloudShellServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::shell::v1::Environment> GetEnvironment(
-      google::cloud::shell::v1::GetEnvironmentRequest const& request);
-
-  virtual future<StatusOr<google::cloud::shell::v1::StartEnvironmentResponse>>
-  StartEnvironment(
-      google::cloud::shell::v1::StartEnvironmentRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::shell::v1::AuthorizeEnvironmentResponse>>
-  AuthorizeEnvironment(
-      google::cloud::shell::v1::AuthorizeEnvironmentRequest const& request);
-
-  virtual future<StatusOr<google::cloud::shell::v1::AddPublicKeyResponse>>
-  AddPublicKey(google::cloud::shell::v1::AddPublicKeyRequest const& request);
-
-  virtual future<StatusOr<google::cloud::shell::v1::RemovePublicKeyResponse>>
-  RemovePublicKey(
-      google::cloud::shell::v1::RemovePublicKeyRequest const& request);
-};
-
-std::shared_ptr<CloudShellServiceConnection> MakeCloudShellServiceConnection(
-    Options options = {});
+/// @deprecated Use shell_v1::CloudShellServiceRetryPolicy directly.
+using ::google::cloud::shell_v1::CloudShellServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace shell
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace shell_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<shell::CloudShellServiceConnection>
-MakeCloudShellServiceConnection(std::shared_ptr<CloudShellServiceStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace shell_internal
 }  // namespace cloud
 }  // namespace google
 

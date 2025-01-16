@@ -19,78 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ORGPOLICY_ORG_POLICY_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ORGPOLICY_ORG_POLICY_CONNECTION_H
 
-#include "google/cloud/orgpolicy/internal/org_policy_retry_traits.h"
-#include "google/cloud/orgpolicy/internal/org_policy_stub.h"
 #include "google/cloud/orgpolicy/org_policy_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/orgpolicy/v2/org_policy_connection.h"
 
 namespace google {
 namespace cloud {
 namespace orgpolicy {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using OrgPolicyRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    orgpolicy_internal::OrgPolicyRetryTraits>;
+/// @deprecated Use orgpolicy_v2::MakeOrgPolicyConnection directly.
+using ::google::cloud::orgpolicy_v2::MakeOrgPolicyConnection;
 
-using OrgPolicyLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        orgpolicy_internal::OrgPolicyRetryTraits>;
+/// @deprecated Use orgpolicy_v2::OrgPolicyConnection directly.
+using ::google::cloud::orgpolicy_v2::OrgPolicyConnection;
 
-using OrgPolicyLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        orgpolicy_internal::OrgPolicyRetryTraits>;
+/// @deprecated Use orgpolicy_v2::OrgPolicyLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::orgpolicy_v2::OrgPolicyLimitedErrorCountRetryPolicy;
 
-class OrgPolicyConnection {
- public:
-  virtual ~OrgPolicyConnection() = 0;
+/// @deprecated Use orgpolicy_v2::OrgPolicyLimitedTimeRetryPolicy directly.
+using ::google::cloud::orgpolicy_v2::OrgPolicyLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::orgpolicy::v2::Constraint> ListConstraints(
-      google::cloud::orgpolicy::v2::ListConstraintsRequest request);
-
-  virtual StreamRange<google::cloud::orgpolicy::v2::Policy> ListPolicies(
-      google::cloud::orgpolicy::v2::ListPoliciesRequest request);
-
-  virtual StatusOr<google::cloud::orgpolicy::v2::Policy> GetPolicy(
-      google::cloud::orgpolicy::v2::GetPolicyRequest const& request);
-
-  virtual StatusOr<google::cloud::orgpolicy::v2::Policy> GetEffectivePolicy(
-      google::cloud::orgpolicy::v2::GetEffectivePolicyRequest const& request);
-
-  virtual StatusOr<google::cloud::orgpolicy::v2::Policy> CreatePolicy(
-      google::cloud::orgpolicy::v2::CreatePolicyRequest const& request);
-
-  virtual StatusOr<google::cloud::orgpolicy::v2::Policy> UpdatePolicy(
-      google::cloud::orgpolicy::v2::UpdatePolicyRequest const& request);
-
-  virtual Status DeletePolicy(
-      google::cloud::orgpolicy::v2::DeletePolicyRequest const& request);
-};
-
-std::shared_ptr<OrgPolicyConnection> MakeOrgPolicyConnection(
-    Options options = {});
+/// @deprecated Use orgpolicy_v2::OrgPolicyRetryPolicy directly.
+using ::google::cloud::orgpolicy_v2::OrgPolicyRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace orgpolicy
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace orgpolicy_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<orgpolicy::OrgPolicyConnection> MakeOrgPolicyConnection(
-    std::shared_ptr<OrgPolicyStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace orgpolicy_internal
 }  // namespace cloud
 }  // namespace google
 

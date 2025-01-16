@@ -21,34 +21,25 @@
 
 #include "google/cloud/dlp/dlp_connection.h"
 #include "google/cloud/dlp/dlp_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/dlp/v2/dlp_options.h"
 
 namespace google {
 namespace cloud {
 namespace dlp {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct DlpServiceRetryPolicyOption {
-  using Type = std::shared_ptr<DlpServiceRetryPolicy>;
-};
+/// @deprecated Use dlp_v2::DlpServiceBackoffPolicyOption directly.
+using ::google::cloud::dlp_v2::DlpServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DlpServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use dlp_v2::DlpServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::dlp_v2::DlpServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DlpServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<DlpServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use dlp_v2::DlpServicePolicyOptionList directly.
+using ::google::cloud::dlp_v2::DlpServicePolicyOptionList;
 
-using DlpServicePolicyOptionList =
-    OptionList<DlpServiceRetryPolicyOption, DlpServiceBackoffPolicyOption,
-               DlpServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use dlp_v2::DlpServiceRetryPolicyOption directly.
+using ::google::cloud::dlp_v2::DlpServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dlp

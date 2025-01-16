@@ -21,34 +21,27 @@
 
 #include "google/cloud/bigquery/bigquery_read_connection.h"
 #include "google/cloud/bigquery/bigquery_read_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/bigquery/storage/v1/bigquery_read_options.h"
 
 namespace google {
 namespace cloud {
 namespace bigquery {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct BigQueryReadRetryPolicyOption {
-  using Type = std::shared_ptr<BigQueryReadRetryPolicy>;
-};
+/// @deprecated Use bigquery_storage_v1::BigQueryReadBackoffPolicyOption
+/// directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryReadBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct BigQueryReadBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// bigquery_storage_v1::BigQueryReadConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::bigquery_storage_v1::
+    BigQueryReadConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct BigQueryReadConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<BigQueryReadConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use bigquery_storage_v1::BigQueryReadPolicyOptionList directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryReadPolicyOptionList;
 
-using BigQueryReadPolicyOptionList =
-    OptionList<BigQueryReadRetryPolicyOption, BigQueryReadBackoffPolicyOption,
-               BigQueryReadConnectionIdempotencyPolicyOption>;
+/// @deprecated Use bigquery_storage_v1::BigQueryReadRetryPolicyOption directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryReadRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigquery

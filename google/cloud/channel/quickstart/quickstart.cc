@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/channel/cloud_channel_client.h"
+//! [all]
+#include "google/cloud/channel/v1/cloud_channel_client.h"
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 int main(int argc, char* argv[]) try {
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace channel = ::google::cloud::channel;
+  namespace channel = ::google::cloud::channel_v1;
   auto client = channel::CloudChannelServiceClient(
       channel::MakeCloudChannelServiceConnection());
 
@@ -31,12 +31,13 @@ int main(int argc, char* argv[]) try {
   auto request = google::cloud::channel::v1::ListProductsRequest{};
   request.set_account(std::string("accounts/") + argv[1]);
   for (auto r : client.ListProducts(std::move(request))) {
-    if (!r) throw std::runtime_error(r.status().message());
+    if (!r) throw std::move(r).status();
     std::cout << r->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

@@ -25,8 +25,14 @@ CurlHttpPayload::CurlHttpPayload(std::unique_ptr<CurlImpl> impl,
                                  Options options)
     : impl_(std::move(impl)), options_(std::move(options)) {}
 
+bool CurlHttpPayload::HasUnreadData() const { return impl_->HasUnreadData(); }
+
 StatusOr<std::size_t> CurlHttpPayload::Read(absl::Span<char> buffer) {
   return impl_->Read(buffer);
+}
+
+std::multimap<std::string, std::string> CurlHttpPayload::DebugHeaders() const {
+  return impl_->headers();
 }
 
 StatusOr<std::string> ReadAll(std::unique_ptr<HttpPayload> payload,
@@ -34,7 +40,7 @@ StatusOr<std::string> ReadAll(std::unique_ptr<HttpPayload> payload,
   std::string output_buffer;
   // Allocate buf on the heap as large values of read_size could exceed stack
   // size.
-  auto buf = absl::make_unique<char[]>(read_size);
+  auto buf = std::make_unique<char[]>(read_size);
   StatusOr<std::size_t> read_status;
   do {
     read_status = payload->Read({&buf[0], read_size});

@@ -19,43 +19,20 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_EVENTARC_EVENTARC_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_EVENTARC_EVENTARC_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/eventarc/v1/eventarc.grpc.pb.h>
-#include <memory>
+#include "google/cloud/eventarc/v1/eventarc_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace eventarc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class EventarcConnectionIdempotencyPolicy {
- public:
-  virtual ~EventarcConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use eventarc_v1::MakeDefaultEventarcConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::eventarc_v1::
+    MakeDefaultEventarcConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<EventarcConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency GetTrigger(
-      google::cloud::eventarc::v1::GetTriggerRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ListTriggers(
-      google::cloud::eventarc::v1::ListTriggersRequest request) = 0;
-
-  virtual google::cloud::Idempotency CreateTrigger(
-      google::cloud::eventarc::v1::CreateTriggerRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency UpdateTrigger(
-      google::cloud::eventarc::v1::UpdateTriggerRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteTrigger(
-      google::cloud::eventarc::v1::DeleteTriggerRequest const& request) = 0;
-};
-
-std::unique_ptr<EventarcConnectionIdempotencyPolicy>
-MakeDefaultEventarcConnectionIdempotencyPolicy();
+/// @deprecated Use eventarc_v1::EventarcConnectionIdempotencyPolicy directly.
+using ::google::cloud::eventarc_v1::EventarcConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace eventarc

@@ -14,6 +14,7 @@
 
 #include "google/cloud/spanner/internal/defaults.h"
 #include "google/cloud/spanner/internal/session_pool.h"
+#include "google/cloud/spanner/internal/spanner_stub_factory.h"
 #include "google/cloud/spanner/options.h"
 #include "google/cloud/spanner/testing/database_integration_test.h"
 #include "google/cloud/testing_util/status_matchers.h"
@@ -31,20 +32,23 @@ struct SessionPoolFriendForTest {
                            CompletionQueue& cq,
                            std::shared_ptr<SpannerStub> const& stub,
                            std::map<std::string, std::string> const& labels,
-                           int num_sessions) {
-    return session_pool->AsyncBatchCreateSessions(cq, stub, labels,
+                           std::string const& role, int num_sessions) {
+    internal::OptionsSpan span(session_pool->opts_);
+    return session_pool->AsyncBatchCreateSessions(cq, stub, labels, role,
                                                   num_sessions);
   }
 
   static future<Status> AsyncDeleteSession(
       std::shared_ptr<SessionPool> const& session_pool, CompletionQueue& cq,
       std::shared_ptr<SpannerStub> const& stub, std::string session_name) {
+    internal::OptionsSpan span(session_pool->opts_);
     return session_pool->AsyncDeleteSession(cq, stub, std::move(session_name));
   }
 
   static future<StatusOr<google::spanner::v1::ResultSet>> AsyncRefreshSession(
       std::shared_ptr<SessionPool> const& session_pool, CompletionQueue& cq,
       std::shared_ptr<SpannerStub> const& stub, std::string session_name) {
+    internal::OptionsSpan span(session_pool->opts_);
     return session_pool->AsyncRefreshSession(cq, stub, std::move(session_name));
   }
 };
@@ -73,10 +77,11 @@ TEST_F(SessionPoolIntegrationTest, SessionAsyncCRUD) {
 
   // Make an asynchronous request, but immediately block until the response
   // arrives
+  auto constexpr kSessionCreatorRole = "public";
   auto constexpr kNumTestSession = 4;
   auto create_response =
       spanner_internal::SessionPoolFriendForTest::AsyncBatchCreateSessions(
-          session_pool, cq, stub, {}, kNumTestSession)
+          session_pool, cq, stub, {}, kSessionCreatorRole, kNumTestSession)
           .get();
   ASSERT_STATUS_OK(create_response);
   EXPECT_EQ(kNumTestSession, create_response->session_size());

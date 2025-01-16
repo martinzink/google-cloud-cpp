@@ -20,39 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_IAP_MOCKS_MOCK_IDENTITY_AWARE_PROXY_ADMIN_CONNECTION_H
 
 #include "google/cloud/iap/identity_aware_proxy_admin_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/iap/v1/mocks/mock_identity_aware_proxy_admin_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in iap_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace iap_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockIdentityAwareProxyAdminServiceConnection
-    : public iap::IdentityAwareProxyAdminServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::Policy>, SetIamPolicy,
-              (google::iam::v1::SetIamPolicyRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::Policy>, GetIamPolicy,
-              (google::iam::v1::GetIamPolicyRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::TestIamPermissionsResponse>,
-              TestIamPermissions,
-              (google::iam::v1::TestIamPermissionsRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::iap::v1::IapSettings>, GetIapSettings,
-              (google::cloud::iap::v1::GetIapSettingsRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::iap::v1::IapSettings>, UpdateIapSettings,
-              (google::cloud::iap::v1::UpdateIapSettingsRequest const& request),
-              (override));
-};
+/// @deprecated Use iap_v1_mocks::MockIdentityAwareProxyAdminServiceConnection
+/// directly.
+using ::google::cloud::iap_v1_mocks::
+    MockIdentityAwareProxyAdminServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace iap_mocks

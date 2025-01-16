@@ -22,9 +22,9 @@
 #include "google/cloud/internal/random.h"
 #include "google/cloud/testing_util/integration_test.h"
 #include "google/cloud/testing_util/status_matchers.h"
+#include "absl/strings/match.h"
 #include <gmock/gmock.h>
 #include <algorithm>
-#include <regex>
 #include <string>
 #include <vector>
 
@@ -37,7 +37,11 @@ namespace {
 using ::google::cloud::testing_util::IsOk;
 using ::google::cloud::testing_util::StatusIs;
 using ::testing::AnyOf;
+using ::testing::EndsWith;
+using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
+using ::testing::Not;
 using ::testing::UnorderedElementsAre;
 
 std::string const& ProjectId() {
@@ -54,10 +58,10 @@ std::string const& InstanceId() {
 }
 
 bool RunSlowInstanceTests() {
-  static bool run_slow_instance_tests =
+  static bool run_slow_instance_tests = absl::StrContains(
       internal::GetEnv("GOOGLE_CLOUD_CPP_SPANNER_SLOW_INTEGRATION_TESTS")
-          .value_or("")
-          .find("instance") != std::string::npos;
+          .value_or(""),
+      "instance");
   return run_slow_instance_tests;
 }
 
@@ -69,26 +73,31 @@ bool Emulator() {
 class CleanupStaleInstances : public ::testing::Environment {
  public:
   void SetUp() override {
-    std::regex instance_name_regex(
-        R"(projects/.+/instances/)"
-        R"((temporary-instance-(\d{4}-\d{2}-\d{2})-.+))");
-
-    // Make sure we're using a correct regex.
-    EXPECT_EQ(2, instance_name_regex.mark_count());
-    auto generator = internal::MakeDefaultPRNG();
-    Instance in(ProjectId(), spanner_testing::RandomInstanceName(generator));
-    auto fq_instance_name = in.FullName();
-    std::smatch m;
-    EXPECT_TRUE(std::regex_match(fq_instance_name, m, instance_name_regex));
-    EXPECT_EQ(3, m.size());
-
+    spanner_admin::InstanceAdminClient instance_admin_client(
+        spanner_admin::MakeInstanceAdminConnection());
+    spanner_admin::DatabaseAdminClient database_admin_client(
+        spanner_admin::MakeDatabaseAdminConnection());
     EXPECT_STATUS_OK(spanner_testing::CleanupStaleInstances(
-        in.project_id(), instance_name_regex));
+        Project(ProjectId()), std::move(instance_admin_client),
+        std::move(database_admin_client)));
   }
 };
 
-::testing::Environment* const kCleanupEnv =
+class CleanupStaleInstanceConfigs : public ::testing::Environment {
+ public:
+  void SetUp() override {
+    spanner_admin::InstanceAdminClient instance_admin_client(
+        spanner_admin::MakeInstanceAdminConnection());
+    EXPECT_STATUS_OK(spanner_testing::CleanupStaleInstanceConfigs(
+        Project(ProjectId()), std::move(instance_admin_client)));
+  }
+};
+
+// Cleanup stale instances before instance configs.
+::testing::Environment* const kCleanupStaleInstancesEnv =
     ::testing::AddGlobalTestEnvironment(new CleanupStaleInstances);
+::testing::Environment* const kCleanupStaleInstanceConfigsEnv =
+    ::testing::AddGlobalTestEnvironment(new CleanupStaleInstanceConfigs);
 
 class InstanceAdminClientTest
     : public ::google::cloud::testing_util::IntegrationTest {
@@ -96,7 +105,8 @@ class InstanceAdminClientTest
   InstanceAdminClientTest()
       : generator_(internal::MakeDefaultPRNG()),
         client_(spanner_admin::MakeInstanceAdminConnection()) {
-    static_cast<void>(kCleanupEnv);
+    static_cast<void>(kCleanupStaleInstancesEnv);
+    static_cast<void>(kCleanupStaleInstanceConfigsEnv);
   }
 
  protected:
@@ -147,10 +157,10 @@ TEST_F(InstanceAdminClientTest, InstanceReadOperations) {
 
 /// @test Verify the basic CRUD operations for instances work.
 TEST_F(InstanceAdminClientTest, InstanceCRUDOperations) {
-  if (!Emulator() && !RunSlowInstanceTests()) {
-    GTEST_SKIP() << "skipping slow instance tests; set "
-                 << "GOOGLE_CLOUD_CPP_SPANNER_SLOW_INTEGRATION_TESTS=instance"
-                 << " to override";
+  if (!Emulator()) {
+    GTEST_SKIP() << "skipping, as there is a quota on CreateInstance requests "
+                    "against production, and other integration tests cover "
+                    "generated client functions for LROs.";
   }
 
   std::string instance_id = spanner_testing::RandomInstanceName(generator_);
@@ -158,13 +168,16 @@ TEST_F(InstanceAdminClientTest, InstanceCRUDOperations) {
   ASSERT_FALSE(in.project_id().empty());
   ASSERT_FALSE(in.instance_id().empty());
 
-  auto instance_config = spanner_testing::PickInstanceConfig(
-      in.project_id(), std::regex(".*us-west.*"), generator_);
-  ASSERT_FALSE(instance_config.empty()) << "could not get an instance config";
+  auto config_name = spanner_testing::PickInstanceConfig(
+      in.project(), generator_,
+      [](google::spanner::admin::instance::v1::InstanceConfig const& config) {
+        return absl::StrContains(config.name(), "/regional-us-west");
+      });
+  ASSERT_FALSE(config_name.empty()) << "could not get an instance config";
 
   auto instance =
       client_
-          .CreateInstance(CreateInstanceRequestBuilder(in, instance_config)
+          .CreateInstance(CreateInstanceRequestBuilder(in, config_name)
                               .SetDisplayName("test-display-name")
                               .SetNodeCount(1)
                               .SetLabels({{"label-key", "label-value"}})
@@ -175,7 +188,7 @@ TEST_F(InstanceAdminClientTest, InstanceCRUDOperations) {
   EXPECT_EQ(instance->name(), in.FullName());
   EXPECT_EQ(instance->display_name(), "test-display-name");
   EXPECT_NE(instance->node_count(), 0);
-  EXPECT_EQ(instance->config(), instance_config);
+  EXPECT_EQ(instance->config(), config_name);
   EXPECT_EQ(instance->labels().at("label-key"), "label-value");
 
   // Then update the instance
@@ -186,7 +199,9 @@ TEST_F(InstanceAdminClientTest, InstanceCRUDOperations) {
                                      .SetNodeCount(2)
                                      .Build())
                  .get();
-  if (!Emulator() || instance) {
+  if (Emulator()) {
+    EXPECT_THAT(instance, StatusIs(StatusCode::kUnimplemented));
+  } else {
     EXPECT_STATUS_OK(instance);
     if (instance) {
       EXPECT_EQ(instance->display_name(), "New display name");
@@ -203,24 +218,138 @@ TEST_F(InstanceAdminClientTest, InstanceConfig) {
   auto project_id = ProjectId();
   ASSERT_FALSE(project_id.empty());
 
-  auto instance_config_names = [&project_id, this]() mutable {
+  auto config_names = [&project_id, this]() mutable {
     std::vector<std::string> names;
     auto const parent = Project(project_id).FullName();
-    for (auto const& instance_config : client_.ListInstanceConfigs(parent)) {
-      EXPECT_STATUS_OK(instance_config);
-      if (!instance_config) break;
-      names.push_back(instance_config->name());
+    for (auto const& config : client_.ListInstanceConfigs(parent)) {
+      EXPECT_STATUS_OK(config);
+      if (!config) break;
+      names.push_back(config->name());
     }
     return names;
   }();
-  ASSERT_FALSE(instance_config_names.empty());
+  ASSERT_FALSE(config_names.empty());
 
   // Use the name of the first element from the list of instance configs.
-  auto instance_config = client_.GetInstanceConfig(instance_config_names[0]);
-  EXPECT_THAT(instance_config->name(), HasSubstr(project_id));
+  auto config = client_.GetInstanceConfig(config_names[0]);
+  ASSERT_STATUS_OK(config);
+  EXPECT_THAT(config->name(), HasSubstr(project_id));
   EXPECT_EQ(
-      1, std::count(instance_config_names.begin(), instance_config_names.end(),
-                    instance_config->name()));
+      1, std::count(config_names.begin(), config_names.end(), config->name()));
+}
+
+TEST_F(InstanceAdminClientTest, InstanceConfigUserManaged) {
+  Project project(ProjectId());
+  auto base_config_name = spanner_testing::PickInstanceConfig(
+      project, generator_,
+      [](google::spanner::admin::instance::v1::InstanceConfig const& config) {
+        return !config.optional_replicas().empty();
+      });
+  ASSERT_THAT(base_config_name, Not(IsEmpty()));
+  auto base_config = client_.GetInstanceConfig(base_config_name);
+  ASSERT_THAT(base_config, IsOk());
+  if (Emulator()) {
+    EXPECT_THAT(base_config->optional_replicas(), IsEmpty());
+    GTEST_SKIP() << "emulator does not support user-configurable instances";
+  }
+
+  std::string config_id = spanner_testing::RandomInstanceConfigName(generator_);
+  google::spanner::admin::instance::v1::CreateInstanceConfigRequest creq;
+  creq.set_parent(project.FullName());
+  creq.set_instance_config_id(config_id);
+  auto* creq_config = creq.mutable_instance_config();
+  creq_config->set_name(project.FullName() + "/instanceConfigs/" + config_id);
+  creq_config->set_display_name("original display name");
+  // The user-managed instance config must contain all the replicas
+  // of the base config plus at least one of the optional replicas.
+  EXPECT_THAT(base_config->replicas(), Not(IsEmpty()));
+  *creq_config->mutable_replicas() = base_config->replicas();
+  EXPECT_THAT(base_config->optional_replicas(), Not(IsEmpty()));
+  for (auto const& replica : base_config->optional_replicas()) {
+    *creq_config->add_replicas() = replica;
+  }
+  creq_config->set_base_config(base_config->name());
+  creq_config->mutable_labels()->insert({"key", "original-value"});
+  *creq_config->mutable_leader_options() = base_config->leader_options();
+  creq.set_validate_only(false);
+  auto user_config = client_.CreateInstanceConfig(creq).get();
+
+  // If the CreateInstanceConfig() failed with a constraint violation,
+  // presumably because of an optional replica we added, just declare
+  // success. It isn't worth trying to encode constraint knowledge here.
+  if (user_config.status().code() == StatusCode::kFailedPrecondition &&
+      absl::StrContains(user_config.status().message(),
+                        "violates constraint")) {
+    return;
+  }
+
+  ASSERT_THAT(user_config, IsOk());
+  EXPECT_THAT(user_config->name(), EndsWith(config_id));
+  EXPECT_THAT(user_config->display_name(), Eq("original display name"));
+  EXPECT_THAT(user_config->replicas(), Not(IsEmpty()));
+  EXPECT_THAT(user_config->base_config(), Eq(base_config->name()));
+  EXPECT_THAT(user_config->labels().at("key"), Eq("original-value"));
+
+  std::vector<std::string> config_names;
+  auto const parent = project.FullName();
+  for (auto const& config : client_.ListInstanceConfigs(parent)) {
+    EXPECT_THAT(config, IsOk());
+    if (!config) break;
+    config_names.push_back(config->name());
+    if (config->name() == user_config->name()) {
+      EXPECT_EQ(
+          config->config_type(),
+          google::spanner::admin::instance::v1::InstanceConfig::USER_MANAGED);
+    }
+  }
+  EXPECT_EQ(1, std::count(config_names.begin(), config_names.end(),
+                          user_config->name()));
+
+  google::spanner::admin::instance::v1::UpdateInstanceConfigRequest ureq;
+  auto* ureq_config = ureq.mutable_instance_config();
+  ureq_config->set_name(user_config->name());
+  ureq_config->set_display_name("updated display name");
+  ureq.mutable_update_mask()->add_paths("display_name");
+  ureq_config->mutable_labels()->insert({"key", "updated-value"});
+  ureq.mutable_update_mask()->add_paths("labels");
+  ureq_config->set_etag(user_config->etag());
+  ureq.set_validate_only(false);
+  auto updated_instance_config = client_.UpdateInstanceConfig(ureq).get();
+  EXPECT_THAT(updated_instance_config, IsOk());
+  if (updated_instance_config) {
+    EXPECT_THAT(updated_instance_config->display_name(),
+                Eq("updated display name"));
+    EXPECT_THAT(updated_instance_config->labels().at("key"),
+                Eq("updated-value"));
+  }
+
+  if (Emulator()) {
+    // there is a quota on CreateInstance requests against production, so only
+    // create an instance to verify the config when running against the
+    // emulator.
+    std::string instance_id = spanner_testing::RandomInstanceName(generator_);
+    Instance in(project, instance_id);
+    auto instance =
+        client_
+            .CreateInstance(
+                CreateInstanceRequestBuilder(in, user_config->name())
+                    .SetDisplayName("test-display-name")
+                    .SetProcessingUnits(100)
+                    .SetLabels({{"label-key", "label-value"}})
+                    .Build())
+            .get();
+    EXPECT_THAT(instance, IsOk());
+    if (instance) {
+      EXPECT_EQ(instance->name(), in.FullName());
+      EXPECT_EQ(instance->config(), user_config->name());
+      EXPECT_EQ(instance->display_name(), "test-display-name");
+      EXPECT_EQ(instance->processing_units(), 100);
+      EXPECT_EQ(instance->labels().at("label-key"), "label-value");
+      EXPECT_THAT(client_.DeleteInstance(instance->name()), IsOk());
+    }
+  }
+
+  EXPECT_THAT(client_.DeleteInstanceConfig(user_config->name()), IsOk());
 }
 
 TEST_F(InstanceAdminClientTest, InstanceIam) {
@@ -228,17 +357,13 @@ TEST_F(InstanceAdminClientTest, InstanceIam) {
   ASSERT_FALSE(in.project_id().empty());
   ASSERT_FALSE(in.instance_id().empty());
 
-  ASSERT_FALSE(internal::GetEnv("GOOGLE_CLOUD_CPP_SPANNER_TEST_SERVICE_ACCOUNT")
-                   .value_or("")
-                   .empty());
-
   auto actual_policy = client_.GetIamPolicy(in.FullName());
-  if (Emulator() &&
-      actual_policy.status().code() == StatusCode::kUnimplemented) {
+  if (Emulator()) {
+    EXPECT_THAT(actual_policy, StatusIs(StatusCode::kUnimplemented));
     GTEST_SKIP() << "emulator does not support IAM policies";
   }
   ASSERT_STATUS_OK(actual_policy);
-  EXPECT_FALSE(actual_policy->etag().empty());
+  EXPECT_THAT(actual_policy->etag(), Not(IsEmpty()));
 
   if (RunSlowInstanceTests()) {
     // Set the policy to the existing value of the policy. While this
@@ -246,14 +371,14 @@ TEST_F(InstanceAdminClientTest, InstanceIam) {
     auto updated_policy = client_.SetIamPolicy(in.FullName(), *actual_policy);
     ASSERT_THAT(updated_policy, AnyOf(IsOk(), StatusIs(StatusCode::kAborted)));
     if (updated_policy) {
-      EXPECT_FALSE(updated_policy->etag().empty());
+      EXPECT_THAT(updated_policy->etag(), Not(IsEmpty()));
     }
 
     // Repeat the test using the OCC API.
     updated_policy = client_.SetIamPolicy(
         in.FullName(), [](google::iam::v1::Policy p) { return p; });
     ASSERT_STATUS_OK(updated_policy);
-    EXPECT_FALSE(updated_policy->etag().empty());
+    EXPECT_THAT(updated_policy->etag(), Not(IsEmpty()));
   }
 
   auto actual = client_.TestIamPermissions(

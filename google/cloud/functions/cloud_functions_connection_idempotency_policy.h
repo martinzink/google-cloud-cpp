@@ -19,63 +19,23 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_FUNCTIONS_CLOUD_FUNCTIONS_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_FUNCTIONS_CLOUD_FUNCTIONS_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/functions/v1/functions.grpc.pb.h>
-#include <memory>
+#include "google/cloud/functions/v1/cloud_functions_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace functions {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class CloudFunctionsServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~CloudFunctionsServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// functions_v1::MakeDefaultCloudFunctionsServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::functions_v1::
+    MakeDefaultCloudFunctionsServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<CloudFunctionsServiceConnectionIdempotencyPolicy>
-  clone() const = 0;
-
-  virtual google::cloud::Idempotency ListFunctions(
-      google::cloud::functions::v1::ListFunctionsRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetFunction(
-      google::cloud::functions::v1::GetFunctionRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency CreateFunction(
-      google::cloud::functions::v1::CreateFunctionRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency UpdateFunction(
-      google::cloud::functions::v1::UpdateFunctionRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteFunction(
-      google::cloud::functions::v1::DeleteFunctionRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency CallFunction(
-      google::cloud::functions::v1::CallFunctionRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency GenerateUploadUrl(
-      google::cloud::functions::v1::GenerateUploadUrlRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency GenerateDownloadUrl(
-      google::cloud::functions::v1::GenerateDownloadUrlRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency TestIamPermissions(
-      google::iam::v1::TestIamPermissionsRequest const& request) = 0;
-};
-
-std::unique_ptr<CloudFunctionsServiceConnectionIdempotencyPolicy>
-MakeDefaultCloudFunctionsServiceConnectionIdempotencyPolicy();
+/// @deprecated Use
+/// functions_v1::CloudFunctionsServiceConnectionIdempotencyPolicy directly.
+using ::google::cloud::functions_v1::
+    CloudFunctionsServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace functions

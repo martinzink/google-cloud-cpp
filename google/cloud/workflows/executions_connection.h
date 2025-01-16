@@ -19,76 +19,35 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_EXECUTIONS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_EXECUTIONS_CONNECTION_H
 
+#include "google/cloud/workflows/executions/v1/executions_connection.h"
 #include "google/cloud/workflows/executions_connection_idempotency_policy.h"
-#include "google/cloud/workflows/internal/executions_retry_traits.h"
-#include "google/cloud/workflows/internal/executions_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace workflows {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ExecutionsRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    workflows_internal::ExecutionsRetryTraits>;
+/// @deprecated Use workflows_executions_v1::MakeExecutionsConnection directly.
+using ::google::cloud::workflows_executions_v1::MakeExecutionsConnection;
 
-using ExecutionsLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        workflows_internal::ExecutionsRetryTraits>;
+/// @deprecated Use workflows_executions_v1::ExecutionsConnection directly.
+using ::google::cloud::workflows_executions_v1::ExecutionsConnection;
 
-using ExecutionsLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        workflows_internal::ExecutionsRetryTraits>;
+/// @deprecated Use
+/// workflows_executions_v1::ExecutionsLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::workflows_executions_v1::
+    ExecutionsLimitedErrorCountRetryPolicy;
 
-class ExecutionsConnection {
- public:
-  virtual ~ExecutionsConnection() = 0;
+/// @deprecated Use workflows_executions_v1::ExecutionsLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::workflows_executions_v1::
+    ExecutionsLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::workflows::executions::v1::Execution>
-  ListExecutions(
-      google::cloud::workflows::executions::v1::ListExecutionsRequest request);
-
-  virtual StatusOr<google::cloud::workflows::executions::v1::Execution>
-  CreateExecution(
-      google::cloud::workflows::executions::v1::CreateExecutionRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::workflows::executions::v1::Execution>
-  GetExecution(
-      google::cloud::workflows::executions::v1::GetExecutionRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::workflows::executions::v1::Execution>
-  CancelExecution(
-      google::cloud::workflows::executions::v1::CancelExecutionRequest const&
-          request);
-};
-
-std::shared_ptr<ExecutionsConnection> MakeExecutionsConnection(
-    Options options = {});
+/// @deprecated Use workflows_executions_v1::ExecutionsRetryPolicy directly.
+using ::google::cloud::workflows_executions_v1::ExecutionsRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace workflows
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace workflows_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<workflows::ExecutionsConnection> MakeExecutionsConnection(
-    std::shared_ptr<ExecutionsStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace workflows_internal
 }  // namespace cloud
 }  // namespace google
 

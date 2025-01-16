@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/assuredworkloads/assured_workloads_client.h"
+//! [all]
+#include "google/cloud/assuredworkloads/v1/assured_workloads_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
+#include <string>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -22,19 +24,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace assuredworkloads = ::google::cloud::assuredworkloads;
+  namespace assuredworkloads = ::google::cloud::assuredworkloads_v1;
   auto client = assuredworkloads::AssuredWorkloadsServiceClient(
       assuredworkloads::MakeAssuredWorkloadsServiceConnection());
   auto const parent =
       std::string("organizations/") + argv[1] + "/locations/" + argv[2];
 
   for (auto w : client.ListWorkloads(parent)) {
-    if (!w) throw std::runtime_error(w.status().message());
+    if (!w) throw std::move(w).status();
     std::cout << w->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

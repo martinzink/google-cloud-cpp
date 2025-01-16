@@ -20,24 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BINARYAUTHORIZATION_MOCKS_MOCK_SYSTEM_POLICY_V1_CONNECTION_H
 
 #include "google/cloud/binaryauthorization/system_policy_v1_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/binaryauthorization/v1/mocks/mock_system_policy_v1_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in binaryauthorization_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace binaryauthorization_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockSystemPolicyV1Connection
-    : public binaryauthorization::SystemPolicyV1Connection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::binaryauthorization::v1::Policy>, GetSystemPolicy,
-      (google::cloud::binaryauthorization::v1::GetSystemPolicyRequest const&
-           request),
-      (override));
-};
+/// @deprecated Use binaryauthorization_v1_mocks::MockSystemPolicyV1Connection
+/// directly.
+using ::google::cloud::binaryauthorization_v1_mocks::
+    MockSystemPolicyV1Connection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace binaryauthorization_mocks

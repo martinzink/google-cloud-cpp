@@ -1,4 +1,4 @@
-//   Copyright 2017 Google Inc.
+//   Copyright 2017 Google LLC
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -22,11 +22,20 @@ namespace bigtable {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
-using ::google::cloud::testing_util::chrono_literals::operator"" _h;
-using ::google::cloud::testing_util::chrono_literals::operator"" _min;
-using ::google::cloud::testing_util::chrono_literals::operator"" _s;
-using ::google::cloud::testing_util::chrono_literals::operator"" _us;
-using ::google::cloud::testing_util::chrono_literals::operator"" _ns;
+using ::google::cloud::testing_util::chrono_literals::operator""_min;
+using ::google::cloud::testing_util::chrono_literals::operator""_h;
+using ::google::cloud::testing_util::chrono_literals::operator""_s;
+using ::google::cloud::testing_util::chrono_literals::operator""_us;
+using ::google::cloud::testing_util::chrono_literals::operator""_ns;
+
+TEST(GcRule, Equality) {
+  auto gc1 = GcRule::MaxNumVersions(3);
+  auto gc2 = GcRule::MaxAge(1_h);
+  EXPECT_NE(gc1, gc2);
+
+  gc2 = gc1;
+  EXPECT_EQ(gc1, gc2);
+}
 
 TEST(GcRule, MaxNumVersions) {
   auto proto = GcRule::MaxNumVersions(3).as_proto();
@@ -119,6 +128,16 @@ TEST(GcRule, UnionNone) {
   auto proto = GC::Union().as_proto();
   EXPECT_TRUE(proto.has_union_());
   EXPECT_EQ(0, proto.union_().rules_size());
+}
+
+TEST(ColumnFamilyModification, Equality) {
+  using M = ColumnFamilyModification;
+  auto m1 = M::Drop("m1");
+  auto m2 = M::Drop("m2");
+  EXPECT_NE(m1, m2);
+
+  m2 = m1;
+  EXPECT_EQ(m1, m2);
 }
 
 TEST(ColumnFamilyModification, Create) {

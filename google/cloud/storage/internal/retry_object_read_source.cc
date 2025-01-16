@@ -13,14 +13,23 @@
 // limitations under the License.
 
 #include "google/cloud/storage/internal/retry_object_read_source.h"
-#include "google/cloud/log.h"
+#include "google/cloud/internal/make_status.h"
+#include "google/cloud/internal/opentelemetry.h"
+#include <algorithm>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace google {
 namespace cloud {
 namespace storage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
+
+using ::google::cloud::internal::OptionsSpan;
 
 std::uint64_t InitialOffset(OffsetDirection const& offset_direction,
                             ReadObjectRangeRequest const& request) {
@@ -31,42 +40,46 @@ std::uint64_t InitialOffset(OffsetDirection const& offset_direction,
 }
 
 RetryObjectReadSource::RetryObjectReadSource(
-    std::shared_ptr<RetryClient> client, ReadObjectRangeRequest request,
-    std::unique_ptr<ObjectReadSource> child,
+    ReadSourceFactory factory,
+    google::cloud::internal::ImmutableOptions options,
+    ReadObjectRangeRequest request, std::unique_ptr<ObjectReadSource> child,
     std::unique_ptr<RetryPolicy> retry_policy,
-    std::unique_ptr<BackoffPolicy> backoff_policy)
-    : client_(std::move(client)),
+    std::unique_ptr<BackoffPolicy> backoff_policy,
+    std::function<void(std::chrono::milliseconds)> backoff)
+    : factory_(std::move(factory)),
+      options_(std::move(options)),
       request_(std::move(request)),
       child_(std::move(child)),
       retry_policy_prototype_(std::move(retry_policy)),
       backoff_policy_prototype_(std::move(backoff_policy)),
       offset_direction_(request_.HasOption<ReadLast>() ? kFromEnd
                                                        : kFromBeginning),
-      current_offset_(InitialOffset(offset_direction_, request_)) {}
+      current_offset_(InitialOffset(offset_direction_, request_)),
+      backoff_(google::cloud::internal::MakeTracedSleeper(
+          *options_, std::move(backoff), "Backoff")) {}
+
+RetryObjectReadSource::RetryObjectReadSource(
+    ReadSourceFactory factory,
+    google::cloud::internal::ImmutableOptions options,
+    ReadObjectRangeRequest request, std::unique_ptr<ObjectReadSource> child,
+    std::unique_ptr<RetryPolicy> retry_policy,
+    std::unique_ptr<BackoffPolicy> backoff_policy)
+    : RetryObjectReadSource(
+          std::move(factory), std::move(options), std::move(request),
+          std::move(child), std::move(retry_policy), std::move(backoff_policy),
+          [](std::chrono::milliseconds d) { std::this_thread::sleep_for(d); }) {
+}
 
 StatusOr<ReadSourceResult> RetryObjectReadSource::Read(char* buf,
                                                        std::size_t n) {
   if (!child_) {
-    return Status(StatusCode::kFailedPrecondition, "Stream is not open");
+    return google::cloud::internal::FailedPreconditionError(
+        "Stream is not open", GCP_ERROR_INFO());
   }
-  // This lambda handles a successful read, avoiding some repetition below.
-  auto handle_result = [this](StatusOr<ReadSourceResult> const& r) {
-    if (!r) {
-      GCP_LOG(INFO) << "current_offset=" << current_offset_
-                    << ", status=" << r.status();
-      return false;
-    }
-    if (r->generation) generation_ = *r->generation;
-    if (offset_direction_ == kFromEnd) {
-      current_offset_ -= r->bytes_received;
-    } else {
-      current_offset_ += r->bytes_received;
-    }
-    return true;
-  };
+
   // Read some data, if successful return immediately, saving some allocations.
   auto result = child_->Read(buf, n);
-  if (handle_result(result)) return result;
+  if (HandleResult(result)) return result;
   bool has_emulator_instructions = false;
   std::string instructions;
   if (request_.HasOption<CustomHeader>()) {
@@ -79,19 +92,23 @@ StatusOr<ReadSourceResult> RetryObjectReadSource::Read(char* buf,
   auto backoff_policy = backoff_policy_prototype_->clone();
   auto retry_policy = retry_policy_prototype_->clone();
   int counter = 0;
-  for (; !result && retry_policy->OnFailure(result.status());
-       std::this_thread::sleep_for(backoff_policy->OnCompletion()),
-       result = child_->Read(buf, n)) {
+  while (!result && retry_policy->OnFailure(result.status())) {
     // A Read() request failed, most likely that means the connection failed or
     // stalled. The current child might no longer be usable, so we will try to
     // create a new one and replace it. Should that fail, the retry policy would
     // already be exhausted, so we should fail this operation too.
     child_.reset();
 
+    // The first attempt does not get to backoff.  The previous download was
+    // working fine, so whatever caused the download to stop may not be an
+    // overload condition.
+    if (++counter != 1) {
+      backoff_(backoff_policy->OnCompletion());
+    }
     if (has_emulator_instructions) {
       request_.set_multiple_options(
           CustomHeader("x-goog-emulator-instructions",
-                       instructions + "/retry-" + std::to_string(++counter)));
+                       instructions + "/retry-" + std::to_string(counter)));
     }
 
     if (offset_direction_ == kFromEnd) {
@@ -102,25 +119,80 @@ StatusOr<ReadSourceResult> RetryObjectReadSource::Read(char* buf,
     if (generation_) {
       request_.set_option(Generation(*generation_));
     }
-    auto new_child =
-        client_->ReadObjectNotWrapped(request_, *retry_policy, *backoff_policy);
-    if (!new_child) {
-      // We've exhausted the retry policy while trying to create the child.
-      // There is nothing else we can do, return immediately.
-      return new_child.status();
+    auto status = MakeChild(*retry_policy, *backoff_policy);
+    if (!status.ok()) {
+      result = status;
+      continue;
     }
-    child_ = std::move(*new_child);
+    result = child_->Read(buf, n);
   }
-  if (handle_result(result)) return result;
+  if (HandleResult(result)) return result;
   // We have exhausted the retry policy, return the error.
   auto status = std::move(result).status();
-  std::stringstream os;
+  std::ostringstream os;
   if (internal::StatusTraits::IsPermanentFailure(status)) {
     os << "Permanent error in Read(): " << status.message();
   } else {
     os << "Retry policy exhausted in Read(): " << status.message();
   }
-  return Status(status.code(), std::move(os).str());
+  return Status(status.code(), std::move(os).str(), status.error_info());
+}
+
+bool RetryObjectReadSource::HandleResult(StatusOr<ReadSourceResult> const& r) {
+  if (!r) return false;
+  if (r->generation) generation_ = r->generation;
+  if (r->transformation.value_or("") == "gunzipped") is_gunzipped_ = true;
+  // Since decompressive transcoding does not respect `ReadLast()` we need
+  // to ensure the offset is incremented, so the discard loop works.
+  if (is_gunzipped_) offset_direction_ = kFromBeginning;
+  if (offset_direction_ == kFromEnd) {
+    current_offset_ -= r->bytes_received;
+  } else {
+    current_offset_ += r->bytes_received;
+  }
+  return true;
+}
+
+Status RetryObjectReadSource::MakeChild(RetryPolicy& retry_policy,
+                                        BackoffPolicy& backoff_policy) {
+  auto on_success = [this](std::unique_ptr<ObjectReadSource> child) {
+    child_ = std::move(child);
+    return Status{};
+  };
+
+  OptionsSpan const span(options_);
+  auto child = factory_(request_, retry_policy, backoff_policy);
+  if (!child) return std::move(child).status();
+  if (!is_gunzipped_) return on_success(*std::move(child));
+
+  // Downloads under decompressive transcoding do not respect the Read-Range
+  // header. Restarting the download effectively restarts the read from the
+  // first byte.
+  child = ReadDiscard(*std::move(child), current_offset_);
+  if (child) return on_success(*std::move(child));
+  return std::move(child).status();
+}
+
+StatusOr<std::unique_ptr<ObjectReadSource>> RetryObjectReadSource::ReadDiscard(
+    std::unique_ptr<ObjectReadSource> child, std::int64_t count) const {
+  // Discard data until we are at the same offset as before.
+  std::vector<char> buffer(128 * 1024);
+  while (count > 0) {
+    auto const read_size =
+        (std::min)(static_cast<std::int64_t>(buffer.size()), count);
+    auto result =
+        child->Read(buffer.data(), static_cast<std::size_t>(read_size));
+    if (!result) return std::move(result).status();
+    count -= result->bytes_received;
+    if (result->response.status_code != HttpStatusCode::kContinue &&
+        count != 0) {
+      return google::cloud::internal::InternalError(
+          "could not read back to previous offset (" +
+              std::to_string(current_offset_) + ")",
+          GCP_ERROR_INFO());
+    }
+  }
+  return child;
 }
 
 }  // namespace internal

@@ -20,72 +20,33 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BILLING_BUDGET_CONNECTION_H
 
 #include "google/cloud/billing/budget_connection_idempotency_policy.h"
-#include "google/cloud/billing/internal/budget_retry_traits.h"
-#include "google/cloud/billing/internal/budget_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/billing/budgets/v1/budget_connection.h"
 
 namespace google {
 namespace cloud {
 namespace billing {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using BudgetServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        billing_internal::BudgetServiceRetryTraits>;
+/// @deprecated Use billing_budgets_v1::MakeBudgetServiceConnection directly.
+using ::google::cloud::billing_budgets_v1::MakeBudgetServiceConnection;
 
-using BudgetServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        billing_internal::BudgetServiceRetryTraits>;
+/// @deprecated Use billing_budgets_v1::BudgetServiceConnection directly.
+using ::google::cloud::billing_budgets_v1::BudgetServiceConnection;
 
-using BudgetServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        billing_internal::BudgetServiceRetryTraits>;
+/// @deprecated Use
+/// billing_budgets_v1::BudgetServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::billing_budgets_v1::
+    BudgetServiceLimitedErrorCountRetryPolicy;
 
-class BudgetServiceConnection {
- public:
-  virtual ~BudgetServiceConnection() = 0;
+/// @deprecated Use billing_budgets_v1::BudgetServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::billing_budgets_v1::BudgetServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::billing::budgets::v1::Budget> CreateBudget(
-      google::cloud::billing::budgets::v1::CreateBudgetRequest const& request);
-
-  virtual StatusOr<google::cloud::billing::budgets::v1::Budget> UpdateBudget(
-      google::cloud::billing::budgets::v1::UpdateBudgetRequest const& request);
-
-  virtual StatusOr<google::cloud::billing::budgets::v1::Budget> GetBudget(
-      google::cloud::billing::budgets::v1::GetBudgetRequest const& request);
-
-  virtual StreamRange<google::cloud::billing::budgets::v1::Budget> ListBudgets(
-      google::cloud::billing::budgets::v1::ListBudgetsRequest request);
-
-  virtual Status DeleteBudget(
-      google::cloud::billing::budgets::v1::DeleteBudgetRequest const& request);
-};
-
-std::shared_ptr<BudgetServiceConnection> MakeBudgetServiceConnection(
-    Options options = {});
+/// @deprecated Use billing_budgets_v1::BudgetServiceRetryPolicy directly.
+using ::google::cloud::billing_budgets_v1::BudgetServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace billing
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace billing_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<billing::BudgetServiceConnection> MakeBudgetServiceConnection(
-    std::shared_ptr<BudgetServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace billing_internal
 }  // namespace cloud
 }  // namespace google
 

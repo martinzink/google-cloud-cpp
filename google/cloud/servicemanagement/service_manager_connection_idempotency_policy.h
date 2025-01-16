@@ -19,86 +19,23 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICEMANAGEMENT_SERVICE_MANAGER_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICEMANAGEMENT_SERVICE_MANAGER_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/api/servicemanagement/v1/servicemanager.grpc.pb.h>
-#include <memory>
+#include "google/cloud/servicemanagement/v1/service_manager_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace servicemanagement {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class ServiceManagerConnectionIdempotencyPolicy {
- public:
-  virtual ~ServiceManagerConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// servicemanagement_v1::MakeDefaultServiceManagerConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::servicemanagement_v1::
+    MakeDefaultServiceManagerConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<ServiceManagerConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency ListServices(
-      google::api::servicemanagement::v1::ListServicesRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetService(
-      google::api::servicemanagement::v1::GetServiceRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency CreateService(
-      google::api::servicemanagement::v1::CreateServiceRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency DeleteService(
-      google::api::servicemanagement::v1::DeleteServiceRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency UndeleteService(
-      google::api::servicemanagement::v1::UndeleteServiceRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency ListServiceConfigs(
-      google::api::servicemanagement::v1::ListServiceConfigsRequest
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetServiceConfig(
-      google::api::servicemanagement::v1::GetServiceConfigRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency CreateServiceConfig(
-      google::api::servicemanagement::v1::CreateServiceConfigRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency SubmitConfigSource(
-      google::api::servicemanagement::v1::SubmitConfigSourceRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency ListServiceRollouts(
-      google::api::servicemanagement::v1::ListServiceRolloutsRequest
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetServiceRollout(
-      google::api::servicemanagement::v1::GetServiceRolloutRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency CreateServiceRollout(
-      google::api::servicemanagement::v1::CreateServiceRolloutRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency GenerateConfigReport(
-      google::api::servicemanagement::v1::GenerateConfigReportRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency EnableService(
-      google::api::servicemanagement::v1::EnableServiceRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency DisableService(
-      google::api::servicemanagement::v1::DisableServiceRequest const&
-          request) = 0;
-};
-
-std::unique_ptr<ServiceManagerConnectionIdempotencyPolicy>
-MakeDefaultServiceManagerConnectionIdempotencyPolicy();
+/// @deprecated Use
+/// servicemanagement_v1::ServiceManagerConnectionIdempotencyPolicy directly.
+using ::google::cloud::servicemanagement_v1::
+    ServiceManagerConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicemanagement

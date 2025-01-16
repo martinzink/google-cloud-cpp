@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/billing/cloud_billing_client.h"
+//! [all]
+#include "google/cloud/billing/v1/cloud_billing_client.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 1) {
@@ -22,17 +22,18 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace billing = ::google::cloud::billing;
+  namespace billing = ::google::cloud::billing_v1;
   auto client =
       billing::CloudBillingClient(billing::MakeCloudBillingConnection());
 
   for (auto a : client.ListBillingAccounts()) {
-    if (!a) throw std::runtime_error(a.status().message());
+    if (!a) throw std::move(a).status();
     std::cout << a->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

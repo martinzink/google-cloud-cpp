@@ -19,61 +19,20 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_MOCKS_MOCK_WORKFLOW_TEMPLATE_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_MOCKS_MOCK_WORKFLOW_TEMPLATE_CONNECTION_H
 
+#include "google/cloud/dataproc/v1/mocks/mock_workflow_template_connection.h"
 #include "google/cloud/dataproc/workflow_template_connection.h"
-#include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in dataproc_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace dataproc_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockWorkflowTemplateServiceConnection
-    : public dataproc::WorkflowTemplateServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::dataproc::v1::WorkflowTemplate>,
-              CreateWorkflowTemplate,
-              (google::cloud::dataproc::v1::CreateWorkflowTemplateRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::dataproc::v1::WorkflowTemplate>,
-      GetWorkflowTemplate,
-      (google::cloud::dataproc::v1::GetWorkflowTemplateRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::dataproc::v1::WorkflowMetadata>>,
-      InstantiateWorkflowTemplate,
-      (google::cloud::dataproc::v1::InstantiateWorkflowTemplateRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::dataproc::v1::WorkflowMetadata>>,
-              InstantiateInlineWorkflowTemplate,
-              (google::cloud::dataproc::v1::
-                   InstantiateInlineWorkflowTemplateRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::dataproc::v1::WorkflowTemplate>,
-              UpdateWorkflowTemplate,
-              (google::cloud::dataproc::v1::UpdateWorkflowTemplateRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(
-      StreamRange<google::cloud::dataproc::v1::WorkflowTemplate>,
-      ListWorkflowTemplates,
-      (google::cloud::dataproc::v1::ListWorkflowTemplatesRequest request),
-      (override));
-
-  MOCK_METHOD(Status, DeleteWorkflowTemplate,
-              (google::cloud::dataproc::v1::DeleteWorkflowTemplateRequest const&
-                   request),
-              (override));
-};
+/// @deprecated Use dataproc_v1_mocks::MockWorkflowTemplateServiceConnection
+/// directly.
+using ::google::cloud::dataproc_v1_mocks::MockWorkflowTemplateServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc_mocks

@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "google/cloud/internal/oauth2_authorized_user_credentials.h"
+#include "google/cloud/internal/make_status.h"
+#include "google/cloud/internal/oauth2_universe_domain.h"
 #include <nlohmann/json.hpp>
 
 namespace google {
@@ -25,10 +27,10 @@ StatusOr<AuthorizedUserCredentialsInfo> ParseAuthorizedUserCredentials(
     std::string const& default_token_uri) {
   auto credentials = nlohmann::json::parse(content, nullptr, false);
   if (credentials.is_discarded()) {
-    return Status(
-        StatusCode::kInvalidArgument,
+    return internal::InvalidArgumentError(
         "Invalid AuthorizedUserCredentials, parsing failed on data from " +
-            source);
+            source,
+        GCP_ERROR_INFO());
   }
 
   std::string const client_id_key = "client_id";
@@ -37,18 +39,22 @@ StatusOr<AuthorizedUserCredentialsInfo> ParseAuthorizedUserCredentials(
   for (auto const& key :
        {client_id_key, client_secret_key, refresh_token_key}) {
     if (credentials.count(key) == 0) {
-      return Status(StatusCode::kInvalidArgument,
-                    "Invalid AuthorizedUserCredentials, the " +
-                        std::string(key) +
-                        " field is missing on data loaded from " + source);
+      return internal::InvalidArgumentError(
+          "Invalid AuthorizedUserCredentials, the " + std::string(key) +
+              " field is missing on data loaded from " + source,
+          GCP_ERROR_INFO());
     }
     if (credentials.value(key, "").empty()) {
-      return Status(StatusCode::kInvalidArgument,
-                    "Invalid AuthorizedUserCredentials, the " +
-                        std::string(key) +
-                        " field is empty on data loaded from " + source);
+      return internal::InvalidArgumentError(
+          "Invalid AuthorizedUserCredentials, the " + std::string(key) +
+              " field is empty on data loaded from " + source,
+          GCP_ERROR_INFO());
     }
   }
+
+  auto universe_domain = GetUniverseDomainFromCredentialsJson(credentials);
+  if (!universe_domain.ok()) return std::move(universe_domain).status();
+
   return AuthorizedUserCredentialsInfo{
       credentials.value(client_id_key, ""),
       credentials.value(client_secret_key, ""),
@@ -56,73 +62,54 @@ StatusOr<AuthorizedUserCredentialsInfo> ParseAuthorizedUserCredentials(
       // Some credential formats (e.g. gcloud's ADC file) don't contain a
       // "token_uri" attribute in the JSON object.  In this case, we try using
       // the default value.
-      credentials.value("token_uri", default_token_uri)};
+      credentials.value("token_uri", default_token_uri),
+      *std::move(universe_domain)};
 }
 
-StatusOr<RefreshingCredentialsWrapper::TemporaryToken>
-ParseAuthorizedUserRefreshResponse(rest_internal::RestResponse& response,
-                                   std::chrono::system_clock::time_point now) {
+StatusOr<AccessToken> ParseAuthorizedUserRefreshResponse(
+    rest_internal::RestResponse& response,
+    std::chrono::system_clock::time_point now) {
   auto status_code = response.StatusCode();
   auto payload = rest_internal::ReadAll(std::move(response).ExtractPayload());
   if (!payload.ok()) return std::move(payload).status();
   auto access_token = nlohmann::json::parse(*payload, nullptr, false);
   if (access_token.is_discarded() || access_token.count("access_token") == 0 ||
       access_token.count("expires_in") == 0 ||
-      access_token.count("id_token") == 0 ||
       access_token.count("token_type") == 0) {
     auto error_payload =
         *payload +
         "Could not find all required fields in response (access_token,"
-        " id_token, expires_in, token_type).";
+        " expires_in, token_type) while trying to obtain an access"
+        " token for service account credentials.";
     return AsStatus(status_code, error_payload);
   }
-  std::string header_value = access_token.value("token_type", "");
-  header_value += ' ';
-  header_value += access_token.value("access_token", "");
-  auto expires_in =
-      std::chrono::seconds(access_token.value("expires_in", int(0)));
-  auto new_expiration = now + expires_in;
-  return RefreshingCredentialsWrapper::TemporaryToken{
-      std::make_pair("Authorization", std::move(header_value)), new_expiration};
+  auto expires_in = std::chrono::seconds(access_token.value("expires_in", 0));
+  return AccessToken{access_token.value("access_token", ""), now + expires_in};
 }
 
 AuthorizedUserCredentials::AuthorizedUserCredentials(
     AuthorizedUserCredentialsInfo info, Options options,
-    std::unique_ptr<rest_internal::RestClient> rest_client,
-    CurrentTimeFn current_time_fn)
+    HttpClientFactory client_factory)
     : info_(std::move(info)),
       options_(std::move(options)),
-      current_time_fn_(std::move(current_time_fn)),
-      rest_client_(std::move(rest_client)) {
-  if (!rest_client_) {
-    rest_client_ =
-        rest_internal::MakeDefaultRestClient(info_.token_uri, options_);
-  }
-}
+      client_factory_(std::move(client_factory)) {}
 
-StatusOr<std::pair<std::string, std::string>>
-AuthorizedUserCredentials::AuthorizationHeader() {
-  std::unique_lock<std::mutex> lock(mu_);
-  return refreshing_creds_.AuthorizationHeader([this] { return Refresh(); });
-}
-
-StatusOr<RefreshingCredentialsWrapper::TemporaryToken>
-AuthorizedUserCredentials::Refresh() {
+StatusOr<AccessToken> AuthorizedUserCredentials::GetToken(
+    std::chrono::system_clock::time_point tp) {
   rest_internal::RestRequest request;
+  request.SetPath(info_.token_uri);
   request.AddHeader("content-type", "application/x-www-form-urlencoded");
   std::vector<std::pair<std::string, std::string>> form_data;
   form_data.emplace_back("grant_type", "refresh_token");
   form_data.emplace_back("client_id", info_.client_id);
   form_data.emplace_back("client_secret", info_.client_secret);
   form_data.emplace_back("refresh_token", info_.refresh_token);
-  StatusOr<std::unique_ptr<rest_internal::RestResponse>> response =
-      rest_client_->Post(request, form_data);
+  auto client = client_factory_(options_);
+  rest_internal::RestContext unused;
+  auto response = client->Post(unused, request, form_data);
   if (!response.ok()) return std::move(response).status();
-  std::unique_ptr<rest_internal::RestResponse> real_response =
-      std::move(response.value());
-  if (real_response->StatusCode() >= 300)
-    return AsStatus(std::move(*real_response));
-  return ParseAuthorizedUserRefreshResponse(*real_response, current_time_fn_());
+  if (IsHttpError(**response)) return AsStatus(std::move(**response));
+  return ParseAuthorizedUserRefreshResponse(**response, tp);
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

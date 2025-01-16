@@ -12,50 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//bazel:gapic.bzl", "cc_gapic_library")
+
 package(default_visibility = ["//visibility:private"])
 
 licenses(["notice"])  # Apache 2.0
 
-SOURCE_GLOB = "**/*.cc"
+service_dirs = [
+    "",
+    "dashboard/v1/",
+    "metricsscope/v1/",
+    "v3/",
+]
 
-MOCK_SOURCE_GLOB = "mocks/*.cc"
+googleapis_deps = [
+    "@com_google_googleapis//google/monitoring/dashboard/v1:dashboard_cc_grpc",
+    "@com_google_googleapis//google/monitoring/metricsscope/v1:metricsscope_cc_grpc",
+    "@com_google_googleapis//google/monitoring/v3:monitoring_cc_grpc",
+]
 
-HEADER_GLOB = "**/*.h"
-
-MOCK_HEADER_GLOB = "mocks/*.h"
-
-cc_library(
-    name = "google_cloud_cpp_monitoring",
-    srcs = glob(
-        include = [SOURCE_GLOB],
-        exclude = [MOCK_SOURCE_GLOB],
-    ),
-    hdrs = glob(
-        include = [HEADER_GLOB],
-        exclude = [MOCK_HEADER_GLOB],
-    ),
-    visibility = ["//:__pkg__"],
-    deps = [
-        "//google/cloud:google_cloud_cpp_common",
-        "//google/cloud:google_cloud_cpp_grpc_utils",
-        "@com_google_googleapis//google/monitoring/dashboard/v1:dashboard_cc_grpc",
-        "@com_google_googleapis//google/monitoring/metricsscope/v1:metricsscope_cc_grpc",
-        "@com_google_googleapis//google/monitoring/v3:monitoring_cc_grpc",
-    ],
-)
-
-cc_library(
-    name = "google_cloud_cpp_monitoring_mocks",
-    srcs = glob(
-        include = [MOCK_SOURCE_GLOB],
-    ),
-    hdrs = glob(
-        include = [MOCK_HEADER_GLOB],
-    ),
-    visibility = ["//:__pkg__"],
-    deps = [
-        ":google_cloud_cpp_monitoring",
-        "//google/cloud:google_cloud_cpp_common",
-        "//google/cloud:google_cloud_cpp_grpc_utils",
-    ],
+cc_gapic_library(
+    name = "monitoring",
+    googleapis_deps = googleapis_deps,
+    service_dirs = service_dirs,
 )

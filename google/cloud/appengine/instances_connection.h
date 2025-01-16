@@ -20,71 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_INSTANCES_CONNECTION_H
 
 #include "google/cloud/appengine/instances_connection_idempotency_policy.h"
-#include "google/cloud/appengine/internal/instances_retry_traits.h"
-#include "google/cloud/appengine/internal/instances_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/appengine/v1/instances_connection.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using InstancesRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    appengine_internal::InstancesRetryTraits>;
+/// @deprecated Use appengine_v1::MakeInstancesConnection directly.
+using ::google::cloud::appengine_v1::MakeInstancesConnection;
 
-using InstancesLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::InstancesRetryTraits>;
+/// @deprecated Use appengine_v1::InstancesConnection directly.
+using ::google::cloud::appengine_v1::InstancesConnection;
 
-using InstancesLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::InstancesRetryTraits>;
+/// @deprecated Use appengine_v1::InstancesLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::appengine_v1::InstancesLimitedErrorCountRetryPolicy;
 
-class InstancesConnection {
- public:
-  virtual ~InstancesConnection() = 0;
+/// @deprecated Use appengine_v1::InstancesLimitedTimeRetryPolicy directly.
+using ::google::cloud::appengine_v1::InstancesLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::appengine::v1::Instance> ListInstances(
-      google::appengine::v1::ListInstancesRequest request);
-
-  virtual StatusOr<google::appengine::v1::Instance> GetInstance(
-      google::appengine::v1::GetInstanceRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::OperationMetadataV1>>
-  DeleteInstance(google::appengine::v1::DeleteInstanceRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::Instance>> DebugInstance(
-      google::appengine::v1::DebugInstanceRequest const& request);
-};
-
-std::shared_ptr<InstancesConnection> MakeInstancesConnection(
-    Options options = {});
+/// @deprecated Use appengine_v1::InstancesRetryPolicy directly.
+using ::google::cloud::appengine_v1::InstancesRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::InstancesConnection> MakeInstancesConnection(
-    std::shared_ptr<InstancesStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

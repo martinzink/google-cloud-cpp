@@ -15,6 +15,7 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_INTERNAL_SUBSCRIPTION_LEASE_MANAGEMENT_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_INTERNAL_SUBSCRIPTION_LEASE_MANAGEMENT_H
 
+#include "google/cloud/pubsub/internal/batch_callback.h"
 #include "google/cloud/pubsub/internal/session_shutdown_manager.h"
 #include "google/cloud/pubsub/internal/subscriber_stub.h"
 #include "google/cloud/pubsub/internal/subscription_batch_source.h"
@@ -49,11 +50,11 @@ class SubscriptionLeaseManagement
             max_deadline_time, max_deadline_extension));
   }
 
-  void Start(BatchCallback cb) override;
+  void Start(std::shared_ptr<BatchCallback> cb) override;
   void Shutdown() override;
-  void AckMessage(std::string const& ack_id) override;
-  void NackMessage(std::string const& ack_id) override;
-  void BulkNack(std::vector<std::string> ack_ids) override;
+  future<Status> AckMessage(std::string const& ack_id) override;
+  future<Status> NackMessage(std::string const& ack_id) override;
+  future<Status> BulkNack(std::vector<std::string> ack_ids) override;
   void ExtendLeases(std::vector<std::string> ack_ids,
                     std::chrono::seconds extension) override;
 
@@ -91,9 +92,9 @@ class SubscriptionLeaseManagement
   std::shared_ptr<SessionShutdownManager> const shutdown_manager_;
   std::chrono::seconds const max_deadline_time_;
   std::chrono::seconds const max_deadline_extension_;
+  std::shared_ptr<BatchCallback> callback_;
 
   std::mutex mu_;
-
   // A collection of message ack_ids to maintain the message leases.
   struct LeaseStatus {
     std::chrono::system_clock::time_point estimated_server_deadline;

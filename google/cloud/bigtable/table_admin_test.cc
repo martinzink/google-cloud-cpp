@@ -24,6 +24,7 @@
 #include <google/protobuf/text_format.h>
 #include <gmock/gmock.h>
 #include <chrono>
+#include <memory>
 
 namespace google {
 namespace cloud {
@@ -55,8 +56,8 @@ class TableAdminTester {
     return admin.background_threads_;
   }
 
-  static Options Policies(bigtable::TableAdmin const& admin) {
-    return admin.policies_;
+  static ::google::cloud::Options Options(bigtable::TableAdmin const& admin) {
+    return admin.options_;
   }
 };
 
@@ -83,6 +84,7 @@ using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::IsNull;
 using ::testing::NotNull;
+using ::testing::Return;
 using ::testing::UnorderedElementsAreArray;
 using MockConnection =
     ::google::cloud::bigtable_admin_mocks::MockBigtableTableAdminConnection;
@@ -101,9 +103,14 @@ auto const* const kBackupName =
     "projects/the-project/instances/the-instance/clusters/the-cluster/backups/"
     "the-backup";
 
+struct TestOption {
+  using Type = int;
+};
+
 Options TestOptions() {
-  return Options{}.set<GrpcCredentialOption>(
-      grpc::InsecureChannelCredentials());
+  return Options{}
+      .set<GrpcCredentialOption>(grpc::InsecureChannelCredentials())
+      .set<TestOption>(1);
 }
 
 Status FailingStatus() { return Status(StatusCode::kPermissionDenied, "fail"); }
@@ -113,7 +120,7 @@ bool SameCQ(CompletionQueue const& a, CompletionQueue const& b) {
   return GetCompletionQueueImpl(a) == GetCompletionQueueImpl(b);
 }
 
-void CheckPolicies(Options const& options) {
+void CheckOptions(Options const& options) {
   EXPECT_TRUE(
       options.has<bigtable_admin::BigtableTableAdminRetryPolicyOption>());
   EXPECT_TRUE(
@@ -122,11 +129,14 @@ void CheckPolicies(Options const& options) {
       options.has<bigtable_admin::BigtableTableAdminPollingPolicyOption>());
   EXPECT_TRUE(options.has<google::cloud::internal::GrpcSetupOption>());
   EXPECT_TRUE(options.has<google::cloud::internal::GrpcSetupPollOption>());
+  EXPECT_TRUE(options.has<TestOption>());
 }
 
 class TableAdminTest : public ::testing::Test {
  protected:
   TableAdmin DefaultTableAdmin() {
+    EXPECT_CALL(*connection_, options())
+        .WillRepeatedly(Return(Options{}.set<TestOption>(1)));
     return TableAdminTester::MakeTestTableAdmin(connection_, {}, kProjectId,
                                                 kInstanceId);
   }
@@ -134,6 +144,20 @@ class TableAdminTest : public ::testing::Test {
   std::shared_ptr<MockConnection> connection_ =
       std::make_shared<MockConnection>();
 };
+
+TEST_F(TableAdminTest, Equality) {
+  auto client1 = MakeAdminClient(kProjectId, TestOptions());
+  auto client2 = MakeAdminClient(kProjectId, TestOptions());
+  auto ta1 = TableAdmin(client1, "i1");
+  auto ta2 = TableAdmin(client1, "i2");
+  auto ta3 = TableAdmin(client2, "i1");
+  EXPECT_NE(ta1, ta2);
+  EXPECT_NE(ta1, ta3);
+  EXPECT_NE(ta2, ta3);
+
+  ta2 = ta1;
+  EXPECT_EQ(ta1, ta2);
+}
 
 TEST_F(TableAdminTest, ResourceNames) {
   auto admin = DefaultTableAdmin();
@@ -192,8 +216,8 @@ TEST_F(TableAdminTest, LegacyConstructorSetsCustomCQ) {
 TEST_F(TableAdminTest, LegacyConstructorDefaultsPolicies) {
   auto admin_client = MakeAdminClient(kProjectId, TestOptions());
   auto admin = TableAdmin(std::move(admin_client), kInstanceId);
-  auto policies = TableAdminTester::Policies(admin);
-  CheckPolicies(policies);
+  auto options = TableAdminTester::Options(admin);
+  CheckOptions(options);
 }
 
 TEST_F(TableAdminTest, LegacyConstructorWithPolicies) {
@@ -211,9 +235,9 @@ TEST_F(TableAdminTest, LegacyConstructorWithPolicies) {
   auto mock_p = std::make_shared<MockPollingPolicy>();
 
   EXPECT_CALL(*mock_r, clone).WillOnce([] {
-    auto clone_1 = absl::make_unique<MockRetryPolicy>();
+    auto clone_1 = std::make_unique<MockRetryPolicy>();
     EXPECT_CALL(*clone_1, clone).WillOnce([] {
-      auto clone_2 = absl::make_unique<MockRetryPolicy>();
+      auto clone_2 = std::make_unique<MockRetryPolicy>();
       EXPECT_CALL(*clone_2, OnFailure(An<Status const&>()));
       return clone_2;
     });
@@ -221,9 +245,9 @@ TEST_F(TableAdminTest, LegacyConstructorWithPolicies) {
   });
 
   EXPECT_CALL(*mock_b, clone).WillOnce([] {
-    auto clone_1 = absl::make_unique<MockBackoffPolicy>();
+    auto clone_1 = std::make_unique<MockBackoffPolicy>();
     EXPECT_CALL(*clone_1, clone).WillOnce([] {
-      auto clone_2 = absl::make_unique<MockBackoffPolicy>();
+      auto clone_2 = std::make_unique<MockBackoffPolicy>();
       EXPECT_CALL(*clone_2, OnCompletion(An<Status const&>()));
       return clone_2;
     });
@@ -231,9 +255,9 @@ TEST_F(TableAdminTest, LegacyConstructorWithPolicies) {
   });
 
   EXPECT_CALL(*mock_p, clone).WillOnce([] {
-    auto clone_1 = absl::make_unique<MockPollingPolicy>();
+    auto clone_1 = std::make_unique<MockPollingPolicy>();
     EXPECT_CALL(*clone_1, clone).WillOnce([] {
-      auto clone_2 = absl::make_unique<MockPollingPolicy>();
+      auto clone_2 = std::make_unique<MockPollingPolicy>();
       EXPECT_CALL(*clone_2, WaitPeriod);
       return clone_2;
     });
@@ -243,19 +267,19 @@ TEST_F(TableAdminTest, LegacyConstructorWithPolicies) {
   auto admin_client = MakeAdminClient(kProjectId, TestOptions());
   auto admin = TableAdmin(std::move(admin_client), kInstanceId, *mock_r,
                           *mock_b, *mock_p);
-  auto policies = TableAdminTester::Policies(admin);
-  CheckPolicies(policies);
+  auto options = TableAdminTester::Options(admin);
+  CheckOptions(options);
 
   auto const& common_retry =
-      policies.get<bigtable_admin::BigtableTableAdminRetryPolicyOption>();
+      options.get<bigtable_admin::BigtableTableAdminRetryPolicyOption>();
   (void)common_retry->OnFailure({});
 
   auto const& common_backoff =
-      policies.get<bigtable_admin::BigtableTableAdminBackoffPolicyOption>();
+      options.get<bigtable_admin::BigtableTableAdminBackoffPolicyOption>();
   (void)common_backoff->OnCompletion();
 
   auto const& common_polling =
-      policies.get<bigtable_admin::BigtableTableAdminPollingPolicyOption>();
+      options.get<bigtable_admin::BigtableTableAdminPollingPolicyOption>();
   (void)common_polling->WaitPeriod();
 }
 
@@ -283,7 +307,7 @@ TEST_F(TableAdminTest, CreateTable) {
   EXPECT_CALL(*connection_, CreateTable)
       .WillOnce(
           [&expected_request](btadmin::CreateTableRequest const& request) {
-            CheckPolicies(google::cloud::internal::CurrentOptions());
+            CheckOptions(google::cloud::internal::CurrentOptions());
             btadmin::CreateTableRequest expected;
             EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(
                 expected_request, &expected));
@@ -309,7 +333,7 @@ TEST_F(TableAdminTest, ListTablesSuccess) {
   EXPECT_CALL(*connection_, ListTables)
       .WillOnce([&iter, &expected_names,
                  expected_view](btadmin::ListTablesRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kInstanceName, request.parent());
         EXPECT_EQ(expected_view, request.view());
 
@@ -344,7 +368,7 @@ TEST_F(TableAdminTest, ListTablesFailure) {
 
   EXPECT_CALL(*connection_, ListTables)
       .WillOnce([&expected_view](btadmin::ListTablesRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kInstanceName, request.parent());
         EXPECT_EQ(expected_view, request.view());
 
@@ -362,7 +386,7 @@ TEST_F(TableAdminTest, GetTable) {
 
   EXPECT_CALL(*connection_, GetTable)
       .WillOnce([&expected_view](btadmin::GetTableRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_EQ(expected_view, request.view());
         return FailingStatus();
@@ -377,7 +401,7 @@ TEST_F(TableAdminTest, DeleteTable) {
 
   EXPECT_CALL(*connection_, DeleteTable)
       .WillOnce([](btadmin::DeleteTableRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         return FailingStatus();
       });
@@ -402,9 +426,10 @@ TEST_F(TableAdminTest, CreateBackup) {
   auto const expire_time = std::chrono::system_clock::now() + hours(24);
   auto admin = DefaultTableAdmin();
 
-  EXPECT_CALL(*connection_, CreateBackup)
+  EXPECT_CALL(*connection_,
+              CreateBackup(An<btadmin::CreateBackupRequest const&>()))
       .WillOnce([expire_time](btadmin::CreateBackupRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kClusterName, request.parent());
         EXPECT_EQ(kBackupId, request.backup_id());
         EXPECT_EQ(kTableName, request.backup().source_table());
@@ -424,7 +449,7 @@ TEST_F(TableAdminTest, GetBackup) {
 
   EXPECT_CALL(*connection_, GetBackup)
       .WillOnce([](btadmin::GetBackupRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kBackupName, request.name());
         return FailingStatus();
       });
@@ -449,7 +474,7 @@ TEST_F(TableAdminTest, UpdateBackup) {
 
   EXPECT_CALL(*connection_, UpdateBackup)
       .WillOnce([expire_time](btadmin::UpdateBackupRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kBackupName, request.backup().name());
         EXPECT_EQ(expire_time,
                   ToChronoTimePoint(request.backup().expire_time()));
@@ -468,7 +493,7 @@ TEST_F(TableAdminTest, DeleteBackup) {
   EXPECT_CALL(*connection_, DeleteBackup)
       .Times(2)
       .WillRepeatedly([](btadmin::DeleteBackupRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kBackupName, request.name());
         return FailingStatus();
       });
@@ -503,7 +528,7 @@ TEST_F(TableAdminTest, ListBackupsSuccess) {
   EXPECT_CALL(*connection_, ListBackups)
       .WillOnce([&iter,
                  &expected_names](btadmin::ListBackupsRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kClusterName, request.parent());
 
         using ::google::cloud::internal::MakeStreamRange;
@@ -537,7 +562,7 @@ TEST_F(TableAdminTest, ListBackupsFailure) {
 
   EXPECT_CALL(*connection_, ListBackups)
       .WillOnce([](btadmin::ListBackupsRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kClusterName, request.parent());
 
         using ::google::cloud::internal::MakeStreamRange;
@@ -560,10 +585,11 @@ TEST_F(TableAdminTest, RestoreTableParams) {
 TEST_F(TableAdminTest, RestoreTable) {
   auto admin = DefaultTableAdmin();
 
-  EXPECT_CALL(*connection_, RestoreTable)
+  EXPECT_CALL(*connection_,
+              RestoreTable(An<btadmin::RestoreTableRequest const&>()))
       .Times(2)
       .WillRepeatedly([](btadmin::RestoreTableRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kInstanceName, request.parent());
         EXPECT_EQ(kTableId, request.table_id());
         EXPECT_EQ(kBackupName, request.backup());
@@ -598,7 +624,7 @@ TEST_F(TableAdminTest, ModifyColumnFamilies) {
   EXPECT_CALL(*connection_, ModifyColumnFamilies)
       .WillOnce([&expected_request](
                     btadmin::ModifyColumnFamiliesRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         btadmin::ModifyColumnFamiliesRequest expected;
         EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(
             expected_request, &expected));
@@ -619,7 +645,7 @@ TEST_F(TableAdminTest, DropRowsByPrefix) {
 
   EXPECT_CALL(*connection_, DropRowRange)
       .WillOnce([](btadmin::DropRowRangeRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_EQ("prefix", request.row_key_prefix());
         return FailingStatus();
@@ -634,7 +660,7 @@ TEST_F(TableAdminTest, WaitForConsistencySuccess) {
 
   EXPECT_CALL(*connection_, AsyncCheckConsistency)
       .WillOnce([](btadmin::CheckConsistencyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_EQ("consistency-token", request.consistency_token());
         btadmin::CheckConsistencyResponse resp;
@@ -653,7 +679,7 @@ TEST_F(TableAdminTest, WaitForConsistencyFailure) {
 
   EXPECT_CALL(*connection_, AsyncCheckConsistency)
       .WillOnce([](btadmin::CheckConsistencyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_EQ("consistency-token", request.consistency_token());
         return make_ready_future<StatusOr<btadmin::CheckConsistencyResponse>>(
@@ -669,7 +695,7 @@ TEST_F(TableAdminTest, DropAllRows) {
 
   EXPECT_CALL(*connection_, DropRowRange)
       .WillOnce([](btadmin::DropRowRangeRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_TRUE(request.delete_all_data_from_table());
         return FailingStatus();
@@ -684,7 +710,7 @@ TEST_F(TableAdminTest, GenerateConsistencyTokenSuccess) {
 
   EXPECT_CALL(*connection_, GenerateConsistencyToken)
       .WillOnce([](btadmin::GenerateConsistencyTokenRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         btadmin::GenerateConsistencyTokenResponse resp;
         resp.set_consistency_token("consistency-token");
@@ -701,7 +727,7 @@ TEST_F(TableAdminTest, GenerateConsistencyTokenFailure) {
 
   EXPECT_CALL(*connection_, GenerateConsistencyToken)
       .WillOnce([](btadmin::GenerateConsistencyTokenRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         return FailingStatus();
       });
@@ -715,7 +741,7 @@ TEST_F(TableAdminTest, CheckConsistencySuccess) {
 
   EXPECT_CALL(*connection_, CheckConsistency)
       .WillOnce([](btadmin::CheckConsistencyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_EQ("consistency-token", request.consistency_token());
         btadmin::CheckConsistencyResponse resp;
@@ -723,7 +749,7 @@ TEST_F(TableAdminTest, CheckConsistencySuccess) {
         return resp;
       })
       .WillOnce([](btadmin::CheckConsistencyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_EQ("consistency-token", request.consistency_token());
         btadmin::CheckConsistencyResponse resp;
@@ -745,7 +771,7 @@ TEST_F(TableAdminTest, CheckConsistencyFailure) {
 
   EXPECT_CALL(*connection_, CheckConsistency)
       .WillOnce([](btadmin::CheckConsistencyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.name());
         EXPECT_EQ("consistency-token", request.consistency_token());
         return FailingStatus();
@@ -760,7 +786,7 @@ TEST_F(TableAdminTest, GetIamPolicyTable) {
 
   EXPECT_CALL(*connection_, GetIamPolicy)
       .WillOnce([](iamproto::GetIamPolicyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.resource());
         return FailingStatus();
       });
@@ -774,7 +800,7 @@ TEST_F(TableAdminTest, GetIamPolicyBackup) {
 
   EXPECT_CALL(*connection_, GetIamPolicy)
       .WillOnce([](iamproto::GetIamPolicyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kBackupName, request.resource());
         return FailingStatus();
       });
@@ -788,7 +814,7 @@ TEST_F(TableAdminTest, SetIamPolicyTable) {
 
   EXPECT_CALL(*connection_, SetIamPolicy)
       .WillOnce([](iamproto::SetIamPolicyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.resource());
         EXPECT_EQ(3, request.policy().version());
         EXPECT_EQ("tag", request.policy().etag());
@@ -807,7 +833,7 @@ TEST_F(TableAdminTest, SetIamPolicyBackup) {
 
   EXPECT_CALL(*connection_, SetIamPolicy)
       .WillOnce([](iamproto::SetIamPolicyRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kBackupName, request.resource());
         EXPECT_EQ(3, request.policy().version());
         EXPECT_EQ("tag", request.policy().etag());
@@ -828,7 +854,7 @@ TEST_F(TableAdminTest, TestIamPermissionsTableSuccess) {
 
   EXPECT_CALL(*connection_, TestIamPermissions)
       .WillOnce([&](iamproto::TestIamPermissionsRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.resource());
         std::vector<std::string> actual_permissions;
         for (auto const& c : request.permissions()) {
@@ -853,7 +879,7 @@ TEST_F(TableAdminTest, TestIamPermissionsTableFailure) {
 
   EXPECT_CALL(*connection_, TestIamPermissions)
       .WillOnce([&](iamproto::TestIamPermissionsRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kTableName, request.resource());
         std::vector<std::string> actual_permissions;
         for (auto const& c : request.permissions()) {
@@ -875,7 +901,7 @@ TEST_F(TableAdminTest, TestIamPermissionsBackupSuccess) {
 
   EXPECT_CALL(*connection_, TestIamPermissions)
       .WillOnce([&](iamproto::TestIamPermissionsRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kBackupName, request.resource());
         std::vector<std::string> actual_permissions;
         for (auto const& c : request.permissions()) {
@@ -901,7 +927,7 @@ TEST_F(TableAdminTest, TestIamPermissionsBackupFailure) {
 
   EXPECT_CALL(*connection_, TestIamPermissions)
       .WillOnce([&](iamproto::TestIamPermissionsRequest const& request) {
-        CheckPolicies(google::cloud::internal::CurrentOptions());
+        CheckOptions(google::cloud::internal::CurrentOptions());
         EXPECT_EQ(kBackupName, request.resource());
         std::vector<std::string> actual_permissions;
         for (auto const& c : request.permissions()) {

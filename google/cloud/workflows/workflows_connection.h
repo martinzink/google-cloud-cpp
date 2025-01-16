@@ -19,78 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_WORKFLOWS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_WORKFLOWS_CONNECTION_H
 
-#include "google/cloud/workflows/internal/workflows_retry_traits.h"
-#include "google/cloud/workflows/internal/workflows_stub.h"
+#include "google/cloud/workflows/v1/workflows_connection.h"
 #include "google/cloud/workflows/workflows_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace workflows {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using WorkflowsRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    workflows_internal::WorkflowsRetryTraits>;
+/// @deprecated Use workflows_v1::MakeWorkflowsConnection directly.
+using ::google::cloud::workflows_v1::MakeWorkflowsConnection;
 
-using WorkflowsLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        workflows_internal::WorkflowsRetryTraits>;
+/// @deprecated Use workflows_v1::WorkflowsConnection directly.
+using ::google::cloud::workflows_v1::WorkflowsConnection;
 
-using WorkflowsLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        workflows_internal::WorkflowsRetryTraits>;
+/// @deprecated Use workflows_v1::WorkflowsLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::workflows_v1::WorkflowsLimitedErrorCountRetryPolicy;
 
-class WorkflowsConnection {
- public:
-  virtual ~WorkflowsConnection() = 0;
+/// @deprecated Use workflows_v1::WorkflowsLimitedTimeRetryPolicy directly.
+using ::google::cloud::workflows_v1::WorkflowsLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::workflows::v1::Workflow> ListWorkflows(
-      google::cloud::workflows::v1::ListWorkflowsRequest request);
-
-  virtual StatusOr<google::cloud::workflows::v1::Workflow> GetWorkflow(
-      google::cloud::workflows::v1::GetWorkflowRequest const& request);
-
-  virtual future<StatusOr<google::cloud::workflows::v1::Workflow>>
-  CreateWorkflow(
-      google::cloud::workflows::v1::CreateWorkflowRequest const& request);
-
-  virtual future<StatusOr<google::cloud::workflows::v1::OperationMetadata>>
-  DeleteWorkflow(
-      google::cloud::workflows::v1::DeleteWorkflowRequest const& request);
-
-  virtual future<StatusOr<google::cloud::workflows::v1::Workflow>>
-  UpdateWorkflow(
-      google::cloud::workflows::v1::UpdateWorkflowRequest const& request);
-};
-
-std::shared_ptr<WorkflowsConnection> MakeWorkflowsConnection(
-    Options options = {});
+/// @deprecated Use workflows_v1::WorkflowsRetryPolicy directly.
+using ::google::cloud::workflows_v1::WorkflowsRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace workflows
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace workflows_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<workflows::WorkflowsConnection> MakeWorkflowsConnection(
-    std::shared_ptr<WorkflowsStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace workflows_internal
 }  // namespace cloud
 }  // namespace google
 

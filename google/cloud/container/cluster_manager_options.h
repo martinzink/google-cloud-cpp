@@ -21,35 +21,26 @@
 
 #include "google/cloud/container/cluster_manager_connection.h"
 #include "google/cloud/container/cluster_manager_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/container/v1/cluster_manager_options.h"
 
 namespace google {
 namespace cloud {
 namespace container {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ClusterManagerRetryPolicyOption {
-  using Type = std::shared_ptr<ClusterManagerRetryPolicy>;
-};
+/// @deprecated Use container_v1::ClusterManagerBackoffPolicyOption directly.
+using ::google::cloud::container_v1::ClusterManagerBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ClusterManagerBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// container_v1::ClusterManagerConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::container_v1::
+    ClusterManagerConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ClusterManagerConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ClusterManagerConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use container_v1::ClusterManagerPolicyOptionList directly.
+using ::google::cloud::container_v1::ClusterManagerPolicyOptionList;
 
-using ClusterManagerPolicyOptionList =
-    OptionList<ClusterManagerRetryPolicyOption,
-               ClusterManagerBackoffPolicyOption,
-               ClusterManagerConnectionIdempotencyPolicyOption>;
+/// @deprecated Use container_v1::ClusterManagerRetryPolicyOption directly.
+using ::google::cloud::container_v1::ClusterManagerRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace container

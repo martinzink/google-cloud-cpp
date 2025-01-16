@@ -20,24 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_EVENTARC_MOCKS_MOCK_PUBLISHER_CONNECTION_H
 
 #include "google/cloud/eventarc/publisher_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/eventarc/publishing/v1/mocks/mock_publisher_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in eventarc_publishing_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace eventarc_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockPublisherConnection : public eventarc::PublisherConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::eventarc::publishing::v1::
-                           PublishChannelConnectionEventsResponse>,
-              PublishChannelConnectionEvents,
-              (google::cloud::eventarc::publishing::v1::
-                   PublishChannelConnectionEventsRequest const& request),
-              (override));
-};
+/// @deprecated Use eventarc_publishing_v1_mocks::MockPublisherConnection
+/// directly.
+using ::google::cloud::eventarc_publishing_v1_mocks::MockPublisherConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace eventarc_mocks

@@ -21,41 +21,31 @@
 
 #include "google/cloud/securitycenter/security_center_connection.h"
 #include "google/cloud/securitycenter/security_center_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/securitycenter/v1/security_center_options.h"
 
 namespace google {
 namespace cloud {
 namespace securitycenter {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct SecurityCenterRetryPolicyOption {
-  using Type = std::shared_ptr<SecurityCenterRetryPolicy>;
-};
+/// @deprecated Use securitycenter_v1::SecurityCenterPollingPolicyOption
+/// directly.
+using ::google::cloud::securitycenter_v1::SecurityCenterPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SecurityCenterBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use securitycenter_v1::SecurityCenterBackoffPolicyOption
+/// directly.
+using ::google::cloud::securitycenter_v1::SecurityCenterBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SecurityCenterPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// securitycenter_v1::SecurityCenterConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::securitycenter_v1::
+    SecurityCenterConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SecurityCenterConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<SecurityCenterConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use securitycenter_v1::SecurityCenterPolicyOptionList directly.
+using ::google::cloud::securitycenter_v1::SecurityCenterPolicyOptionList;
 
-using SecurityCenterPolicyOptionList =
-    OptionList<SecurityCenterRetryPolicyOption,
-               SecurityCenterBackoffPolicyOption,
-               SecurityCenterPollingPolicyOption,
-               SecurityCenterConnectionIdempotencyPolicyOption>;
+/// @deprecated Use securitycenter_v1::SecurityCenterRetryPolicyOption directly.
+using ::google::cloud::securitycenter_v1::SecurityCenterRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace securitycenter

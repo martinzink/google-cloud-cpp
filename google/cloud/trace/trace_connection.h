@@ -19,63 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TRACE_TRACE_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TRACE_TRACE_CONNECTION_H
 
-#include "google/cloud/trace/internal/trace_retry_traits.h"
-#include "google/cloud/trace/internal/trace_stub.h"
 #include "google/cloud/trace/trace_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/trace/v2/trace_connection.h"
 
 namespace google {
 namespace cloud {
 namespace trace {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using TraceServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        trace_internal::TraceServiceRetryTraits>;
+/// @deprecated Use trace_v2::MakeTraceServiceConnection directly.
+using ::google::cloud::trace_v2::MakeTraceServiceConnection;
 
-using TraceServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        trace_internal::TraceServiceRetryTraits>;
+/// @deprecated Use trace_v2::TraceServiceConnection directly.
+using ::google::cloud::trace_v2::TraceServiceConnection;
 
-using TraceServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        trace_internal::TraceServiceRetryTraits>;
+/// @deprecated Use trace_v2::TraceServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::trace_v2::TraceServiceLimitedErrorCountRetryPolicy;
 
-class TraceServiceConnection {
- public:
-  virtual ~TraceServiceConnection() = 0;
+/// @deprecated Use trace_v2::TraceServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::trace_v2::TraceServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual Status BatchWriteSpans(
-      google::devtools::cloudtrace::v2::BatchWriteSpansRequest const& request);
-
-  virtual StatusOr<google::devtools::cloudtrace::v2::Span> CreateSpan(
-      google::devtools::cloudtrace::v2::Span const& request);
-};
-
-std::shared_ptr<TraceServiceConnection> MakeTraceServiceConnection(
-    Options options = {});
+/// @deprecated Use trace_v2::TraceServiceRetryPolicy directly.
+using ::google::cloud::trace_v2::TraceServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace trace
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace trace_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<trace::TraceServiceConnection> MakeTraceServiceConnection(
-    std::shared_ptr<TraceServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace trace_internal
 }  // namespace cloud
 }  // namespace google
 

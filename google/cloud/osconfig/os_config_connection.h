@@ -19,90 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_OSCONFIG_OS_CONFIG_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_OSCONFIG_OS_CONFIG_CONNECTION_H
 
-#include "google/cloud/osconfig/internal/os_config_retry_traits.h"
-#include "google/cloud/osconfig/internal/os_config_stub.h"
 #include "google/cloud/osconfig/os_config_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/osconfig/v1/os_config_connection.h"
 
 namespace google {
 namespace cloud {
 namespace osconfig {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using OsConfigServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        osconfig_internal::OsConfigServiceRetryTraits>;
+/// @deprecated Use osconfig_v1::MakeOsConfigServiceConnection directly.
+using ::google::cloud::osconfig_v1::MakeOsConfigServiceConnection;
 
-using OsConfigServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        osconfig_internal::OsConfigServiceRetryTraits>;
+/// @deprecated Use osconfig_v1::OsConfigServiceConnection directly.
+using ::google::cloud::osconfig_v1::OsConfigServiceConnection;
 
-using OsConfigServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        osconfig_internal::OsConfigServiceRetryTraits>;
+/// @deprecated Use osconfig_v1::OsConfigServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::osconfig_v1::OsConfigServiceLimitedErrorCountRetryPolicy;
 
-class OsConfigServiceConnection {
- public:
-  virtual ~OsConfigServiceConnection() = 0;
+/// @deprecated Use osconfig_v1::OsConfigServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::osconfig_v1::OsConfigServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::osconfig::v1::PatchJob> ExecutePatchJob(
-      google::cloud::osconfig::v1::ExecutePatchJobRequest const& request);
-
-  virtual StatusOr<google::cloud::osconfig::v1::PatchJob> GetPatchJob(
-      google::cloud::osconfig::v1::GetPatchJobRequest const& request);
-
-  virtual StatusOr<google::cloud::osconfig::v1::PatchJob> CancelPatchJob(
-      google::cloud::osconfig::v1::CancelPatchJobRequest const& request);
-
-  virtual StreamRange<google::cloud::osconfig::v1::PatchJob> ListPatchJobs(
-      google::cloud::osconfig::v1::ListPatchJobsRequest request);
-
-  virtual StreamRange<google::cloud::osconfig::v1::PatchJobInstanceDetails>
-  ListPatchJobInstanceDetails(
-      google::cloud::osconfig::v1::ListPatchJobInstanceDetailsRequest request);
-
-  virtual StatusOr<google::cloud::osconfig::v1::PatchDeployment>
-  CreatePatchDeployment(
-      google::cloud::osconfig::v1::CreatePatchDeploymentRequest const& request);
-
-  virtual StatusOr<google::cloud::osconfig::v1::PatchDeployment>
-  GetPatchDeployment(
-      google::cloud::osconfig::v1::GetPatchDeploymentRequest const& request);
-
-  virtual StreamRange<google::cloud::osconfig::v1::PatchDeployment>
-  ListPatchDeployments(
-      google::cloud::osconfig::v1::ListPatchDeploymentsRequest request);
-
-  virtual Status DeletePatchDeployment(
-      google::cloud::osconfig::v1::DeletePatchDeploymentRequest const& request);
-};
-
-std::shared_ptr<OsConfigServiceConnection> MakeOsConfigServiceConnection(
-    Options options = {});
+/// @deprecated Use osconfig_v1::OsConfigServiceRetryPolicy directly.
+using ::google::cloud::osconfig_v1::OsConfigServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace osconfig
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace osconfig_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<osconfig::OsConfigServiceConnection>
-MakeOsConfigServiceConnection(std::shared_ptr<OsConfigServiceStub> stub,
-                              Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace osconfig_internal
 }  // namespace cloud
 }  // namespace google
 

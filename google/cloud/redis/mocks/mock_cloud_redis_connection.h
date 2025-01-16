@@ -20,60 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_REDIS_MOCKS_MOCK_CLOUD_REDIS_CONNECTION_H
 
 #include "google/cloud/redis/cloud_redis_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/redis/v1/mocks/mock_cloud_redis_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in redis_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace redis_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockCloudRedisConnection : public redis::CloudRedisConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::redis::v1::Instance>, ListInstances,
-              (google::cloud::redis::v1::ListInstancesRequest request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::redis::v1::Instance>, GetInstance,
-              (google::cloud::redis::v1::GetInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::redis::v1::Instance>>,
-              CreateInstance,
-              (google::cloud::redis::v1::CreateInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::redis::v1::Instance>>,
-              UpdateInstance,
-              (google::cloud::redis::v1::UpdateInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::redis::v1::Instance>>,
-              UpgradeInstance,
-              (google::cloud::redis::v1::UpgradeInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::redis::v1::Instance>>,
-              ImportInstance,
-              (google::cloud::redis::v1::ImportInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::redis::v1::Instance>>,
-              ExportInstance,
-              (google::cloud::redis::v1::ExportInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::redis::v1::Instance>>, FailoverInstance,
-      (google::cloud::redis::v1::FailoverInstanceRequest const& request),
-      (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::redis::v1::OperationMetadata>>,
-              DeleteInstance,
-              (google::cloud::redis::v1::DeleteInstanceRequest const& request),
-              (override));
-};
+/// @deprecated Use redis_v1_mocks::MockCloudRedisConnection directly.
+using ::google::cloud::redis_v1_mocks::MockCloudRedisConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace redis_mocks

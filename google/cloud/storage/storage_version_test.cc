@@ -15,6 +15,7 @@
 #include "google/cloud/storage/version.h"
 #include "google/cloud/internal/build_info.h"
 #include <gmock/gmock.h>
+#include <string>
 
 namespace google {
 namespace cloud {
@@ -43,13 +44,23 @@ TEST(StorageVersionTest, Format) {
 }
 
 /// @test Verify the version does not contain build info for release builds.
-TEST(StorageVersionTest, NoBuildInfoInRelease) {
-  if (!google::cloud::internal::build_metadata().empty()) {
+TEST(StorageVersionTest, HasMetadataWhenDefined) {
+  if (google::cloud::internal::build_metadata().empty()) {
+    EXPECT_THAT(version_string(), Not(HasSubstr("+")));
+  } else {
     EXPECT_THAT(version_string(),
                 HasSubstr("+" + google::cloud::internal::build_metadata()));
-    return;
   }
-  EXPECT_THAT(version_string(), Not(HasSubstr("+")));
+}
+
+/// @test Verify the version contains a pre-release only if defined.
+TEST(StorageVersionTest, HasPreReleaseWhenDefined) {
+  char const* pre_release = version_pre_release();
+  if (*pre_release == '\0') {
+    EXPECT_THAT(version_string(), Not(HasSubstr("-")));
+  } else {
+    EXPECT_THAT(version_string(), HasSubstr(std::string{"-"} + pre_release));
+  }
 }
 
 }  // namespace

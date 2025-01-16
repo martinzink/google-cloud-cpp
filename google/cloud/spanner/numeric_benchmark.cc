@@ -88,7 +88,8 @@ void BM_NumericToString(benchmark::State& state) {
   std::string s = "99999999999999999999999999999.999999999";
   Numeric n = MakeNumeric(s).value();
   for (auto _ : state) {
-    benchmark::DoNotOptimize(n.ToString());
+    auto unused = n.ToString();
+    benchmark::DoNotOptimize(std::move(unused));
   }
 }
 BENCHMARK(BM_NumericToString);

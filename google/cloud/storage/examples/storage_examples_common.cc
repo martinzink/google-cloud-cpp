@@ -15,8 +15,12 @@
 #include "google/cloud/storage/examples/storage_examples_common.h"
 #include "google/cloud/storage/testing/random_names.h"
 #include "google/cloud/internal/getenv.h"
+#include "absl/strings/match.h"
 #include <regex>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -31,9 +35,13 @@ bool UsingEmulator() {
       .has_value();
 }
 
+std::string BucketPrefix() {
+  return "gcs-grpc-team-cloud-cpp-testing-examples";
+}
+
 std::string MakeRandomBucketName(google::cloud::internal::DefaultPRNG& gen) {
-  return google::cloud::storage::testing::MakeRandomBucketName(
-      gen, "cloud-cpp-testing-examples");
+  return google::cloud::storage::testing::MakeRandomBucketName(gen,
+                                                               BucketPrefix());
 }
 
 std::string MakeRandomObjectName(google::cloud::internal::DefaultPRNG& gen,
@@ -41,11 +49,19 @@ std::string MakeRandomObjectName(google::cloud::internal::DefaultPRNG& gen,
   return prefix + testing::MakeRandomObjectName(gen);
 }
 
+google::cloud::Options CreateBucketOptions() {
+  // Projects cannot create more than 1 bucket every 2 seconds. We want a
+  // more aggressive backoff than usual when the CreateBucket() operation fails.
+  auto const backoff = ExponentialBackoffPolicy(std::chrono::seconds(4),
+                                                std::chrono::minutes(5), 2.0);
+  return google::cloud::Options{}.set<BackoffPolicyOption>(backoff.clone());
+}
+
 Commands::value_type CreateCommandEntry(
     std::string const& name, std::vector<std::string> const& arg_names,
     ClientCommand const& command) {
   bool allow_varargs =
-      !arg_names.empty() && arg_names.back().find("...") != std::string::npos;
+      !arg_names.empty() && absl::StrContains(arg_names.back(), "...");
   auto adapter = [=](std::vector<std::string> const& argv) {
     if ((argv.size() == 1 && argv[0] == "--help") ||
         (allow_varargs ? argv.size() < (arg_names.size() - 1)

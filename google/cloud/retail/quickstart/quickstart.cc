@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/retail/catalog_client.h"
+//! [all]
+#include "google/cloud/retail/v2/catalog_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -22,20 +23,21 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace retail = ::google::cloud::retail;
+  // The service only accepts "global" as the location for ListCatalogs()
+  auto const location = google::cloud::Location(argv[1], "global");
+
+  namespace retail = ::google::cloud::retail_v2;
   auto client =
       retail::CatalogServiceClient(retail::MakeCatalogServiceConnection());
 
-  // The service only accepts "global" as the location for ListCatalogs()
-  auto const location =
-      "projects/" + std::string(argv[1]) + "/locations/global";
-  for (auto r : client.ListCatalogs(location)) {
-    if (!r) throw std::runtime_error(r.status().message());
-    std::cout << r->DebugString() << "\n";
+  for (auto c : client.ListCatalogs(location.FullName())) {
+    if (!c) throw std::move(c).status();
+    std::cout << c->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

@@ -21,41 +21,31 @@
 
 #include "google/cloud/apigateway/api_gateway_connection.h"
 #include "google/cloud/apigateway/api_gateway_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/apigateway/v1/api_gateway_options.h"
 
 namespace google {
 namespace cloud {
 namespace apigateway {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ApiGatewayServiceRetryPolicyOption {
-  using Type = std::shared_ptr<ApiGatewayServiceRetryPolicy>;
-};
+/// @deprecated Use apigateway_v1::ApiGatewayServicePollingPolicyOption
+/// directly.
+using ::google::cloud::apigateway_v1::ApiGatewayServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ApiGatewayServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use apigateway_v1::ApiGatewayServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::apigateway_v1::ApiGatewayServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ApiGatewayServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// apigateway_v1::ApiGatewayServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::apigateway_v1::
+    ApiGatewayServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ApiGatewayServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ApiGatewayServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use apigateway_v1::ApiGatewayServicePolicyOptionList directly.
+using ::google::cloud::apigateway_v1::ApiGatewayServicePolicyOptionList;
 
-using ApiGatewayServicePolicyOptionList =
-    OptionList<ApiGatewayServiceRetryPolicyOption,
-               ApiGatewayServiceBackoffPolicyOption,
-               ApiGatewayServicePollingPolicyOption,
-               ApiGatewayServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use apigateway_v1::ApiGatewayServiceRetryPolicyOption directly.
+using ::google::cloud::apigateway_v1::ApiGatewayServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace apigateway

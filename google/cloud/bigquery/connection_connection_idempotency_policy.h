@@ -19,57 +19,24 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_CONNECTION_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_CONNECTION_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/bigquery/connection/v1/connection.grpc.pb.h>
-#include <memory>
+#include "google/cloud/bigquery/connection/v1/connection_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace bigquery {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class ConnectionServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~ConnectionServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// bigquery_connection_v1::MakeDefaultConnectionServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::bigquery_connection_v1::
+    MakeDefaultConnectionServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<ConnectionServiceConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency CreateConnection(
-      google::cloud::bigquery::connection::v1::CreateConnectionRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetConnection(
-      google::cloud::bigquery::connection::v1::GetConnectionRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency ListConnections(
-      google::cloud::bigquery::connection::v1::ListConnectionsRequest
-          request) = 0;
-
-  virtual google::cloud::Idempotency UpdateConnection(
-      google::cloud::bigquery::connection::v1::UpdateConnectionRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency DeleteConnection(
-      google::cloud::bigquery::connection::v1::DeleteConnectionRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency TestIamPermissions(
-      google::iam::v1::TestIamPermissionsRequest const& request) = 0;
-};
-
-std::unique_ptr<ConnectionServiceConnectionIdempotencyPolicy>
-MakeDefaultConnectionServiceConnectionIdempotencyPolicy();
+/// @deprecated Use
+/// bigquery_connection_v1::ConnectionServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::bigquery_connection_v1::
+    ConnectionServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigquery

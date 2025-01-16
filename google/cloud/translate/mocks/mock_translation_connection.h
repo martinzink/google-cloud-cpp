@@ -20,80 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TRANSLATE_MOCKS_MOCK_TRANSLATION_CONNECTION_H
 
 #include "google/cloud/translate/translation_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/translate/v3/mocks/mock_translation_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in translate_v3_mocks instead of the aliases
+///     defined in this namespace.
 namespace translate_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockTranslationServiceConnection
-    : public translate::TranslationServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::translation::v3::TranslateTextResponse>,
-      TranslateText,
-      (google::cloud::translation::v3::TranslateTextRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::translation::v3::DetectLanguageResponse>,
-      DetectLanguage,
-      (google::cloud::translation::v3::DetectLanguageRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::translation::v3::SupportedLanguages>,
-      GetSupportedLanguages,
-      (google::cloud::translation::v3::GetSupportedLanguagesRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::translation::v3::TranslateDocumentResponse>,
-      TranslateDocument,
-      (google::cloud::translation::v3::TranslateDocumentRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::translation::v3::BatchTranslateResponse>>,
-      BatchTranslateText,
-      (google::cloud::translation::v3::BatchTranslateTextRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<
-          google::cloud::translation::v3::BatchTranslateDocumentResponse>>,
-      BatchTranslateDocument,
-      (google::cloud::translation::v3::BatchTranslateDocumentRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::translation::v3::Glossary>>,
-      CreateGlossary,
-      (google::cloud::translation::v3::CreateGlossaryRequest const& request),
-      (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::translation::v3::Glossary>,
-              ListGlossaries,
-              (google::cloud::translation::v3::ListGlossariesRequest request),
-              (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::translation::v3::Glossary>, GetGlossary,
-      (google::cloud::translation::v3::GetGlossaryRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::translation::v3::DeleteGlossaryResponse>>,
-      DeleteGlossary,
-      (google::cloud::translation::v3::DeleteGlossaryRequest const& request),
-      (override));
-};
+/// @deprecated Use translate_v3_mocks::MockTranslationServiceConnection
+/// directly.
+using ::google::cloud::translate_v3_mocks::MockTranslationServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace translate_mocks

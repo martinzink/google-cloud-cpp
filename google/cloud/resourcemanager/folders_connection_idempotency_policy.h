@@ -19,64 +19,21 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RESOURCEMANAGER_FOLDERS_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RESOURCEMANAGER_FOLDERS_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/resourcemanager/v3/folders.grpc.pb.h>
-#include <memory>
+#include "google/cloud/resourcemanager/v3/folders_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace resourcemanager {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class FoldersConnectionIdempotencyPolicy {
- public:
-  virtual ~FoldersConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// resourcemanager_v3::MakeDefaultFoldersConnectionIdempotencyPolicy directly.
+using ::google::cloud::resourcemanager_v3::
+    MakeDefaultFoldersConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<FoldersConnectionIdempotencyPolicy> clone() const = 0;
-
-  virtual google::cloud::Idempotency GetFolder(
-      google::cloud::resourcemanager::v3::GetFolderRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ListFolders(
-      google::cloud::resourcemanager::v3::ListFoldersRequest request) = 0;
-
-  virtual google::cloud::Idempotency SearchFolders(
-      google::cloud::resourcemanager::v3::SearchFoldersRequest request) = 0;
-
-  virtual google::cloud::Idempotency CreateFolder(
-      google::cloud::resourcemanager::v3::CreateFolderRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency UpdateFolder(
-      google::cloud::resourcemanager::v3::UpdateFolderRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency MoveFolder(
-      google::cloud::resourcemanager::v3::MoveFolderRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteFolder(
-      google::cloud::resourcemanager::v3::DeleteFolderRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency UndeleteFolder(
-      google::cloud::resourcemanager::v3::UndeleteFolderRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency TestIamPermissions(
-      google::iam::v1::TestIamPermissionsRequest const& request) = 0;
-};
-
-std::unique_ptr<FoldersConnectionIdempotencyPolicy>
-MakeDefaultFoldersConnectionIdempotencyPolicy();
+/// @deprecated Use resourcemanager_v3::FoldersConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::resourcemanager_v3::FoldersConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace resourcemanager

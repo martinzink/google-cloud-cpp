@@ -19,42 +19,30 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_WORKFLOWS_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WORKFLOWS_WORKFLOWS_OPTIONS_H
 
+#include "google/cloud/workflows/v1/workflows_options.h"
 #include "google/cloud/workflows/workflows_connection.h"
 #include "google/cloud/workflows/workflows_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace workflows {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowsRetryPolicyOption {
-  using Type = std::shared_ptr<WorkflowsRetryPolicy>;
-};
+/// @deprecated Use workflows_v1::WorkflowsPollingPolicyOption directly.
+using ::google::cloud::workflows_v1::WorkflowsPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use workflows_v1::WorkflowsBackoffPolicyOption directly.
+using ::google::cloud::workflows_v1::WorkflowsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowsPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use workflows_v1::WorkflowsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::workflows_v1::WorkflowsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<WorkflowsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use workflows_v1::WorkflowsPolicyOptionList directly.
+using ::google::cloud::workflows_v1::WorkflowsPolicyOptionList;
 
-using WorkflowsPolicyOptionList =
-    OptionList<WorkflowsRetryPolicyOption, WorkflowsBackoffPolicyOption,
-               WorkflowsPollingPolicyOption,
-               WorkflowsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use workflows_v1::WorkflowsRetryPolicyOption directly.
+using ::google::cloud::workflows_v1::WorkflowsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace workflows

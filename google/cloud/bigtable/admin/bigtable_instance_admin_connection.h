@@ -21,14 +21,16 @@
 
 #include "google/cloud/bigtable/admin/bigtable_instance_admin_connection_idempotency_policy.h"
 #include "google/cloud/bigtable/admin/internal/bigtable_instance_admin_retry_traits.h"
-#include "google/cloud/bigtable/admin/internal/bigtable_instance_admin_stub.h"
 #include "google/cloud/backoff_policy.h"
 #include "google/cloud/future.h"
+#include "google/cloud/internal/retry_policy_impl.h"
+#include "google/cloud/no_await_tag.h"
 #include "google/cloud/options.h"
 #include "google/cloud/polling_policy.h"
 #include "google/cloud/status_or.h"
 #include "google/cloud/stream_range.h"
 #include "google/cloud/version.h"
+#include <google/bigtable/admin/v2/bigtable_instance_admin.pb.h>
 #include <google/longrunning/operations.grpc.pb.h>
 #include <memory>
 
@@ -37,18 +39,155 @@ namespace cloud {
 namespace bigtable_admin {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using BigtableInstanceAdminRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        bigtable_admin_internal::BigtableInstanceAdminRetryTraits>;
+/// The retry policy for `BigtableInstanceAdminConnection`.
+class BigtableInstanceAdminRetryPolicy : public ::google::cloud::RetryPolicy {
+ public:
+  /// Creates a new instance of the policy, reset to the initial state.
+  virtual std::unique_ptr<BigtableInstanceAdminRetryPolicy> clone() const = 0;
+};
 
-using BigtableInstanceAdminLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        bigtable_admin_internal::BigtableInstanceAdminRetryTraits>;
+/**
+ * A retry policy for `BigtableInstanceAdminConnection` based on counting
+ * errors.
+ *
+ * This policy stops retrying if:
+ * - An RPC returns a non-transient error.
+ * - More than a prescribed number of transient failures is detected.
+ *
+ * In this class the following status codes are treated as transient errors:
+ * - [`kAborted`](@ref google::cloud::StatusCode)
+ * - [`kUnavailable`](@ref google::cloud::StatusCode)
+ */
+class BigtableInstanceAdminLimitedErrorCountRetryPolicy
+    : public BigtableInstanceAdminRetryPolicy {
+ public:
+  /**
+   * Create an instance that tolerates up to @p maximum_failures transient
+   * errors.
+   *
+   * @note Disable the retry loop by providing an instance of this policy with
+   *     @p maximum_failures == 0.
+   */
+  explicit BigtableInstanceAdminLimitedErrorCountRetryPolicy(
+      int maximum_failures)
+      : impl_(maximum_failures) {}
 
-using BigtableInstanceAdminLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        bigtable_admin_internal::BigtableInstanceAdminRetryTraits>;
+  BigtableInstanceAdminLimitedErrorCountRetryPolicy(
+      BigtableInstanceAdminLimitedErrorCountRetryPolicy&& rhs) noexcept
+      : BigtableInstanceAdminLimitedErrorCountRetryPolicy(
+            rhs.maximum_failures()) {}
+  BigtableInstanceAdminLimitedErrorCountRetryPolicy(
+      BigtableInstanceAdminLimitedErrorCountRetryPolicy const& rhs) noexcept
+      : BigtableInstanceAdminLimitedErrorCountRetryPolicy(
+            rhs.maximum_failures()) {}
 
+  int maximum_failures() const { return impl_.maximum_failures(); }
+
+  bool OnFailure(Status const& status) override {
+    return impl_.OnFailure(status);
+  }
+  bool IsExhausted() const override { return impl_.IsExhausted(); }
+  bool IsPermanentFailure(Status const& status) const override {
+    return impl_.IsPermanentFailure(status);
+  }
+  std::unique_ptr<BigtableInstanceAdminRetryPolicy> clone() const override {
+    return std::make_unique<BigtableInstanceAdminLimitedErrorCountRetryPolicy>(
+        maximum_failures());
+  }
+
+  // This is provided only for backwards compatibility.
+  using BaseType = BigtableInstanceAdminRetryPolicy;
+
+ private:
+  google::cloud::internal::LimitedErrorCountRetryPolicy<
+      bigtable_admin_internal::BigtableInstanceAdminRetryTraits>
+      impl_;
+};
+
+/**
+ * A retry policy for `BigtableInstanceAdminConnection` based on elapsed time.
+ *
+ * This policy stops retrying if:
+ * - An RPC returns a non-transient error.
+ * - The elapsed time in the retry loop exceeds a prescribed duration.
+ *
+ * In this class the following status codes are treated as transient errors:
+ * - [`kAborted`](@ref google::cloud::StatusCode)
+ * - [`kUnavailable`](@ref google::cloud::StatusCode)
+ */
+class BigtableInstanceAdminLimitedTimeRetryPolicy
+    : public BigtableInstanceAdminRetryPolicy {
+ public:
+  /**
+   * Constructor given a `std::chrono::duration<>` object.
+   *
+   * @tparam DurationRep a placeholder to match the `Rep` tparam for @p
+   *     duration's type. The semantics of this template parameter are
+   *     documented in `std::chrono::duration<>`. In brief, the underlying
+   *     arithmetic type used to store the number of ticks. For our purposes it
+   *     is simply a formal parameter.
+   * @tparam DurationPeriod a placeholder to match the `Period` tparam for @p
+   *     duration's type. The semantics of this template parameter are
+   *     documented in `std::chrono::duration<>`. In brief, the length of the
+   *     tick in seconds, expressed as a `std::ratio<>`. For our purposes it is
+   *     simply a formal parameter.
+   * @param maximum_duration the maximum time allowed before the policy expires.
+   *     While the application can express this time in any units they desire,
+   *     the class truncates to milliseconds.
+   *
+   * @see https://en.cppreference.com/w/cpp/chrono/duration for more information
+   *     about `std::chrono::duration`.
+   */
+  template <typename DurationRep, typename DurationPeriod>
+  explicit BigtableInstanceAdminLimitedTimeRetryPolicy(
+      std::chrono::duration<DurationRep, DurationPeriod> maximum_duration)
+      : impl_(maximum_duration) {}
+
+  BigtableInstanceAdminLimitedTimeRetryPolicy(
+      BigtableInstanceAdminLimitedTimeRetryPolicy&& rhs) noexcept
+      : BigtableInstanceAdminLimitedTimeRetryPolicy(rhs.maximum_duration()) {}
+  BigtableInstanceAdminLimitedTimeRetryPolicy(
+      BigtableInstanceAdminLimitedTimeRetryPolicy const& rhs) noexcept
+      : BigtableInstanceAdminLimitedTimeRetryPolicy(rhs.maximum_duration()) {}
+
+  std::chrono::milliseconds maximum_duration() const {
+    return impl_.maximum_duration();
+  }
+
+  bool OnFailure(Status const& status) override {
+    return impl_.OnFailure(status);
+  }
+  bool IsExhausted() const override { return impl_.IsExhausted(); }
+  bool IsPermanentFailure(Status const& status) const override {
+    return impl_.IsPermanentFailure(status);
+  }
+  std::unique_ptr<BigtableInstanceAdminRetryPolicy> clone() const override {
+    return std::make_unique<BigtableInstanceAdminLimitedTimeRetryPolicy>(
+        maximum_duration());
+  }
+
+  // This is provided only for backwards compatibility.
+  using BaseType = BigtableInstanceAdminRetryPolicy;
+
+ private:
+  google::cloud::internal::LimitedTimeRetryPolicy<
+      bigtable_admin_internal::BigtableInstanceAdminRetryTraits>
+      impl_;
+};
+
+/**
+ * The `BigtableInstanceAdminConnection` object for
+ * `BigtableInstanceAdminClient`.
+ *
+ * This interface defines virtual methods for each of the user-facing overload
+ * sets in `BigtableInstanceAdminClient`. This allows users to inject custom
+ * behavior (e.g., with a Google Mock object) when writing tests that use
+ * objects of type `BigtableInstanceAdminClient`.
+ *
+ * To create a concrete instance, see `MakeBigtableInstanceAdminConnection()`.
+ *
+ * For mocking, see `bigtable_admin_mocks::MockBigtableInstanceAdminConnection`.
+ */
 class BigtableInstanceAdminConnection {
  public:
   virtual ~BigtableInstanceAdminConnection() = 0;
@@ -58,6 +197,13 @@ class BigtableInstanceAdminConnection {
   virtual future<StatusOr<google::bigtable::admin::v2::Instance>>
   CreateInstance(
       google::bigtable::admin::v2::CreateInstanceRequest const& request);
+
+  virtual StatusOr<google::longrunning::Operation> CreateInstance(
+      NoAwaitTag,
+      google::bigtable::admin::v2::CreateInstanceRequest const& request);
+
+  virtual future<StatusOr<google::bigtable::admin::v2::Instance>>
+  CreateInstance(google::longrunning::Operation const& operation);
 
   virtual StatusOr<google::bigtable::admin::v2::Instance> GetInstance(
       google::bigtable::admin::v2::GetInstanceRequest const& request);
@@ -73,11 +219,25 @@ class BigtableInstanceAdminConnection {
   PartialUpdateInstance(
       google::bigtable::admin::v2::PartialUpdateInstanceRequest const& request);
 
+  virtual StatusOr<google::longrunning::Operation> PartialUpdateInstance(
+      NoAwaitTag,
+      google::bigtable::admin::v2::PartialUpdateInstanceRequest const& request);
+
+  virtual future<StatusOr<google::bigtable::admin::v2::Instance>>
+  PartialUpdateInstance(google::longrunning::Operation const& operation);
+
   virtual Status DeleteInstance(
       google::bigtable::admin::v2::DeleteInstanceRequest const& request);
 
   virtual future<StatusOr<google::bigtable::admin::v2::Cluster>> CreateCluster(
       google::bigtable::admin::v2::CreateClusterRequest const& request);
+
+  virtual StatusOr<google::longrunning::Operation> CreateCluster(
+      NoAwaitTag,
+      google::bigtable::admin::v2::CreateClusterRequest const& request);
+
+  virtual future<StatusOr<google::bigtable::admin::v2::Cluster>> CreateCluster(
+      google::longrunning::Operation const& operation);
 
   virtual StatusOr<google::bigtable::admin::v2::Cluster> GetCluster(
       google::bigtable::admin::v2::GetClusterRequest const& request);
@@ -88,9 +248,22 @@ class BigtableInstanceAdminConnection {
   virtual future<StatusOr<google::bigtable::admin::v2::Cluster>> UpdateCluster(
       google::bigtable::admin::v2::Cluster const& request);
 
+  virtual StatusOr<google::longrunning::Operation> UpdateCluster(
+      NoAwaitTag, google::bigtable::admin::v2::Cluster const& request);
+
+  virtual future<StatusOr<google::bigtable::admin::v2::Cluster>> UpdateCluster(
+      google::longrunning::Operation const& operation);
+
   virtual future<StatusOr<google::bigtable::admin::v2::Cluster>>
   PartialUpdateCluster(
       google::bigtable::admin::v2::PartialUpdateClusterRequest const& request);
+
+  virtual StatusOr<google::longrunning::Operation> PartialUpdateCluster(
+      NoAwaitTag,
+      google::bigtable::admin::v2::PartialUpdateClusterRequest const& request);
+
+  virtual future<StatusOr<google::bigtable::admin::v2::Cluster>>
+  PartialUpdateCluster(google::longrunning::Operation const& operation);
 
   virtual Status DeleteCluster(
       google::bigtable::admin::v2::DeleteClusterRequest const& request);
@@ -108,6 +281,13 @@ class BigtableInstanceAdminConnection {
   UpdateAppProfile(
       google::bigtable::admin::v2::UpdateAppProfileRequest const& request);
 
+  virtual StatusOr<google::longrunning::Operation> UpdateAppProfile(
+      NoAwaitTag,
+      google::bigtable::admin::v2::UpdateAppProfileRequest const& request);
+
+  virtual future<StatusOr<google::bigtable::admin::v2::AppProfile>>
+  UpdateAppProfile(google::longrunning::Operation const& operation);
+
   virtual Status DeleteAppProfile(
       google::bigtable::admin::v2::DeleteAppProfileRequest const& request);
 
@@ -119,27 +299,39 @@ class BigtableInstanceAdminConnection {
 
   virtual StatusOr<google::iam::v1::TestIamPermissionsResponse>
   TestIamPermissions(google::iam::v1::TestIamPermissionsRequest const& request);
+
+  virtual StreamRange<google::bigtable::admin::v2::HotTablet> ListHotTablets(
+      google::bigtable::admin::v2::ListHotTabletsRequest request);
 };
 
+/**
+ * A factory function to construct an object of type
+ * `BigtableInstanceAdminConnection`.
+ *
+ * The returned connection object should not be used directly; instead it
+ * should be passed as an argument to the constructor of
+ * BigtableInstanceAdminClient.
+ *
+ * The optional @p options argument may be used to configure aspects of the
+ * returned `BigtableInstanceAdminConnection`. Expected options are any of the
+ * types in the following option lists:
+ *
+ * - `google::cloud::CommonOptionList`
+ * - `google::cloud::GrpcOptionList`
+ * - `google::cloud::UnifiedCredentialsOptionList`
+ * - `google::cloud::bigtable_admin::BigtableInstanceAdminPolicyOptionList`
+ *
+ * @note Unexpected options will be ignored. To log unexpected options instead,
+ *     set `GOOGLE_CLOUD_CPP_ENABLE_CLOG=yes` in the environment.
+ *
+ * @param options (optional) Configure the `BigtableInstanceAdminConnection`
+ * created by this function.
+ */
 std::shared_ptr<BigtableInstanceAdminConnection>
 MakeBigtableInstanceAdminConnection(Options options = {});
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigtable_admin
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace bigtable_admin_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<bigtable_admin::BigtableInstanceAdminConnection>
-MakeBigtableInstanceAdminConnection(
-    std::shared_ptr<BigtableInstanceAdminStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace bigtable_admin_internal
 }  // namespace cloud
 }  // namespace google
 

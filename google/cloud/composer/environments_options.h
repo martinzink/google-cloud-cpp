@@ -21,40 +21,29 @@
 
 #include "google/cloud/composer/environments_connection.h"
 #include "google/cloud/composer/environments_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/composer/v1/environments_options.h"
 
 namespace google {
 namespace cloud {
 namespace composer {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct EnvironmentsRetryPolicyOption {
-  using Type = std::shared_ptr<EnvironmentsRetryPolicy>;
-};
+/// @deprecated Use composer_v1::EnvironmentsPollingPolicyOption directly.
+using ::google::cloud::composer_v1::EnvironmentsPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct EnvironmentsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use composer_v1::EnvironmentsBackoffPolicyOption directly.
+using ::google::cloud::composer_v1::EnvironmentsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct EnvironmentsPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use composer_v1::EnvironmentsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::composer_v1::
+    EnvironmentsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct EnvironmentsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<EnvironmentsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use composer_v1::EnvironmentsPolicyOptionList directly.
+using ::google::cloud::composer_v1::EnvironmentsPolicyOptionList;
 
-using EnvironmentsPolicyOptionList =
-    OptionList<EnvironmentsRetryPolicyOption, EnvironmentsBackoffPolicyOption,
-               EnvironmentsPollingPolicyOption,
-               EnvironmentsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use composer_v1::EnvironmentsRetryPolicyOption directly.
+using ::google::cloud::composer_v1::EnvironmentsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace composer

@@ -26,6 +26,11 @@ namespace cloud {
 namespace spanner_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+/**
+ * A `PartialResultSetReader` decorator that logs the `Read()` `resume_token`
+ * parameter and the `PartialResultSet::resumption` return value. This is an
+ * extension to the standard `SpannerLogging` request/response logging.
+ */
 class LoggingResultSetReader : public PartialResultSetReader {
  public:
   LoggingResultSetReader(std::unique_ptr<PartialResultSetReader> impl,
@@ -34,7 +39,8 @@ class LoggingResultSetReader : public PartialResultSetReader {
   ~LoggingResultSetReader() override = default;
 
   void TryCancel() override;
-  absl::optional<google::spanner::v1::PartialResultSet> Read() override;
+  absl::optional<PartialResultSet> Read(
+      absl::optional<std::string> const& resume_token) override;
   Status Finish() override;
 
  private:

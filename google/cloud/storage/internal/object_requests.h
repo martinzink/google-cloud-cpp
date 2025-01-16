@@ -18,16 +18,26 @@
 #include "google/cloud/storage/auto_finalize.h"
 #include "google/cloud/storage/download_options.h"
 #include "google/cloud/storage/hashing_options.h"
+#include "google/cloud/storage/include_folders_as_prefixes.h"
 #include "google/cloud/storage/internal/const_buffer.h"
 #include "google/cloud/storage/internal/generic_object_request.h"
+#include "google/cloud/storage/internal/hash_function.h"
+#include "google/cloud/storage/internal/hash_values.h"
 #include "google/cloud/storage/internal/http_response.h"
 #include "google/cloud/storage/object_metadata.h"
+#include "google/cloud/storage/override_unlocked_retention.h"
+#include "google/cloud/storage/soft_deleted.h"
 #include "google/cloud/storage/upload_options.h"
 #include "google/cloud/storage/version.h"
 #include "google/cloud/storage/well_known_parameters.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
+#include <map>
+#include <memory>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace google {
@@ -40,8 +50,9 @@ namespace internal {
  */
 class ListObjectsRequest
     : public GenericRequest<ListObjectsRequest, MaxResults, Prefix, Delimiter,
-                            IncludeTrailingDelimiter, StartOffset, EndOffset,
-                            Projection, UserProject, Versions> {
+                            IncludeFoldersAsPrefixes, IncludeTrailingDelimiter,
+                            StartOffset, EndOffset, MatchGlob, Projection,
+                            SoftDeleted, UserProject, Versions> {
  public:
   ListObjectsRequest() = default;
   explicit ListObjectsRequest(std::string bucket_name)
@@ -64,6 +75,8 @@ std::ostream& operator<<(std::ostream& os, ListObjectsRequest const& r);
 struct ListObjectsResponse {
   static StatusOr<ListObjectsResponse> FromHttpResponse(
       std::string const& payload);
+  static StatusOr<ListObjectsResponse> FromHttpResponse(
+      HttpResponse const& response);
 
   std::string next_page_token;
   std::vector<ObjectMetadata> items;
@@ -79,12 +92,23 @@ class GetObjectMetadataRequest
     : public GenericObjectRequest<
           GetObjectMetadataRequest, Generation, IfGenerationMatch,
           IfGenerationNotMatch, IfMetagenerationMatch, IfMetagenerationNotMatch,
-          Projection, UserProject> {
+          Projection, SoftDeleted, UserProject> {
  public:
   using GenericObjectRequest::GenericObjectRequest;
 };
 
 std::ostream& operator<<(std::ostream& os, GetObjectMetadataRequest const& r);
+
+/**
+ * Refactors common attributes for `InsertObject*` requests.
+ */
+template <typename Derived>
+using InsertObjectRequestImpl = GenericObjectRequest<
+    Derived, ContentEncoding, ContentType, Crc32cChecksumValue,
+    DisableCrc32cChecksum, DisableMD5Hash, EncryptionKey, IfGenerationMatch,
+    IfGenerationNotMatch, IfMetagenerationMatch, IfMetagenerationNotMatch,
+    KmsKeyName, MD5HashValue, PredefinedAcl, Projection, UserProject,
+    UploadFromOffset, UploadLimit, WithObjectMetadata>;
 
 /**
  * Represents a request to the `Objects: insert` API with a string for the
@@ -95,31 +119,49 @@ std::ostream& operator<<(std::ostream& os, GetObjectMetadataRequest const& r);
  * objects.
  */
 class InsertObjectMediaRequest
-    : public GenericObjectRequest<
-          InsertObjectMediaRequest, ContentEncoding, ContentType,
-          Crc32cChecksumValue, DisableCrc32cChecksum, DisableMD5Hash,
-          EncryptionKey, IfGenerationMatch, IfGenerationNotMatch,
-          IfMetagenerationMatch, IfMetagenerationNotMatch, KmsKeyName,
-          MD5HashValue, PredefinedAcl, Projection, UserProject,
-          UploadFromOffset, UploadLimit, WithObjectMetadata> {
+    : public InsertObjectRequestImpl<InsertObjectMediaRequest> {
  public:
-  InsertObjectMediaRequest() = default;
+  InsertObjectMediaRequest();
+  InsertObjectMediaRequest(std::string bucket_name, std::string object_name,
+                           absl::string_view payload);
 
-  explicit InsertObjectMediaRequest(std::string bucket_name,
-                                    std::string object_name,
-                                    std::string contents)
-      : GenericObjectRequest(std::move(bucket_name), std::move(object_name)),
-        contents_(std::move(contents)) {}
+  absl::string_view payload() const { return payload_; }
+  void set_payload(absl::string_view payload);
 
-  std::string const& contents() const { return contents_; }
-  InsertObjectMediaRequest& set_contents(std::string&& v) {
-    contents_ = std::move(v);
+  template <typename... O>
+  InsertObjectMediaRequest& set_multiple_options(O&&... o) {
+    InsertObjectRequestImpl<InsertObjectMediaRequest>::set_multiple_options(
+        std::forward<O>(o)...);
+    reset_hash_function();
     return *this;
   }
+  HashFunction& hash_function() const { return *hash_function_; }
+
+  ///@{
+  /**
+   * @name Backwards compatibility.
+   *
+   * While this class is in the internal namespace, the storage library
+   * requires applications to use parts of the internal namespace in mocks.
+   *
+   * These functions are only provided for backwards compatibility. The library
+   * no longer uses them, and mocks (if any) should migrate to payload() and
+   * set_payload().
+   */
+  [[deprecated("use payload() instead")]] std::string const& contents() const;
+  [[deprecated("use set_payload() instead")]] void set_contents(std::string v);
+  ///@}
 
  private:
-  std::string contents_;
+  void reset_hash_function();
+
+  absl::string_view payload_;
+  std::shared_ptr<HashFunction> hash_function_;
+  mutable std::string contents_;
+  mutable bool dirty_ = true;
 };
+
+HashValues FinishHashes(InsertObjectMediaRequest const& request);
 
 std::ostream& operator<<(std::ostream& os, InsertObjectMediaRequest const& r);
 
@@ -167,13 +209,14 @@ class ReadObjectRangeRequest
           ReadObjectRangeRequest, DisableCrc32cChecksum, DisableMD5Hash,
           EncryptionKey, Generation, IfGenerationMatch, IfGenerationNotMatch,
           IfMetagenerationMatch, IfMetagenerationNotMatch, ReadFromOffset,
-          ReadRange, ReadLast, UserProject> {
+          ReadRange, ReadLast, UserProject, AcceptEncoding> {
  public:
   using GenericObjectRequest::GenericObjectRequest;
 
   bool RequiresNoCache() const;
   bool RequiresRangeHeader() const;
   std::string RangeHeader() const;
+  std::string RangeHeaderValue() const;
   std::int64_t StartingByte() const;
 };
 
@@ -200,7 +243,7 @@ class UpdateObjectRequest
     : public GenericObjectRequest<
           UpdateObjectRequest, Generation, EncryptionKey, IfGenerationMatch,
           IfGenerationNotMatch, IfMetagenerationMatch, IfMetagenerationNotMatch,
-          PredefinedAcl, Projection, UserProject> {
+          OverrideUnlockedRetention, PredefinedAcl, Projection, UserProject> {
  public:
   UpdateObjectRequest() = default;
   explicit UpdateObjectRequest(std::string bucket_name, std::string object_name,
@@ -247,13 +290,47 @@ class ComposeObjectRequest
 std::ostream& operator<<(std::ostream& os, ComposeObjectRequest const& r);
 
 /**
+ * Represents a request to the `Objects: move` API.
+ */
+class MoveObjectRequest
+    : public GenericObjectRequest<
+          MoveObjectRequest, IfGenerationMatch, IfGenerationNotMatch,
+          IfMetagenerationMatch, IfMetagenerationNotMatch,
+          IfSourceGenerationMatch, IfSourceGenerationNotMatch,
+          IfSourceMetagenerationMatch, IfSourceMetagenerationNotMatch,
+          Projection> {
+ public:
+  MoveObjectRequest() = default;
+  explicit MoveObjectRequest(std::string bucket_name,
+                             std::string source_object_name,
+                             std::string destination_object_name)
+      : bucket_name_(std::move(bucket_name)),
+        source_object_name_(std::move(source_object_name)),
+        destination_object_name_(std::move(destination_object_name)) {}
+
+  std::string const& bucket_name() const { return bucket_name_; }
+  std::string const& source_object_name() const { return source_object_name_; }
+  std::string const& destination_object_name() const {
+    return destination_object_name_;
+  }
+
+ private:
+  std::string bucket_name_;
+  std::string source_object_name_;
+  std::string destination_object_name_;
+};
+
+std::ostream& operator<<(std::ostream& os, MoveObjectRequest const& r);
+
+/**
  * Represents a request to the `Objects: patch` API.
  */
 class PatchObjectRequest
     : public GenericObjectRequest<
           PatchObjectRequest, Generation, IfGenerationMatch,
           IfGenerationNotMatch, IfMetagenerationMatch, IfMetagenerationNotMatch,
-          PredefinedAcl, EncryptionKey, Projection, UserProject,
+          OverrideUnlockedRetention, PredefinedAcl, EncryptionKey, Projection,
+          UserProject,
           // PredefinedDefaultObjectAcl has no effect in an `Objects: patch`
           // request.  We are keeping it here for backwards compatibility. It
           // was introduced in error (should have been PredefinedAcl), and it
@@ -322,6 +399,8 @@ std::ostream& operator<<(std::ostream& os, RewriteObjectRequest const& r);
 struct RewriteObjectResponse {
   static StatusOr<RewriteObjectResponse> FromHttpResponse(
       std::string const& payload);
+  static StatusOr<RewriteObjectResponse> FromHttpResponse(
+      HttpResponse const& response);
 
   std::uint64_t total_bytes_rewritten;
   std::uint64_t object_size;
@@ -331,6 +410,34 @@ struct RewriteObjectResponse {
 };
 
 std::ostream& operator<<(std::ostream& os, RewriteObjectResponse const& r);
+
+/**
+ * Represents a request to the `Objects: restore` API
+ */
+class RestoreObjectRequest
+    : public GenericObjectRequest<
+          RestoreObjectRequest, Generation, CopySourceAcl, EncryptionKey,
+          IfGenerationMatch, IfGenerationNotMatch, IfMetagenerationMatch,
+          IfMetagenerationNotMatch, Projection, UserProject> {
+ public:
+  RestoreObjectRequest() = default;
+  RestoreObjectRequest(std::string bucket_name, std::string object_name,
+                       std::int64_t generation)
+      : bucket_name_(std::move(bucket_name)),
+        object_name_(std::move(object_name)),
+        generation_(std::move(generation)) {}
+
+  std::string const& bucket_name() const { return bucket_name_; }
+  std::string const& object_name() const { return object_name_; }
+  std::int64_t const& generation() const { return generation_; }
+
+ private:
+  std::string bucket_name_;
+  std::string object_name_;
+  std::int64_t generation_;
+};
+
+std::ostream& operator<<(std::ostream& os, RestoreObjectRequest const& r);
 
 /**
  * Represents a request to start a resumable upload in `Objects: insert`.
@@ -359,6 +466,23 @@ class ResumableUploadRequest
 
 std::ostream& operator<<(std::ostream& os, ResumableUploadRequest const& r);
 
+struct CreateResumableUploadResponse {
+  static StatusOr<CreateResumableUploadResponse> FromHttpResponse(
+      HttpResponse response);
+
+  std::string upload_id;
+};
+
+bool operator==(CreateResumableUploadResponse const& lhs,
+                CreateResumableUploadResponse const& rhs);
+inline bool operator!=(CreateResumableUploadResponse const& lhs,
+                       CreateResumableUploadResponse const& rhs) {
+  return !(lhs == rhs);
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         CreateResumableUploadResponse const& r);
+
 /**
  * A request to cancel a resumable upload.
  */
@@ -381,29 +505,48 @@ std::ostream& operator<<(std::ostream& os,
 /**
  * A request to send one chunk in an upload session.
  */
-class UploadChunkRequest : public GenericRequest<UploadChunkRequest> {
+class UploadChunkRequest
+    : public GenericRequest<UploadChunkRequest, UserProject> {
  public:
   UploadChunkRequest() = default;
-  UploadChunkRequest(std::string upload_session_url, std::uint64_t range_begin,
-                     ConstBufferSequence payload)
-      : upload_session_url_(std::move(upload_session_url)),
-        range_begin_(range_begin),
-        payload_(std::move(payload)) {}
-  UploadChunkRequest(std::string upload_session_url, std::uint64_t range_begin,
-                     ConstBufferSequence payload, std::uint64_t source_size)
-      : upload_session_url_(std::move(upload_session_url)),
-        range_begin_(range_begin),
-        source_size_(source_size),
-        last_chunk_(true),
-        payload_(std::move(payload)) {}
+
+  // A non-final chunk.
+  UploadChunkRequest(std::string upload_session_url, std::uint64_t offset,
+                     ConstBufferSequence payload,
+                     std::shared_ptr<HashFunction> hash_function);
+
+  // A chunk that finalizes the upload.
+  UploadChunkRequest(std::string upload_session_url, std::uint64_t offset,
+                     ConstBufferSequence payload,
+                     std::shared_ptr<HashFunction> hash_function,
+                     HashValues known_hashes);
 
   std::string const& upload_session_url() const { return upload_session_url_; }
-  std::uint64_t range_begin() const { return range_begin_; }
-  std::uint64_t range_end() const { return range_begin_ + payload_size() - 1; }
-  std::uint64_t source_size() const { return source_size_; }
-  std::size_t payload_size() const { return TotalBytes(payload_); }
+  std::uint64_t offset() const { return offset_; }
+  absl::optional<std::uint64_t> upload_size() const { return upload_size_; }
   ConstBufferSequence const& payload() const { return payload_; }
+
+  [[deprecated("use known_hashes() and hash_function()")]] HashValues const&
+  full_object_hashes() const {
+    return known_object_hashes_;
+  }
+
+  HashValues const& known_object_hashes() const { return known_object_hashes_; }
+
+  HashFunction& hash_function() const { return *hash_function_; }
+
+  bool last_chunk() const { return upload_size_.has_value(); }
+  std::size_t payload_size() const { return TotalBytes(payload_); }
   std::string RangeHeader() const;
+  std::string RangeHeaderValue() const;
+
+  /**
+   * Returns the request to continue writing at @p new_offset.
+   *
+   * @note the result of calling this with an out of range value is undefined
+   *     behavior.
+   */
+  UploadChunkRequest RemainingChunk(std::uint64_t new_offset) const;
 
   // Chunks must be multiples of 256 KiB:
   //  https://cloud.google.com/storage/docs/json_api/v1/how-tos/resumable-upload
@@ -422,11 +565,14 @@ class UploadChunkRequest : public GenericRequest<UploadChunkRequest> {
 
  private:
   std::string upload_session_url_;
-  std::uint64_t range_begin_ = 0;
-  std::uint64_t source_size_ = 0;
-  bool last_chunk_ = false;
+  std::uint64_t offset_ = 0;
+  absl::optional<std::uint64_t> upload_size_;
   ConstBufferSequence payload_;
+  std::shared_ptr<HashFunction> hash_function_;
+  HashValues known_object_hashes_;
 };
+
+HashValues FinishHashes(UploadChunkRequest const& request);
 
 std::ostream& operator<<(std::ostream& os, UploadChunkRequest const& r);
 
@@ -448,6 +594,47 @@ class QueryResumableUploadRequest
 
 std::ostream& operator<<(std::ostream& os,
                          QueryResumableUploadRequest const& r);
+
+StatusOr<std::uint64_t> ParseRangeHeader(std::string const& range);
+
+/**
+ * The response from uploading a chunk and querying a resumable upload.
+ *
+ * We use the same type to represent the response for a UploadChunkRequest and a
+ * QueryResumableUploadRequest because they are the same response.  Once a chunk
+ * is successfully uploaded the response is the new status for the resumable
+ * upload.
+ */
+struct QueryResumableUploadResponse {
+  static StatusOr<QueryResumableUploadResponse> FromHttpResponse(
+      HttpResponse response);
+  QueryResumableUploadResponse() = default;
+  QueryResumableUploadResponse(
+      absl::optional<std::uint64_t> cs,
+      absl::optional<google::cloud::storage::ObjectMetadata> p)
+      : committed_size(std::move(cs)), payload(std::move(p)) {}
+  QueryResumableUploadResponse(
+      absl::optional<std::uint64_t> cs,
+      absl::optional<google::cloud::storage::ObjectMetadata> p,
+      std::multimap<std::string, std::string> rm)
+      : committed_size(std::move(cs)),
+        payload(std::move(p)),
+        request_metadata(std::move(rm)) {}
+
+  absl::optional<std::uint64_t> committed_size;
+  absl::optional<google::cloud::storage::ObjectMetadata> payload;
+  std::multimap<std::string, std::string> request_metadata;
+};
+
+bool operator==(QueryResumableUploadResponse const& lhs,
+                QueryResumableUploadResponse const& rhs);
+inline bool operator!=(QueryResumableUploadResponse const& lhs,
+                       QueryResumableUploadResponse const& rhs) {
+  return !(lhs == rhs);
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         QueryResumableUploadResponse const& r);
 
 }  // namespace internal
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

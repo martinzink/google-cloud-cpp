@@ -18,6 +18,7 @@ set -euo pipefail
 
 source "$(dirname "$0")/../../lib/init.sh"
 source module ci/cloudbuild/builds/lib/bazel.sh
+source module ci/cloudbuild/builds/lib/cloudcxxrc.sh
 source module ci/cloudbuild/builds/lib/integration.sh
 
 export CC=gcc
@@ -26,15 +27,17 @@ export CXX=g++
 # Explicitly list the patterns that match hand-crafted code. Excluding the
 # generated code results in a longer list and more maintenance.
 instrumented_patterns=(
+  "/examples[/:]"
+  "/generator[/:]"
+  "/docfx[/:]"
   "/google/cloud:"
   "/google/cloud/testing_util:"
   "/google/cloud/bigtable[/:]"
-  "/google/cloud/examples[/:]"
   "/google/cloud/pubsub[/:]"
   "/google/cloud/pubsublite[/:]"
   "/google/cloud/spanner[/:]"
   "/google/cloud/storage[/:]"
-  "/generator[/:]"
+  "/google/cloud/bigquery[/:]"
 )
 instrumentation_filter="$(printf ",%s" "${instrumented_patterns[@]}")"
 instrumentation_filter="${instrumentation_filter:1}"
@@ -42,9 +45,32 @@ instrumentation_filter="${instrumentation_filter:1}"
 mapfile -t args < <(bazel::common_args)
 args+=("--instrumentation_filter=${instrumentation_filter}")
 args+=("--instrument_test_targets")
-bazel coverage "${args[@]}" --test_tag_filters=-integration-test ...
+# This is a workaround for:
+#     https://github.com/googleapis/google-cloud-cpp/issues/6952
+# Based on the recommendations from:
+#     https://github.com/bazelbuild/bazel/issues/3236
+args+=("--sandbox_tmpfs_path=/tmp")
+io::log_h2 "Running coverage on non-integration tests."
+bazel coverage "${args[@]}" --test_tag_filters=-integration-test "${BAZEL_TARGETS[@]}"
+
 GOOGLE_CLOUD_CPP_SPANNER_SLOW_INTEGRATION_TESTS="instance"
 mapfile -t integration_args < <(integration::bazel_args)
+# With code coverage the `--flaky_test_attempts` flag works in unexpected ways.
+# A flake produces an empty `coverage.dat` file, which breaks the build when
+# trying to consolidate all the `coverage.dat` files.
+#
+# This combination of a "successful" test (because the flake is retried) and a
+# failure in the consolidation of coverage results, which happens much later
+# in the build, easily leads the developer astray.
+i=0
+for arg in "${integration_args[@]}"; do
+  case "${arg}" in
+    --flaky_test_attempts=*)
+      unset "integration_args[$i]"
+      ;;
+  esac
+  i=$((++i))
+done
 integration::bazel_with_emulators coverage "${args[@]}" "${integration_args[@]}"
 
 # Where does this token come from? For triggered ci/pr builds GCB will securely
@@ -66,32 +92,32 @@ time {
   mapfile -t coverage_dat < <(find "$(bazel info output_path)" -name "coverage.dat")
   io::log "Found ${#coverage_dat[@]} coverage.dat files"
   mapfile -t lcov_flags < <(printf -- "--add-tracefile=%s\n" "${coverage_dat[@]}")
-  lcov --quiet "${lcov_flags[@]}" --output-file "${MERGED_COVERAGE}"
+  lcov --quiet --ignore-errors negative "${lcov_flags[@]}" --output-file "${MERGED_COVERAGE}"
   ls -lh "${MERGED_COVERAGE}"
 }
 
 codecov_args=(
-  "-X" "gcov"
-  "-f" "${MERGED_COVERAGE}"
-  "-q" "${HOME}/coverage-report.txt"
-  "-B" "${BRANCH_NAME}"
-  "-C" "${COMMIT_SHA}"
-  "-P" "${PR_NUMBER:-}"
-  "-b" "${BUILD_ID:-}"
+  "--filter=gcov"
+  "--file=${MERGED_COVERAGE}"
+  "--branch=${BRANCH_NAME}"
+  "--sha=${COMMIT_SHA}"
+  "--pr=${PR_NUMBER:-}"
+  "--build=${BUILD_ID:-}"
+  "--verbose"
 )
 io::log_h2 "Uploading ${MERGED_COVERAGE} to codecov.io"
 io::log "Flags: ${codecov_args[*]}"
 TIMEFORMAT="==> 🕑 codecov.io upload done in %R seconds"
 time {
-  # Verifies the codecov bash uploader before executing it.
-  sha256sum="d6aa3207c4908d123bd8af62ec0538e3f2b9f257c3de62fad4e29cd3b59b41d9"
-  codecov_url="https://raw.githubusercontent.com/codecov/codecov-bash/1b4b96ac38946b20043b3ca3bad88d95462259b6/codecov"
-  codecov_script="$(curl -s "${codecov_url}")"
-  if ! sha256sum -c <(echo "${sha256sum} -") <<<"${codecov_script}"; then
-    io::log_h2 "ERROR: Invalid sha256sum for codecov_script:"
-    echo "${codecov_script}"
+  # Downloads and verifies the codecov uploader before executing it.
+  codecov="$(mktemp -u -t codecov.XXXXXXXXXX)"
+  curl -fsSL -o "${codecov}" https://github.com/codecov/uploader/releases/download/v0.6.3/codecov-linux
+  sha256sum="e6aa8429d6ff91eddc7eced927e6ec936364a88fe755eed28b1f627a6499980d"
+  if ! sha256sum -c <(echo "${sha256sum} *${codecov}"); then
+    io::log_h2 "ERROR: Invalid sha256sum for codecov program"
     exit 1
   fi
-  env -i CODECOV_TOKEN="${CODECOV_TOKEN:-}" HOME="${HOME}" \
-    bash <(echo "${codecov_script}") "${codecov_args[@]}"
+  chmod +x "${codecov}"
+  env -i HOME="${HOME}" "${codecov}" --token="${CODECOV_TOKEN}" "${codecov_args[@]}"
+  rm "${codecov}"
 }

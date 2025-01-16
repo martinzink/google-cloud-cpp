@@ -21,35 +21,33 @@
 
 #include "google/cloud/bigquery/data_transfer_connection.h"
 #include "google/cloud/bigquery/data_transfer_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/bigquery/datatransfer/v1/data_transfer_options.h"
 
 namespace google {
 namespace cloud {
 namespace bigquery {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct DataTransferServiceRetryPolicyOption {
-  using Type = std::shared_ptr<DataTransferServiceRetryPolicy>;
-};
+/// @deprecated Use
+/// bigquery_datatransfer_v1::DataTransferServiceBackoffPolicyOption directly.
+using ::google::cloud::bigquery_datatransfer_v1::
+    DataTransferServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DataTransferServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// bigquery_datatransfer_v1::DataTransferServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::bigquery_datatransfer_v1::
+    DataTransferServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DataTransferServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<DataTransferServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use
+/// bigquery_datatransfer_v1::DataTransferServicePolicyOptionList directly.
+using ::google::cloud::bigquery_datatransfer_v1::
+    DataTransferServicePolicyOptionList;
 
-using DataTransferServicePolicyOptionList =
-    OptionList<DataTransferServiceRetryPolicyOption,
-               DataTransferServiceBackoffPolicyOption,
-               DataTransferServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use
+/// bigquery_datatransfer_v1::DataTransferServiceRetryPolicyOption directly.
+using ::google::cloud::bigquery_datatransfer_v1::
+    DataTransferServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigquery

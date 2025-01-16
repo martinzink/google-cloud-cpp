@@ -18,6 +18,8 @@
 #include "google/cloud/bigtable/data_client.h"
 #include <google/bigtable/v2/bigtable.grpc.pb.h>
 #include <string>
+// TODO(#8800) - delete this class when deprecation is complete
+#include "google/cloud/internal/disable_deprecation_warnings.inc"
 
 namespace google {
 namespace cloud {
@@ -51,7 +53,7 @@ class InProcessDataClient : public bigtable::DataClient {
     return google::bigtable::v2::Bigtable::NewStub(Channel());
   }
 
-  //@{
+  ///@{
   /// @name the google.bigtable.v2.Bigtable operations.
   grpc::Status MutateRow(
       grpc::ClientContext* context,
@@ -130,7 +132,7 @@ class InProcessDataClient : public bigtable::DataClient {
       ::grpc::ClientContext* context,
       ::google::bigtable::v2::MutateRowsRequest const& request,
       ::grpc::CompletionQueue* cq) override;
-  //@}
+  ///@}
 
  private:
   google::cloud::BackgroundThreadsFactory BackgroundThreadsFactory() override {
@@ -146,5 +148,8 @@ class InProcessDataClient : public bigtable::DataClient {
 }  // namespace bigtable
 }  // namespace cloud
 }  // namespace google
+
+// TODO(#8800) - delete this class when deprecation is complete
+#include "google/cloud/internal/diagnostics_pop.inc"
 
 #endif  // GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGTABLE_TESTING_INPROCESS_DATA_CLIENT_H

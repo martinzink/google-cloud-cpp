@@ -19,67 +19,42 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VIDEOINTELLIGENCE_VIDEO_INTELLIGENCE_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VIDEOINTELLIGENCE_VIDEO_INTELLIGENCE_CONNECTION_H
 
-#include "google/cloud/videointelligence/internal/video_intelligence_retry_traits.h"
-#include "google/cloud/videointelligence/internal/video_intelligence_stub.h"
+#include "google/cloud/videointelligence/v1/video_intelligence_connection.h"
 #include "google/cloud/videointelligence/video_intelligence_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace videointelligence {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using VideoIntelligenceServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        videointelligence_internal::VideoIntelligenceServiceRetryTraits>;
+/// @deprecated Use videointelligence_v1::MakeVideoIntelligenceServiceConnection
+/// directly.
+using ::google::cloud::videointelligence_v1::
+    MakeVideoIntelligenceServiceConnection;
 
-using VideoIntelligenceServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        videointelligence_internal::VideoIntelligenceServiceRetryTraits>;
+/// @deprecated Use videointelligence_v1::VideoIntelligenceServiceConnection
+/// directly.
+using ::google::cloud::videointelligence_v1::VideoIntelligenceServiceConnection;
 
-using VideoIntelligenceServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        videointelligence_internal::VideoIntelligenceServiceRetryTraits>;
+/// @deprecated Use
+/// videointelligence_v1::VideoIntelligenceServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::videointelligence_v1::
+    VideoIntelligenceServiceLimitedErrorCountRetryPolicy;
 
-class VideoIntelligenceServiceConnection {
- public:
-  virtual ~VideoIntelligenceServiceConnection() = 0;
+/// @deprecated Use
+/// videointelligence_v1::VideoIntelligenceServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::videointelligence_v1::
+    VideoIntelligenceServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual future<
-      StatusOr<google::cloud::videointelligence::v1::AnnotateVideoResponse>>
-  AnnotateVideo(
-      google::cloud::videointelligence::v1::AnnotateVideoRequest const&
-          request);
-};
-
-std::shared_ptr<VideoIntelligenceServiceConnection>
-MakeVideoIntelligenceServiceConnection(Options options = {});
+/// @deprecated Use videointelligence_v1::VideoIntelligenceServiceRetryPolicy
+/// directly.
+using ::google::cloud::videointelligence_v1::
+    VideoIntelligenceServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace videointelligence
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace videointelligence_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<videointelligence::VideoIntelligenceServiceConnection>
-MakeVideoIntelligenceServiceConnection(
-    std::shared_ptr<VideoIntelligenceServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace videointelligence_internal
 }  // namespace cloud
 }  // namespace google
 

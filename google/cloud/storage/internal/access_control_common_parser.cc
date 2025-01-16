@@ -13,6 +13,11 @@
 // limitations under the License.
 
 #include "google/cloud/storage/internal/access_control_common_parser.h"
+#include "google/cloud/storage/internal/metadata_parser.h"
+#include <utility>
+// This file contains the implementation for deprecated functions, we need to
+// disable the warnings.
+#include "google/cloud/internal/disable_deprecation_warnings.inc"
 
 namespace google {
 namespace cloud {
@@ -21,9 +26,7 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
 Status AccessControlCommonParser::FromJson(AccessControlCommon& result,
                                            nlohmann::json const& json) {
-  if (!json.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
+  if (!json.is_object()) return NotJsonObject(json, GCP_ERROR_INFO());
   result.bucket_ = json.value("bucket", "");
   result.domain_ = json.value("domain", "");
   result.email_ = json.value("email", "");
@@ -35,7 +38,7 @@ Status AccessControlCommonParser::FromJson(AccessControlCommon& result,
   result.role_ = json.value("role", "");
   result.self_link_ = json.value("selfLink", "");
   if (json.count("projectTeam") != 0) {
-    auto tmp = json["projectTeam"];
+    auto const& tmp = json["projectTeam"];
     if (tmp.is_null()) return Status{};
     ProjectTeam p;
     p.project_number = tmp.value("projectNumber", "");

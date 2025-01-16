@@ -21,11 +21,15 @@
 #include "google/cloud/pubsublite/internal/admin_connection_impl.h"
 #include "google/cloud/pubsublite/internal/admin_option_defaults.h"
 #include "google/cloud/pubsublite/internal/admin_stub_factory.h"
+#include "google/cloud/pubsublite/internal/admin_tracing_connection.h"
 #include "google/cloud/background_threads.h"
 #include "google/cloud/common_options.h"
+#include "google/cloud/credentials.h"
 #include "google/cloud/grpc_options.h"
 #include "google/cloud/internal/pagination_range.h"
+#include "google/cloud/internal/unified_grpc_credentials.h"
 #include <memory>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -52,9 +56,9 @@ AdminServiceConnection::GetTopicPartitions(
 }
 
 StreamRange<google::cloud::pubsublite::v1::Topic>
-    AdminServiceConnection::ListTopics(
-        google::cloud::pubsublite::v1::
-            ListTopicsRequest) {  // NOLINT(performance-unnecessary-value-param)
+AdminServiceConnection::ListTopics(
+    google::cloud::pubsublite::v1::
+        ListTopicsRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::cloud::pubsublite::v1::Topic>>();
 }
@@ -90,9 +94,9 @@ AdminServiceConnection::GetSubscription(
 }
 
 StreamRange<google::cloud::pubsublite::v1::Subscription>
-    AdminServiceConnection::ListSubscriptions(
-        google::cloud::pubsublite::v1::
-            ListSubscriptionsRequest) {  // NOLINT(performance-unnecessary-value-param)
+AdminServiceConnection::ListSubscriptions(
+    google::cloud::pubsublite::v1::
+        ListSubscriptionsRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::cloud::pubsublite::v1::Subscription>>();
 }
@@ -116,6 +120,21 @@ AdminServiceConnection::SeekSubscription(
       Status(StatusCode::kUnimplemented, "not implemented"));
 }
 
+StatusOr<google::longrunning::Operation>
+AdminServiceConnection::SeekSubscription(
+    NoAwaitTag, google::cloud::pubsublite::v1::SeekSubscriptionRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::cloud::pubsublite::v1::SeekSubscriptionResponse>>
+AdminServiceConnection::SeekSubscription(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::cloud::pubsublite::v1::SeekSubscriptionResponse>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 StatusOr<google::cloud::pubsublite::v1::Reservation>
 AdminServiceConnection::CreateReservation(
     google::cloud::pubsublite::v1::CreateReservationRequest const&) {
@@ -129,9 +148,9 @@ AdminServiceConnection::GetReservation(
 }
 
 StreamRange<google::cloud::pubsublite::v1::Reservation>
-    AdminServiceConnection::ListReservations(
-        google::cloud::pubsublite::v1::
-            ListReservationsRequest) {  // NOLINT(performance-unnecessary-value-param)
+AdminServiceConnection::ListReservations(
+    google::cloud::pubsublite::v1::
+        ListReservationsRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::cloud::pubsublite::v1::Reservation>>();
 }
@@ -154,38 +173,54 @@ StreamRange<std::string> AdminServiceConnection::ListReservationTopics(
       StreamRange<std::string>>();
 }
 
+StreamRange<google::longrunning::Operation>
+AdminServiceConnection::ListOperations(
+    google::longrunning::
+        ListOperationsRequest) {  // NOLINT(performance-unnecessary-value-param)
+  return google::cloud::internal::MakeUnimplementedPaginationRange<
+      StreamRange<google::longrunning::Operation>>();
+}
+
+StatusOr<google::longrunning::Operation> AdminServiceConnection::GetOperation(
+    google::longrunning::GetOperationRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+Status AdminServiceConnection::DeleteOperation(
+    google::longrunning::DeleteOperationRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+Status AdminServiceConnection::CancelOperation(
+    google::longrunning::CancelOperationRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+future<StatusOr<google::cloud::pubsublite::v1::TopicPartitions>>
+AdminServiceConnection::AsyncGetTopicPartitions(
+    google::cloud::pubsublite::v1::GetTopicPartitionsRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::cloud::pubsublite::v1::TopicPartitions>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 std::shared_ptr<AdminServiceConnection> MakeAdminServiceConnection(
     Options options) {
   internal::CheckExpectedOptions<CommonOptionList, GrpcOptionList,
+                                 UnifiedCredentialsOptionList,
                                  AdminServicePolicyOptionList>(options,
                                                                __func__);
   options = pubsublite_internal::AdminServiceDefaultOptions(std::move(options));
   auto background = internal::MakeBackgroundThreadsFactory(options)();
+  auto auth = internal::CreateAuthenticationStrategy(background->cq(), options);
   auto stub = pubsublite_internal::CreateDefaultAdminServiceStub(
-      background->cq(), options);
-  return std::make_shared<pubsublite_internal::AdminServiceConnectionImpl>(
-      std::move(background), std::move(stub), std::move(options));
+      std::move(auth), options);
+  return pubsublite_internal::MakeAdminServiceTracingConnection(
+      std::make_shared<pubsublite_internal::AdminServiceConnectionImpl>(
+          std::move(background), std::move(stub), std::move(options)));
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace pubsublite
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace pubsublite_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<pubsublite::AdminServiceConnection> MakeAdminServiceConnection(
-    std::shared_ptr<AdminServiceStub> stub, Options options) {
-  options = AdminServiceDefaultOptions(std::move(options));
-  auto background = internal::MakeBackgroundThreadsFactory(options)();
-  return std::make_shared<pubsublite_internal::AdminServiceConnectionImpl>(
-      std::move(background), std::move(stub), std::move(options));
-}
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace pubsublite_internal
 }  // namespace cloud
 }  // namespace google

@@ -15,10 +15,12 @@
 #include "google/cloud/storage/client.h"
 #include "google/cloud/storage/internal/object_requests.h"
 #include "google/cloud/storage/testing/mock_client.h"
-#include "absl/memory/memory.h"
 #include <gmock/gmock.h>
+#include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <utility>
 
 namespace {
 
@@ -30,7 +32,7 @@ TEST(StorageMockingSamples, MockReadObject) {
 
   std::shared_ptr<gcs::testing::MockClient> mock =
       std::make_shared<gcs::testing::MockClient>();
-  auto client = gcs::testing::ClientFromMock(mock);
+  auto client = gcs::testing::UndecoratedClientFromMock(mock);
 
   std::string const text = "this is a mock http response";
   std::size_t offset = 0;
@@ -73,38 +75,18 @@ TEST(StorageMockingSamples, MockWriteObject) {
 
   std::shared_ptr<gcs::testing::MockClient> mock =
       std::make_shared<gcs::testing::MockClient>();
-  auto client = gcs::testing::ClientFromMock(mock);
+  auto client = gcs::testing::UndecoratedClientFromMock(mock);
 
   gcs::ObjectMetadata expected_metadata;
 
-  EXPECT_CALL(*mock, CreateResumableSession)
-      .WillOnce([&expected_metadata](
-                    gcs::internal::ResumableUploadRequest const& request) {
-        EXPECT_EQ(request.bucket_name(), "mock-bucket-name") << request;
-        auto* mock_result = new gcs::testing::MockResumableUploadSession;
-        using gcs::internal::ResumableUploadResponse;
-        EXPECT_CALL(*mock_result, done()).WillRepeatedly(Return(false));
-        EXPECT_CALL(*mock_result, next_expected_byte())
-            .WillRepeatedly(Return(0));
-        EXPECT_CALL(*mock_result, UploadChunk)
-            .WillRepeatedly(Return(google::cloud::make_status_or(
-                ResumableUploadResponse{"fake-url",
-                                        ResumableUploadResponse::kInProgress,
-                                        /*committed_size=*/absl::nullopt,
-                                        /*object_metadata=*/absl::nullopt,
-                                        {}})));
-        EXPECT_CALL(*mock_result, UploadFinalChunk)
-            .WillRepeatedly(Return(google::cloud::make_status_or(
-                ResumableUploadResponse{"fake-url",
-                                        ResumableUploadResponse::kDone,
-                                        /*committed_size=*/absl::nullopt,
-                                        /*object_metadata=*/expected_metadata,
-                                        {}})));
-
-        std::unique_ptr<gcs::internal::ResumableUploadSession> result(
-            mock_result);
-        return google::cloud::make_status_or(std::move(result));
-      });
+  using gcs::internal::CreateResumableUploadResponse;
+  using gcs::internal::QueryResumableUploadResponse;
+  EXPECT_CALL(*mock, CreateResumableUpload)
+      .WillOnce(Return(CreateResumableUploadResponse{"test-only-upload-id"}));
+  EXPECT_CALL(*mock, UploadChunk)
+      .WillOnce(Return(QueryResumableUploadResponse{
+          /*.committed_size=*/absl::nullopt,
+          /*.object_metadata=*/expected_metadata}));
 
   auto stream = client.WriteObject("mock-bucket-name", "mock-object-name");
   stream << "Hello World!";
@@ -118,7 +100,7 @@ TEST(StorageMockingSamples, MockReadObjectFailure) {
 
   std::shared_ptr<gcs::testing::MockClient> mock =
       std::make_shared<gcs::testing::MockClient>();
-  auto client = gcs::testing::ClientFromMock(mock);
+  auto client = gcs::testing::UndecoratedClientFromMock(mock);
 
   std::string text = "this is a mock http response";
   EXPECT_CALL(*mock, ReadObject)
@@ -151,29 +133,15 @@ TEST(StorageMockingSamples, MockWriteObjectFailure) {
 
   std::shared_ptr<gcs::testing::MockClient> mock =
       std::make_shared<gcs::testing::MockClient>();
-  auto client = gcs::testing::ClientFromMock(mock);
+  auto client = gcs::testing::UndecoratedClientFromMock(mock);
 
-  EXPECT_CALL(*mock, CreateResumableSession)
-      .WillOnce([](gcs::internal::ResumableUploadRequest const& request) {
-        EXPECT_EQ(request.bucket_name(), "mock-bucket-name") << request;
-        auto* mock_result = new gcs::testing::MockResumableUploadSession;
-        using gcs::internal::ResumableUploadResponse;
-        EXPECT_CALL(*mock_result, done()).WillRepeatedly(Return(false));
-        EXPECT_CALL(*mock_result, next_expected_byte())
-            .WillRepeatedly(Return(0));
-        EXPECT_CALL(*mock_result, UploadChunk)
-            .WillRepeatedly(Return(google::cloud::Status(
-                google::cloud::StatusCode::kInvalidArgument,
-                "Invalid Argument")));
-        EXPECT_CALL(*mock_result, UploadFinalChunk)
-            .WillRepeatedly(Return(google::cloud::Status(
-                google::cloud::StatusCode::kInvalidArgument,
-                "Invalid Argument")));
-
-        std::unique_ptr<gcs::internal::ResumableUploadSession> result(
-            mock_result);
-        return google::cloud::make_status_or(std::move(result));
-      });
+  using gcs::internal::CreateResumableUploadResponse;
+  using gcs::internal::QueryResumableUploadResponse;
+  EXPECT_CALL(*mock, CreateResumableUpload)
+      .WillOnce(Return(CreateResumableUploadResponse{"test-only-upload-id"}));
+  EXPECT_CALL(*mock, UploadChunk)
+      .WillOnce(Return(google::cloud::Status{
+          google::cloud::StatusCode::kInvalidArgument, "Invalid Argument"}));
 
   auto stream = client.WriteObject("mock-bucket-name", "mock-object-name");
   stream << "Hello World!";

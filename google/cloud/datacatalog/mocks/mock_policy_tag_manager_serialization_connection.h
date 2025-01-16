@@ -20,35 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATACATALOG_MOCKS_MOCK_POLICY_TAG_MANAGER_SERIALIZATION_CONNECTION_H
 
 #include "google/cloud/datacatalog/policy_tag_manager_serialization_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/datacatalog/v1/mocks/mock_policy_tag_manager_serialization_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in datacatalog_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace datacatalog_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockPolicyTagManagerSerializationConnection
-    : public datacatalog::PolicyTagManagerSerializationConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::datacatalog::v1::Taxonomy>, ReplaceTaxonomy,
-      (google::cloud::datacatalog::v1::ReplaceTaxonomyRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::datacatalog::v1::ImportTaxonomiesResponse>,
-      ImportTaxonomies,
-      (google::cloud::datacatalog::v1::ImportTaxonomiesRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::datacatalog::v1::ExportTaxonomiesResponse>,
-      ExportTaxonomies,
-      (google::cloud::datacatalog::v1::ExportTaxonomiesRequest const& request),
-      (override));
-};
+/// @deprecated Use
+/// datacatalog_v1_mocks::MockPolicyTagManagerSerializationConnection directly.
+using ::google::cloud::datacatalog_v1_mocks::
+    MockPolicyTagManagerSerializationConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace datacatalog_mocks

@@ -16,14 +16,15 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_STORAGE_INTERNAL_BUCKET_REQUESTS_H
 
 #include "google/cloud/storage/bucket_metadata.h"
+#include "google/cloud/storage/enable_object_retention.h"
 #include "google/cloud/storage/iam_policy.h"
 #include "google/cloud/storage/internal/generic_request.h"
 #include "google/cloud/storage/internal/http_response.h"
 #include "google/cloud/storage/version.h"
 #include "google/cloud/storage/well_known_parameters.h"
-#include "google/cloud/iam_policy.h"
 #include <iosfwd>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace google {
@@ -36,7 +37,7 @@ namespace internal {
  */
 class ListBucketsRequest
     : public GenericRequest<ListBucketsRequest, MaxResults, Prefix, Projection,
-                            UserProject> {
+                            UserProject, OverrideDefaultProject> {
  public:
   ListBucketsRequest() = default;
   explicit ListBucketsRequest(std::string project_id)
@@ -59,6 +60,8 @@ std::ostream& operator<<(std::ostream& os, ListBucketsRequest const& r);
 struct ListBucketsResponse {
   static StatusOr<ListBucketsResponse> FromHttpResponse(
       std::string const& payload);
+  static StatusOr<ListBucketsResponse> FromHttpResponse(
+      HttpResponse const& response);
 
   std::string next_page_token;
   std::vector<BucketMetadata> items;
@@ -89,9 +92,9 @@ std::ostream& operator<<(std::ostream& os, GetBucketMetadataRequest const& r);
  * Represents a request to the `Buckets: insert` API.
  */
 class CreateBucketRequest
-    : public GenericRequest<CreateBucketRequest, PredefinedAcl,
-                            PredefinedDefaultObjectAcl, Projection,
-                            UserProject> {
+    : public GenericRequest<CreateBucketRequest, EnableObjectRetention,
+                            PredefinedAcl, PredefinedDefaultObjectAcl,
+                            Projection, UserProject, OverrideDefaultProject> {
  public:
   CreateBucketRequest() = default;
   explicit CreateBucketRequest(std::string project_id, BucketMetadata metadata)
@@ -206,37 +209,13 @@ class GetBucketIamPolicyRequest
 
 std::ostream& operator<<(std::ostream& os, GetBucketIamPolicyRequest const& r);
 
-StatusOr<google::cloud::IamPolicy> ParseIamPolicyFromString(
-    std::string const& payload);
-
-/**
- * Represents a request to the `Buckets: setIamPolicy` API.
- */
-class SetBucketIamPolicyRequest
-    : public GenericRequest<SetBucketIamPolicyRequest, UserProject> {
- public:
-  SetBucketIamPolicyRequest() = default;
-  explicit SetBucketIamPolicyRequest(std::string bucket_name,
-                                     IamPolicy const& policy);
-
-  std::string const& bucket_name() const { return bucket_name_; }
-  IamPolicy const& policy() const { return policy_; }
-  std::string const& json_payload() const { return json_payload_; }
-
- private:
-  std::string bucket_name_;
-  IamPolicy policy_;
-  std::string json_payload_;
-};
-
-std::ostream& operator<<(std::ostream& os, SetBucketIamPolicyRequest const& r);
-
 /**
  * Represents a request to the `Buckets: setIamPolicy` native API.
  */
 class SetNativeBucketIamPolicyRequest
     : public GenericRequest<SetNativeBucketIamPolicyRequest, UserProject> {
  public:
+  SetNativeBucketIamPolicyRequest();
   explicit SetNativeBucketIamPolicyRequest(std::string bucket_name,
                                            NativeIamPolicy const& policy);
 
@@ -279,6 +258,8 @@ std::ostream& operator<<(std::ostream& os,
 struct TestBucketIamPermissionsResponse {
   static StatusOr<TestBucketIamPermissionsResponse> FromHttpResponse(
       std::string const& payload);
+  static StatusOr<TestBucketIamPermissionsResponse> FromHttpResponse(
+      HttpResponse const& response);
 
   std::vector<std::string> permissions;
 };

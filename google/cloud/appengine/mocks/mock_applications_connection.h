@@ -20,36 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_MOCKS_MOCK_APPLICATIONS_CONNECTION_H
 
 #include "google/cloud/appengine/applications_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/appengine/v1/mocks/mock_applications_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in appengine_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace appengine_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockApplicationsConnection : public appengine::ApplicationsConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::appengine::v1::Application>, GetApplication,
-              (google::appengine::v1::GetApplicationRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::appengine::v1::Application>>,
-              CreateApplication,
-              (google::appengine::v1::CreateApplicationRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::appengine::v1::Application>>,
-              UpdateApplication,
-              (google::appengine::v1::UpdateApplicationRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::appengine::v1::Application>>,
-              RepairApplication,
-              (google::appengine::v1::RepairApplicationRequest const& request),
-              (override));
-};
+/// @deprecated Use appengine_v1_mocks::MockApplicationsConnection directly.
+using ::google::cloud::appengine_v1_mocks::MockApplicationsConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine_mocks

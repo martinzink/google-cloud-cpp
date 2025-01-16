@@ -21,41 +21,29 @@
 
 #include "google/cloud/shell/cloud_shell_connection.h"
 #include "google/cloud/shell/cloud_shell_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/shell/v1/cloud_shell_options.h"
 
 namespace google {
 namespace cloud {
 namespace shell {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CloudShellServiceRetryPolicyOption {
-  using Type = std::shared_ptr<CloudShellServiceRetryPolicy>;
-};
+/// @deprecated Use shell_v1::CloudShellServicePollingPolicyOption directly.
+using ::google::cloud::shell_v1::CloudShellServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudShellServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use shell_v1::CloudShellServiceBackoffPolicyOption directly.
+using ::google::cloud::shell_v1::CloudShellServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudShellServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use shell_v1::CloudShellServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::shell_v1::
+    CloudShellServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudShellServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CloudShellServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use shell_v1::CloudShellServicePolicyOptionList directly.
+using ::google::cloud::shell_v1::CloudShellServicePolicyOptionList;
 
-using CloudShellServicePolicyOptionList =
-    OptionList<CloudShellServiceRetryPolicyOption,
-               CloudShellServiceBackoffPolicyOption,
-               CloudShellServicePollingPolicyOption,
-               CloudShellServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use shell_v1::CloudShellServiceRetryPolicyOption directly.
+using ::google::cloud::shell_v1::CloudShellServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace shell

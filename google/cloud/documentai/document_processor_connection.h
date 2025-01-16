@@ -20,72 +20,36 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DOCUMENTAI_DOCUMENT_PROCESSOR_CONNECTION_H
 
 #include "google/cloud/documentai/document_processor_connection_idempotency_policy.h"
-#include "google/cloud/documentai/internal/document_processor_retry_traits.h"
-#include "google/cloud/documentai/internal/document_processor_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/documentai/v1/document_processor_connection.h"
 
 namespace google {
 namespace cloud {
 namespace documentai {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using DocumentProcessorServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        documentai_internal::DocumentProcessorServiceRetryTraits>;
+/// @deprecated Use documentai_v1::MakeDocumentProcessorServiceConnection
+/// directly.
+using ::google::cloud::documentai_v1::MakeDocumentProcessorServiceConnection;
 
-using DocumentProcessorServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        documentai_internal::DocumentProcessorServiceRetryTraits>;
+/// @deprecated Use documentai_v1::DocumentProcessorServiceConnection directly.
+using ::google::cloud::documentai_v1::DocumentProcessorServiceConnection;
 
-using DocumentProcessorServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        documentai_internal::DocumentProcessorServiceRetryTraits>;
+/// @deprecated Use
+/// documentai_v1::DocumentProcessorServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::documentai_v1::
+    DocumentProcessorServiceLimitedErrorCountRetryPolicy;
 
-class DocumentProcessorServiceConnection {
- public:
-  virtual ~DocumentProcessorServiceConnection() = 0;
+/// @deprecated Use
+/// documentai_v1::DocumentProcessorServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::documentai_v1::
+    DocumentProcessorServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::documentai::v1::ProcessResponse>
-  ProcessDocument(google::cloud::documentai::v1::ProcessRequest const& request);
-
-  virtual future<StatusOr<google::cloud::documentai::v1::BatchProcessResponse>>
-  BatchProcessDocuments(
-      google::cloud::documentai::v1::BatchProcessRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::documentai::v1::ReviewDocumentResponse>>
-  ReviewDocument(
-      google::cloud::documentai::v1::ReviewDocumentRequest const& request);
-};
-
-std::shared_ptr<DocumentProcessorServiceConnection>
-MakeDocumentProcessorServiceConnection(Options options = {});
+/// @deprecated Use documentai_v1::DocumentProcessorServiceRetryPolicy directly.
+using ::google::cloud::documentai_v1::DocumentProcessorServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace documentai
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace documentai_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<documentai::DocumentProcessorServiceConnection>
-MakeDocumentProcessorServiceConnection(
-    std::shared_ptr<DocumentProcessorServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace documentai_internal
 }  // namespace cloud
 }  // namespace google
 

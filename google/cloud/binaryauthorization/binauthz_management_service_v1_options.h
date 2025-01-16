@@ -21,36 +21,36 @@
 
 #include "google/cloud/binaryauthorization/binauthz_management_service_v1_connection.h"
 #include "google/cloud/binaryauthorization/binauthz_management_service_v1_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/binaryauthorization/v1/binauthz_management_service_v1_options.h"
 
 namespace google {
 namespace cloud {
 namespace binaryauthorization {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct BinauthzManagementServiceV1RetryPolicyOption {
-  using Type = std::shared_ptr<BinauthzManagementServiceV1RetryPolicy>;
-};
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1BackoffPolicyOption
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1BackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct BinauthzManagementServiceV1BackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1ConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1ConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct BinauthzManagementServiceV1ConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<BinauthzManagementServiceV1ConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1PolicyOptionList
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1PolicyOptionList;
 
-using BinauthzManagementServiceV1PolicyOptionList =
-    OptionList<BinauthzManagementServiceV1RetryPolicyOption,
-               BinauthzManagementServiceV1BackoffPolicyOption,
-               BinauthzManagementServiceV1ConnectionIdempotencyPolicyOption>;
+/// @deprecated Use
+/// binaryauthorization_v1::BinauthzManagementServiceV1RetryPolicyOption
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    BinauthzManagementServiceV1RetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace binaryauthorization

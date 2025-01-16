@@ -19,43 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VPCACCESS_VPC_ACCESS_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VPCACCESS_VPC_ACCESS_OPTIONS_H
 
+#include "google/cloud/vpcaccess/v1/vpc_access_options.h"
 #include "google/cloud/vpcaccess/vpc_access_connection.h"
 #include "google/cloud/vpcaccess/vpc_access_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace vpcaccess {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct VpcAccessServiceRetryPolicyOption {
-  using Type = std::shared_ptr<VpcAccessServiceRetryPolicy>;
-};
+/// @deprecated Use vpcaccess_v1::VpcAccessServicePollingPolicyOption directly.
+using ::google::cloud::vpcaccess_v1::VpcAccessServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct VpcAccessServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use vpcaccess_v1::VpcAccessServiceBackoffPolicyOption directly.
+using ::google::cloud::vpcaccess_v1::VpcAccessServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct VpcAccessServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// vpcaccess_v1::VpcAccessServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::vpcaccess_v1::
+    VpcAccessServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct VpcAccessServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<VpcAccessServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use vpcaccess_v1::VpcAccessServicePolicyOptionList directly.
+using ::google::cloud::vpcaccess_v1::VpcAccessServicePolicyOptionList;
 
-using VpcAccessServicePolicyOptionList =
-    OptionList<VpcAccessServiceRetryPolicyOption,
-               VpcAccessServiceBackoffPolicyOption,
-               VpcAccessServicePollingPolicyOption,
-               VpcAccessServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use vpcaccess_v1::VpcAccessServiceRetryPolicyOption directly.
+using ::google::cloud::vpcaccess_v1::VpcAccessServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace vpcaccess

@@ -21,11 +21,15 @@
 #include "google/cloud/spanner/admin/internal/database_admin_connection_impl.h"
 #include "google/cloud/spanner/admin/internal/database_admin_option_defaults.h"
 #include "google/cloud/spanner/admin/internal/database_admin_stub_factory.h"
+#include "google/cloud/spanner/admin/internal/database_admin_tracing_connection.h"
 #include "google/cloud/background_threads.h"
 #include "google/cloud/common_options.h"
+#include "google/cloud/credentials.h"
 #include "google/cloud/grpc_options.h"
 #include "google/cloud/internal/pagination_range.h"
+#include "google/cloud/internal/unified_grpc_credentials.h"
 #include <memory>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -35,9 +39,9 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 DatabaseAdminConnection::~DatabaseAdminConnection() = default;
 
 StreamRange<google::spanner::admin::database::v1::Database>
-    DatabaseAdminConnection::ListDatabases(
-        google::spanner::admin::database::v1::
-            ListDatabasesRequest) {  // NOLINT(performance-unnecessary-value-param)
+DatabaseAdminConnection::ListDatabases(
+    google::spanner::admin::database::v1::
+        ListDatabasesRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::spanner::admin::database::v1::Database>>();
 }
@@ -50,16 +54,71 @@ DatabaseAdminConnection::CreateDatabase(
       Status(StatusCode::kUnimplemented, "not implemented"));
 }
 
+StatusOr<google::longrunning::Operation>
+DatabaseAdminConnection::CreateDatabase(
+    NoAwaitTag,
+    google::spanner::admin::database::v1::CreateDatabaseRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::spanner::admin::database::v1::Database>>
+DatabaseAdminConnection::CreateDatabase(google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::spanner::admin::database::v1::Database>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 StatusOr<google::spanner::admin::database::v1::Database>
 DatabaseAdminConnection::GetDatabase(
     google::spanner::admin::database::v1::GetDatabaseRequest const&) {
   return Status(StatusCode::kUnimplemented, "not implemented");
 }
 
+future<StatusOr<google::spanner::admin::database::v1::Database>>
+DatabaseAdminConnection::UpdateDatabase(
+    google::spanner::admin::database::v1::UpdateDatabaseRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::spanner::admin::database::v1::Database>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+DatabaseAdminConnection::UpdateDatabase(
+    NoAwaitTag,
+    google::spanner::admin::database::v1::UpdateDatabaseRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::spanner::admin::database::v1::Database>>
+DatabaseAdminConnection::UpdateDatabase(google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::spanner::admin::database::v1::Database>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 future<
     StatusOr<google::spanner::admin::database::v1::UpdateDatabaseDdlMetadata>>
 DatabaseAdminConnection::UpdateDatabaseDdl(
     google::spanner::admin::database::v1::UpdateDatabaseDdlRequest const&) {
+  return google::cloud::make_ready_future<StatusOr<
+      google::spanner::admin::database::v1::UpdateDatabaseDdlMetadata>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+DatabaseAdminConnection::UpdateDatabaseDdl(
+    NoAwaitTag,
+    google::spanner::admin::database::v1::UpdateDatabaseDdlRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<
+    StatusOr<google::spanner::admin::database::v1::UpdateDatabaseDdlMetadata>>
+DatabaseAdminConnection::UpdateDatabaseDdl(
+    google::longrunning::Operation const&) {
   return google::cloud::make_ready_future<StatusOr<
       google::spanner::admin::database::v1::UpdateDatabaseDdlMetadata>>(
       Status(StatusCode::kUnimplemented, "not implemented"));
@@ -100,6 +159,42 @@ DatabaseAdminConnection::CreateBackup(
       Status(StatusCode::kUnimplemented, "not implemented"));
 }
 
+StatusOr<google::longrunning::Operation> DatabaseAdminConnection::CreateBackup(
+    NoAwaitTag,
+    google::spanner::admin::database::v1::CreateBackupRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::spanner::admin::database::v1::Backup>>
+DatabaseAdminConnection::CreateBackup(google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::spanner::admin::database::v1::Backup>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::spanner::admin::database::v1::Backup>>
+DatabaseAdminConnection::CopyBackup(
+    google::spanner::admin::database::v1::CopyBackupRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::spanner::admin::database::v1::Backup>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation> DatabaseAdminConnection::CopyBackup(
+    NoAwaitTag,
+    google::spanner::admin::database::v1::CopyBackupRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::spanner::admin::database::v1::Backup>>
+DatabaseAdminConnection::CopyBackup(google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::spanner::admin::database::v1::Backup>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 StatusOr<google::spanner::admin::database::v1::Backup>
 DatabaseAdminConnection::GetBackup(
     google::spanner::admin::database::v1::GetBackupRequest const&) {
@@ -118,9 +213,9 @@ Status DatabaseAdminConnection::DeleteBackup(
 }
 
 StreamRange<google::spanner::admin::database::v1::Backup>
-    DatabaseAdminConnection::ListBackups(
-        google::spanner::admin::database::v1::
-            ListBackupsRequest) {  // NOLINT(performance-unnecessary-value-param)
+DatabaseAdminConnection::ListBackups(
+    google::spanner::admin::database::v1::
+        ListBackupsRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::spanner::admin::database::v1::Backup>>();
 }
@@ -133,58 +228,118 @@ DatabaseAdminConnection::RestoreDatabase(
       Status(StatusCode::kUnimplemented, "not implemented"));
 }
 
+StatusOr<google::longrunning::Operation>
+DatabaseAdminConnection::RestoreDatabase(
+    NoAwaitTag,
+    google::spanner::admin::database::v1::RestoreDatabaseRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::spanner::admin::database::v1::Database>>
+DatabaseAdminConnection::RestoreDatabase(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::spanner::admin::database::v1::Database>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 StreamRange<google::longrunning::Operation>
-    DatabaseAdminConnection::ListDatabaseOperations(
-        google::spanner::admin::database::v1::
-            ListDatabaseOperationsRequest) {  // NOLINT(performance-unnecessary-value-param)
+DatabaseAdminConnection::ListDatabaseOperations(
+    google::spanner::admin::database::v1::
+        ListDatabaseOperationsRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::longrunning::Operation>>();
 }
 
 StreamRange<google::longrunning::Operation>
-    DatabaseAdminConnection::ListBackupOperations(
-        google::spanner::admin::database::v1::
-            ListBackupOperationsRequest) {  // NOLINT(performance-unnecessary-value-param)
+DatabaseAdminConnection::ListBackupOperations(
+    google::spanner::admin::database::v1::
+        ListBackupOperationsRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::longrunning::Operation>>();
+}
+
+StreamRange<google::spanner::admin::database::v1::DatabaseRole>
+DatabaseAdminConnection::ListDatabaseRoles(
+    google::spanner::admin::database::v1::
+        ListDatabaseRolesRequest) {  // NOLINT(performance-unnecessary-value-param)
+  return google::cloud::internal::MakeUnimplementedPaginationRange<
+      StreamRange<google::spanner::admin::database::v1::DatabaseRole>>();
+}
+
+StatusOr<google::spanner::admin::database::v1::BackupSchedule>
+DatabaseAdminConnection::CreateBackupSchedule(
+    google::spanner::admin::database::v1::CreateBackupScheduleRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+StatusOr<google::spanner::admin::database::v1::BackupSchedule>
+DatabaseAdminConnection::GetBackupSchedule(
+    google::spanner::admin::database::v1::GetBackupScheduleRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+StatusOr<google::spanner::admin::database::v1::BackupSchedule>
+DatabaseAdminConnection::UpdateBackupSchedule(
+    google::spanner::admin::database::v1::UpdateBackupScheduleRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+Status DatabaseAdminConnection::DeleteBackupSchedule(
+    google::spanner::admin::database::v1::DeleteBackupScheduleRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+StreamRange<google::spanner::admin::database::v1::BackupSchedule>
+DatabaseAdminConnection::ListBackupSchedules(
+    google::spanner::admin::database::v1::
+        ListBackupSchedulesRequest) {  // NOLINT(performance-unnecessary-value-param)
+  return google::cloud::internal::MakeUnimplementedPaginationRange<
+      StreamRange<google::spanner::admin::database::v1::BackupSchedule>>();
+}
+
+StreamRange<google::longrunning::Operation>
+DatabaseAdminConnection::ListOperations(
+    google::longrunning::
+        ListOperationsRequest) {  // NOLINT(performance-unnecessary-value-param)
+  return google::cloud::internal::MakeUnimplementedPaginationRange<
+      StreamRange<google::longrunning::Operation>>();
+}
+
+StatusOr<google::longrunning::Operation> DatabaseAdminConnection::GetOperation(
+    google::longrunning::GetOperationRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+Status DatabaseAdminConnection::DeleteOperation(
+    google::longrunning::DeleteOperationRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+Status DatabaseAdminConnection::CancelOperation(
+    google::longrunning::CancelOperationRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
 }
 
 std::shared_ptr<DatabaseAdminConnection> MakeDatabaseAdminConnection(
     Options options) {
   internal::CheckExpectedOptions<CommonOptionList, GrpcOptionList,
+                                 UnifiedCredentialsOptionList,
                                  DatabaseAdminPolicyOptionList>(options,
                                                                 __func__);
   options =
       spanner_admin_internal::DatabaseAdminDefaultOptions(std::move(options));
   auto background = internal::MakeBackgroundThreadsFactory(options)();
+  auto auth = internal::CreateAuthenticationStrategy(background->cq(), options);
   auto stub = spanner_admin_internal::CreateDefaultDatabaseAdminStub(
-      background->cq(), options);
-  return std::make_shared<spanner_admin_internal::DatabaseAdminConnectionImpl>(
-      std::move(background), std::move(stub), std::move(options));
+      std::move(auth), options);
+  return spanner_admin_internal::MakeDatabaseAdminTracingConnection(
+      std::make_shared<spanner_admin_internal::DatabaseAdminConnectionImpl>(
+          std::move(background), std::move(stub), std::move(options)));
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-namespace gcpcxxV1 = GOOGLE_CLOUD_CPP_NS;  // NOLINT(misc-unused-alias-decls)
 }  // namespace spanner_admin
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace spanner_admin_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<spanner_admin::DatabaseAdminConnection>
-MakeDatabaseAdminConnection(std::shared_ptr<DatabaseAdminStub> stub,
-                            Options options) {
-  options = DatabaseAdminDefaultOptions(std::move(options));
-  auto background = internal::MakeBackgroundThreadsFactory(options)();
-  return std::make_shared<spanner_admin_internal::DatabaseAdminConnectionImpl>(
-      std::move(background), std::move(stub), std::move(options));
-}
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-namespace gcpcxxV1 = GOOGLE_CLOUD_CPP_NS;  // NOLINT(misc-unused-alias-decls)
-}  // namespace spanner_admin_internal
 }  // namespace cloud
 }  // namespace google

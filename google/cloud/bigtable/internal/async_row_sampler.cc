@@ -13,83 +13,74 @@
 // limitations under the License.
 
 #include "google/cloud/bigtable/internal/async_row_sampler.h"
-#include "google/cloud/grpc_error_delegate.h"
-#include "absl/memory/memory.h"
-#include <grpcpp/client_context.h>
-#include <grpcpp/completion_queue.h>
+#include "google/cloud/bigtable/internal/async_streaming_read.h"
+#include "google/cloud/grpc_options.h"
+#include "google/cloud/internal/grpc_opentelemetry.h"
+#include "google/cloud/internal/make_status.h"
+#include "google/cloud/internal/retry_loop_helpers.h"
 #include <chrono>
 
 namespace google {
 namespace cloud {
-namespace bigtable {
+namespace bigtable_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-namespace internal {
 
-namespace btproto = ::google::bigtable::v2;
+namespace v2 = ::google::bigtable::v2;
 
-future<StatusOr<std::vector<RowKeySample>>> AsyncRowSampler::Create(
-    CompletionQueue cq, std::shared_ptr<DataClient> client,
-    std::unique_ptr<RPCRetryPolicy> rpc_retry_policy,
-    std::unique_ptr<RPCBackoffPolicy> rpc_backoff_policy,
-    MetadataUpdatePolicy metadata_update_policy, std::string app_profile_id,
-    std::string table_name) {
-  std::shared_ptr<AsyncRowSampler> sampler(new AsyncRowSampler(
-      std::move(cq), std::move(client), std::move(rpc_retry_policy),
-      std::move(rpc_backoff_policy), std::move(metadata_update_policy),
-      std::move(app_profile_id), std::move(table_name)));
+future<StatusOr<std::vector<bigtable::RowKeySample>>> AsyncRowSampler::Create(
+    CompletionQueue cq, std::shared_ptr<BigtableStub> stub,
+    std::unique_ptr<bigtable::DataRetryPolicy> retry_policy,
+    std::unique_ptr<BackoffPolicy> backoff_policy, bool enable_server_retries,
+    std::string const& app_profile_id, std::string const& table_name) {
+  std::shared_ptr<AsyncRowSampler> sampler(
+      new AsyncRowSampler(std::move(cq), std::move(stub),
+                          std::move(retry_policy), std::move(backoff_policy),
+                          enable_server_retries, app_profile_id, table_name));
   sampler->StartIteration();
   return sampler->promise_.get_future();
 }
 
 AsyncRowSampler::AsyncRowSampler(
-    CompletionQueue cq, std::shared_ptr<DataClient> client,
-    std::unique_ptr<RPCRetryPolicy> rpc_retry_policy,
-    std::unique_ptr<RPCBackoffPolicy> rpc_backoff_policy,
-    MetadataUpdatePolicy metadata_update_policy, std::string app_profile_id,
-    std::string table_name)
+    CompletionQueue cq, std::shared_ptr<BigtableStub> stub,
+    std::unique_ptr<bigtable::DataRetryPolicy> retry_policy,
+    std::unique_ptr<BackoffPolicy> backoff_policy, bool enable_server_retries,
+    std::string const& app_profile_id, std::string const& table_name)
     : cq_(std::move(cq)),
-      client_(std::move(client)),
-      rpc_retry_policy_(std::move(rpc_retry_policy)),
-      rpc_backoff_policy_(std::move(rpc_backoff_policy)),
-      metadata_update_policy_(std::move(metadata_update_policy)),
+      stub_(std::move(stub)),
+      retry_policy_(std::move(retry_policy)),
+      backoff_policy_(std::move(backoff_policy)),
+      enable_server_retries_(enable_server_retries),
       app_profile_id_(std::move(app_profile_id)),
       table_name_(std::move(table_name)),
-      stream_cancelled_(false),
-      promise_([&] { stream_cancelled_ = true; }) {}
+      promise_([this] { keep_reading_ = false; }),
+      options_(internal::SaveCurrentOptions()),
+      call_context_(options_) {}
 
 void AsyncRowSampler::StartIteration() {
-  btproto::SampleRowKeysRequest request;
+  v2::SampleRowKeysRequest request;
   request.set_app_profile_id(app_profile_id_);
   request.set_table_name(table_name_);
 
-  auto context = absl::make_unique<grpc::ClientContext>();
-  rpc_retry_policy_->Setup(*context);
-  rpc_backoff_policy_->Setup(*context);
-  metadata_update_policy_.Setup(*context);
+  internal::ScopedCallContext scope(call_context_);
+  context_ = std::make_shared<grpc::ClientContext>();
+  internal::ConfigureContext(*context_, *call_context_.options);
+  retry_context_->PreCall(*context_);
 
-  auto client = client_;
   auto self = this->shared_from_this();
-  cq_.MakeStreamingReadRpc(
-      [client](grpc::ClientContext* context,
-               btproto::SampleRowKeysRequest const& request,
-               grpc::CompletionQueue* cq) {
-        return client->PrepareAsyncSampleRowKeys(context, request, cq);
-      },
-      request, std::move(context),
-      [self](btproto::SampleRowKeysResponse response) {
+  PerformAsyncStreamingRead<v2::SampleRowKeysResponse>(
+      stub_->AsyncSampleRowKeys(cq_, context_, options_, request),
+      [self](v2::SampleRowKeysResponse response) {
         return self->OnRead(std::move(response));
       },
       [self](Status const& status) { self->OnFinish(status); });
 }
 
-future<bool> AsyncRowSampler::OnRead(btproto::SampleRowKeysResponse response) {
-  if (stream_cancelled_) return make_ready_future(false);
-
-  RowKeySample row_sample;
+future<bool> AsyncRowSampler::OnRead(v2::SampleRowKeysResponse response) {
+  bigtable::RowKeySample row_sample;
   row_sample.offset_bytes = response.offset_bytes();
   row_sample.row_key = std::move(*response.mutable_row_key());
   samples_.emplace_back(std::move(row_sample));
-  return make_ready_future(true);
+  return make_ready_future(keep_reading_.load());
 }
 
 void AsyncRowSampler::OnFinish(Status const& status) {
@@ -97,28 +88,32 @@ void AsyncRowSampler::OnFinish(Status const& status) {
     promise_.set_value(std::move(samples_));
     return;
   }
-  if (!rpc_retry_policy_->OnFailure(status)) {
-    promise_.set_value(std::move(status));
+  auto delay = internal::Backoff(status, "AsyncSampleRows", *retry_policy_,
+                                 *backoff_policy_, Idempotency::kIdempotent,
+                                 enable_server_retries_);
+  if (!delay) {
+    promise_.set_value(std::move(delay).status());
     return;
   }
 
-  using TimerFuture = future<StatusOr<std::chrono::system_clock::time_point>>;
-
+  retry_context_->PostCall(*context_);
+  context_.reset();
   samples_.clear();
   auto self = this->shared_from_this();
-  auto delay = rpc_backoff_policy_->OnCompletion(std::move(status));
-  cq_.MakeRelativeTimer(delay).then([self](TimerFuture result) {
-    if (result.get()) {
-      self->StartIteration();
-    } else {
-      self->promise_.set_value(
-          Status(StatusCode::kCancelled, "call cancelled"));
-    }
-  });
+  internal::TracedAsyncBackoff(cq_, *call_context_.options, *delay,
+                               "Async Backoff")
+      .then([self](auto result) {
+        if (result.get()) {
+          self->StartIteration();
+        } else {
+          self->promise_.set_value(internal::CancelledError(
+              "call cancelled",
+              GCP_ERROR_INFO().WithMetadata("gl-cpp.error.origin", "client")));
+        }
+      });
 }
 
-}  // namespace internal
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace bigtable
+}  // namespace bigtable_internal
 }  // namespace cloud
 }  // namespace google

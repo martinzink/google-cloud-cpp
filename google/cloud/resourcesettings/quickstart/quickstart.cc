@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/resourcesettings/resource_settings_client.h"
+//! [all]
+#include "google/cloud/resourcesettings/v1/resource_settings_client.h"
 #include "google/cloud/project.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -23,18 +23,19 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace resourcesettings = ::google::cloud::resourcesettings;
+  namespace resourcesettings = ::google::cloud::resourcesettings_v1;
   auto client = resourcesettings::ResourceSettingsServiceClient(
       resourcesettings::MakeResourceSettingsServiceConnection());
 
   auto const project = google::cloud::Project(argv[1]);
   for (auto r : client.ListSettings(project.FullName())) {
-    if (!r) throw std::runtime_error(r.status().message());
+    if (!r) throw std::move(r).status();
     std::cout << r->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

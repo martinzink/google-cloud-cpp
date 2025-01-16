@@ -20,26 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICECONTROL_MOCKS_MOCK_SERVICE_CONTROLLER_CONNECTION_H
 
 #include "google/cloud/servicecontrol/service_controller_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/servicecontrol/v1/mocks/mock_service_controller_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in servicecontrol_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace servicecontrol_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockServiceControllerConnection
-    : public servicecontrol::ServiceControllerConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::api::servicecontrol::v1::CheckResponse>, Check,
-              (google::api::servicecontrol::v1::CheckRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::api::servicecontrol::v1::ReportResponse>, Report,
-              (google::api::servicecontrol::v1::ReportRequest const& request),
-              (override));
-};
+/// @deprecated Use servicecontrol_v1_mocks::MockServiceControllerConnection
+/// directly.
+using ::google::cloud::servicecontrol_v1_mocks::MockServiceControllerConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicecontrol_mocks

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/trace/trace_client.h"
+//! [all]
+#include "google/cloud/trace/v2/trace_client.h"
 #include "google/cloud/project.h"
 #include <google/protobuf/util/time_util.h>
 #include <iostream>
 #include <random>
-#include <stdexcept>
 #include <thread>
 
 std::string RandomHexDigits(std::mt19937_64& gen, int count) {
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace trace = ::google::cloud::trace;
+  namespace trace = ::google::cloud::trace_v2;
   namespace v2 = ::google::devtools::cloudtrace::v2;
   using ::google::protobuf::util::TimeUtil;
 
@@ -49,17 +49,18 @@ int main(int argc, char* argv[]) try {
   span.set_name(std::string{"projects/"} + argv[1] + "/traces/" +
                 RandomHexDigits(gen, 32) + "/spans/" + span_id);
   span.set_span_id(std::move(span_id));
-  *span.mutable_start_time() = TimeUtil::GetCurrentTime();
+  *span.mutable_start_time() = (TimeUtil::GetCurrentTime)();
   // Simulate a call using a small sleep
   std::this_thread::sleep_for(std::chrono::milliseconds(2));
-  *span.mutable_end_time() = TimeUtil::GetCurrentTime();
+  *span.mutable_end_time() = (TimeUtil::GetCurrentTime)();
 
   auto response = client.CreateSpan(span);
-  if (!response) throw std::runtime_error(response.status().message());
+  if (!response) throw std::move(response).status();
   std::cout << response->DebugString() << "\n";
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

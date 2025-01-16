@@ -19,96 +19,39 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_NETWORKMANAGEMENT_REACHABILITY_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_NETWORKMANAGEMENT_REACHABILITY_CONNECTION_H
 
-#include "google/cloud/networkmanagement/internal/reachability_retry_traits.h"
-#include "google/cloud/networkmanagement/internal/reachability_stub.h"
 #include "google/cloud/networkmanagement/reachability_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/networkmanagement/v1/reachability_connection.h"
 
 namespace google {
 namespace cloud {
 namespace networkmanagement {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ReachabilityServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        networkmanagement_internal::ReachabilityServiceRetryTraits>;
+/// @deprecated Use networkmanagement_v1::MakeReachabilityServiceConnection
+/// directly.
+using ::google::cloud::networkmanagement_v1::MakeReachabilityServiceConnection;
 
-using ReachabilityServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        networkmanagement_internal::ReachabilityServiceRetryTraits>;
+/// @deprecated Use networkmanagement_v1::ReachabilityServiceConnection
+/// directly.
+using ::google::cloud::networkmanagement_v1::ReachabilityServiceConnection;
 
-using ReachabilityServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        networkmanagement_internal::ReachabilityServiceRetryTraits>;
+/// @deprecated Use
+/// networkmanagement_v1::ReachabilityServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::networkmanagement_v1::
+    ReachabilityServiceLimitedErrorCountRetryPolicy;
 
-class ReachabilityServiceConnection {
- public:
-  virtual ~ReachabilityServiceConnection() = 0;
+/// @deprecated Use
+/// networkmanagement_v1::ReachabilityServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::networkmanagement_v1::
+    ReachabilityServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::networkmanagement::v1::ConnectivityTest>
-  ListConnectivityTests(
-      google::cloud::networkmanagement::v1::ListConnectivityTestsRequest
-          request);
-
-  virtual StatusOr<google::cloud::networkmanagement::v1::ConnectivityTest>
-  GetConnectivityTest(
-      google::cloud::networkmanagement::v1::GetConnectivityTestRequest const&
-          request);
-
-  virtual future<
-      StatusOr<google::cloud::networkmanagement::v1::ConnectivityTest>>
-  CreateConnectivityTest(
-      google::cloud::networkmanagement::v1::CreateConnectivityTestRequest const&
-          request);
-
-  virtual future<
-      StatusOr<google::cloud::networkmanagement::v1::ConnectivityTest>>
-  UpdateConnectivityTest(
-      google::cloud::networkmanagement::v1::UpdateConnectivityTestRequest const&
-          request);
-
-  virtual future<
-      StatusOr<google::cloud::networkmanagement::v1::ConnectivityTest>>
-  RerunConnectivityTest(
-      google::cloud::networkmanagement::v1::RerunConnectivityTestRequest const&
-          request);
-
-  virtual future<
-      StatusOr<google::cloud::networkmanagement::v1::OperationMetadata>>
-  DeleteConnectivityTest(
-      google::cloud::networkmanagement::v1::DeleteConnectivityTestRequest const&
-          request);
-};
-
-std::shared_ptr<ReachabilityServiceConnection>
-MakeReachabilityServiceConnection(Options options = {});
+/// @deprecated Use networkmanagement_v1::ReachabilityServiceRetryPolicy
+/// directly.
+using ::google::cloud::networkmanagement_v1::ReachabilityServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace networkmanagement
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace networkmanagement_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<networkmanagement::ReachabilityServiceConnection>
-MakeReachabilityServiceConnection(std::shared_ptr<ReachabilityServiceStub> stub,
-                                  Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace networkmanagement_internal
 }  // namespace cloud
 }  // namespace google
 

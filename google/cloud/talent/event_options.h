@@ -21,34 +21,25 @@
 
 #include "google/cloud/talent/event_connection.h"
 #include "google/cloud/talent/event_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/talent/v4/event_options.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct EventServiceRetryPolicyOption {
-  using Type = std::shared_ptr<EventServiceRetryPolicy>;
-};
+/// @deprecated Use talent_v4::EventServiceBackoffPolicyOption directly.
+using ::google::cloud::talent_v4::EventServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct EventServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use talent_v4::EventServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::talent_v4::EventServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct EventServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<EventServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use talent_v4::EventServicePolicyOptionList directly.
+using ::google::cloud::talent_v4::EventServicePolicyOptionList;
 
-using EventServicePolicyOptionList =
-    OptionList<EventServiceRetryPolicyOption, EventServiceBackoffPolicyOption,
-               EventServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use talent_v4::EventServiceRetryPolicyOption directly.
+using ::google::cloud::talent_v4::EventServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent

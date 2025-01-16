@@ -18,11 +18,17 @@
 #include "google/cloud/internal/random.h"
 #include "google/cloud/log.h"
 #include "google/cloud/testing_util/status_matchers.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include <gmock/gmock.h>
 #include <algorithm>
 #include <future>
+#include <iterator>
+#include <memory>
+#include <set>
+#include <string>
 #include <thread>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -42,21 +48,19 @@ class ThreadIntegrationTest
                             ObjectNameList const& group,
                             std::string const& contents) {
     // Create our own client so no state is shared with the other threads.
-    StatusOr<Client> client = MakeIntegrationTestClient();
-    ASSERT_STATUS_OK(client);
+    auto client = MakeIntegrationTestClient();
     for (auto const& object_name : group) {
-      (void)client->InsertObject(bucket_name, object_name, contents,
-                                 IfGenerationMatch(0));
+      (void)client.InsertObject(bucket_name, object_name, contents,
+                                IfGenerationMatch(0));
     }
   }
 
   static void DeleteObjects(std::string const& bucket_name,
                             ObjectNameList const& group) {
     // Create our own client so no state is shared with the other threads.
-    StatusOr<Client> client = MakeIntegrationTestClient();
-    ASSERT_STATUS_OK(client);
+    auto client = MakeIntegrationTestClient();
     for (auto const& object_name : group) {
-      (void)client->DeleteObject(bucket_name, object_name);
+      (void)client.DeleteObject(bucket_name, object_name);
     }
   }
 
@@ -94,12 +98,9 @@ std::vector<ObjectNameList> DivideIntoEqualSizedGroups(
 TEST_F(ThreadIntegrationTest, Unshared) {
   std::string bucket_name = MakeRandomBucketName();
   auto bucket_client = MakeBucketIntegrationTestClient();
-  ASSERT_STATUS_OK(bucket_client);
+  auto client = MakeIntegrationTestClient();
 
-  StatusOr<Client> client = MakeIntegrationTestClient();
-  ASSERT_STATUS_OK(client);
-
-  StatusOr<BucketMetadata> meta = bucket_client->CreateBucketForProject(
+  StatusOr<BucketMetadata> meta = bucket_client.CreateBucketForProject(
       bucket_name, project_id_,
       BucketMetadata()
           .set_storage_class(storage_class::Standard())
@@ -108,13 +109,14 @@ TEST_F(ThreadIntegrationTest, Unshared) {
       PredefinedAcl("private"), PredefinedDefaultObjectAcl("projectPrivate"),
       Projection("full"));
   ASSERT_STATUS_OK(meta);
+  ScheduleForDelete(*meta);
   EXPECT_EQ(bucket_name, meta->name());
 
   // Clamp the thread count to the [8, 32] range. Sadly, `std::clamp` is a C++17
   // feature.
   auto const thread_count =
       (std::min)(32U, (std::max)(8U, std::thread::hardware_concurrency()));
-  auto const object_count = 100 * thread_count;
+  auto const object_count = 25 * thread_count;
   std::vector<std::string> objects(object_count);
   std::generate(objects.begin(), objects.end(),
                 [this] { return MakeRandomObjectName(); });
@@ -132,7 +134,7 @@ TEST_F(ThreadIntegrationTest, Unshared) {
   // with the default policies an object may be successfully created, but
   // `InsertObject()` returns an error due to retries.
   std::size_t found = 0;
-  for (auto& o : client->ListObjects(bucket_name)) {
+  for (auto& o : client.ListObjects(bucket_name)) {
     if (!o.ok()) break;
     ++found;
   }
@@ -145,7 +147,7 @@ TEST_F(ThreadIntegrationTest, Unshared) {
                  });
   for (auto& t : tasks) t.get();
 
-  auto delete_status = bucket_client->DeleteBucket(bucket_name);
+  auto delete_status = bucket_client.DeleteBucket(bucket_name);
   ASSERT_STATUS_OK(delete_status);
 }
 
@@ -163,10 +165,11 @@ class CaptureSendHeaderBackend : public LogBackend {
 };
 
 TEST_F(ThreadIntegrationTest, ReuseConnections) {
+  if (UsingGrpc()) GTEST_SKIP();
+
   auto log_backend = std::make_shared<CaptureSendHeaderBackend>();
-
-  Client client(Options{}.set<TracingComponentsOption>({"raw-client", "http"}));
-
+  auto client = MakeIntegrationTestClient(
+      Options{}.set<LoggingComponentsOption>({"raw-client", "http"}));
   std::string bucket_name = MakeRandomBucketName();
 
   auto id = LogSink::Instance().AddBackend(log_backend);
@@ -206,15 +209,16 @@ TEST_F(ThreadIntegrationTest, ReuseConnections) {
   ASSERT_STATUS_OK(delete_status);
 
   std::set<std::string> connected;
-  std::copy_if(
-      log_backend->log_lines.begin(), log_backend->log_lines.end(),
-      std::inserter(connected, connected.end()), [](std::string const& line) {
-        // libcurl prints established connections using this format:
-        //   Connected to <hostname> (<ipaddress>) port <num> (#<connection>)
-        // We capturing the different lines in that form tells us how many
-        // different connections were used.
-        return line.find("== curl(Info): Connected to ") != std::string::npos;
-      });
+  std::copy_if(log_backend->log_lines.begin(), log_backend->log_lines.end(),
+               std::inserter(connected, connected.end()),
+               [](std::string const& line) {
+                 // libcurl prints established connections using this format:
+                 //   Connected to <hostname> (<ipaddress>) port <num>
+                 //   (#<connection>)
+                 // We capture all such lines to count how many connections were
+                 // used.
+                 return absl::StrContains(line, "== curl(Info): Connected to ");
+               });
   // We expect that at most 5% of the requests required a new connection,
   // ideally it should be 1 connection, but anything small is acceptable. Recall
   // that we make two requests per connection, so:

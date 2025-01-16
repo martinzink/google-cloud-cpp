@@ -21,41 +21,38 @@
 
 #include "google/cloud/networkmanagement/reachability_connection.h"
 #include "google/cloud/networkmanagement/reachability_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/networkmanagement/v1/reachability_options.h"
 
 namespace google {
 namespace cloud {
 namespace networkmanagement {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ReachabilityServiceRetryPolicyOption {
-  using Type = std::shared_ptr<ReachabilityServiceRetryPolicy>;
-};
+/// @deprecated Use networkmanagement_v1::ReachabilityServicePollingPolicyOption
+/// directly.
+using ::google::cloud::networkmanagement_v1::
+    ReachabilityServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ReachabilityServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use networkmanagement_v1::ReachabilityServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::networkmanagement_v1::
+    ReachabilityServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ReachabilityServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// networkmanagement_v1::ReachabilityServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::networkmanagement_v1::
+    ReachabilityServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ReachabilityServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ReachabilityServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use networkmanagement_v1::ReachabilityServicePolicyOptionList
+/// directly.
+using ::google::cloud::networkmanagement_v1::
+    ReachabilityServicePolicyOptionList;
 
-using ReachabilityServicePolicyOptionList =
-    OptionList<ReachabilityServiceRetryPolicyOption,
-               ReachabilityServiceBackoffPolicyOption,
-               ReachabilityServicePollingPolicyOption,
-               ReachabilityServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use networkmanagement_v1::ReachabilityServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::networkmanagement_v1::
+    ReachabilityServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace networkmanagement

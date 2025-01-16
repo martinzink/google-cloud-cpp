@@ -5,26 +5,8 @@ This directory contains an idiomatic C++ client library for interacting with
 managed, scalable, relational database service for regional and global
 application data.
 
-While this library is **GA**, please note that the Google Cloud C++ client libraries do **not** follow
-[Semantic Versioning](http://semver.org/).
-
-## Supported Platforms
-
-* Windows, macOS, Linux
-* C++11 (and higher) compilers (we test with GCC >= 5.4, Clang >= 6.0, and
-  MSVC >= 2017)
-* Environments with or without exceptions
-* Bazel and CMake builds
-
-## Documentation
-
-* Official documentation about the [Cloud Spanner][cloud-spanner-docs] service
-* [Reference doxygen documentation][doxygen-link] for each release of this client library
-* Detailed header comments in our [public `.h`][source-link] files
-
-[doxygen-link]: https://googleapis.dev/cpp/google-cloud-spanner/latest/
-[cloud-spanner-docs]: https://cloud.google.com/spanner/docs/
-[source-link]: https://github.com/googleapis/google-cloud-cpp/tree/main/google/cloud/spanner
+While this library is **GA**, please note that the Google Cloud C++ client
+libraries do **not** follow [Semantic Versioning](http://semver.org/).
 
 ## Quickstart
 
@@ -34,12 +16,12 @@ to get started using this client library in a larger project. The following
 this library.
 
 <!-- inject-quickstart-start -->
+
 ```cc
 #include "google/cloud/spanner/client.h"
 #include <iostream>
-#include <stdexcept>
 
-int main(int argc, char* argv[]) try {
+int main(int argc, char* argv[]) {
   if (argc != 4) {
     std::cerr << "Usage: " << argv[0]
               << " project-id instance-id database-id\n";
@@ -54,37 +36,26 @@ int main(int argc, char* argv[]) try {
       client.ExecuteQuery(spanner::SqlStatement("SELECT 'Hello World'"));
 
   for (auto const& row : spanner::StreamOf<std::tuple<std::string>>(rows)) {
-    if (!row) throw std::runtime_error(row.status().message());
+    if (!row) {
+      std::cerr << row.status() << "\n";
+      return 1;
+    }
     std::cout << std::get<0>(*row) << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
-  return 1;
 }
 ```
+
 <!-- inject-quickstart-end -->
 
-* Packaging maintainers or developers who prefer to install the library in a
-  fixed directory (such as `/usr/local` or `/opt`) should consult the
-  [packaging guide](/doc/packaging.md).
-* Developers wanting to use the libraries as part of a larger CMake or Bazel
-  project should consult the [quickstart guides](#quickstart) for the library
-  or libraries they want to use.
-* Developers wanting to compile the library just to run some of the examples or
-  tests should read the current document.
-* Contributors and developers to `google-cloud-cpp` should consult the guide to
-  [setup a development workstation][howto-setup-dev-workstation].
+## More Information
 
-[howto-setup-dev-workstation]: /doc/contributor/howto-guide-setup-development-workstation.md
+- Official documentation about the [Cloud Spanner][cloud-spanner-docs] service
+- [Reference doxygen documentation][doxygen-link] for each release of this
+  client library
+- Detailed header comments in our [public `.h`][source-link] files
 
-## Contributing changes
-
-See [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) for details on how to
-contribute to this project, including how to build and test your changes
-as well as how to properly format your code.
-
-## Licensing
-
-Apache 2.0; see [`LICENSE`](../../../LICENSE) for details.
+[cloud-spanner-docs]: https://cloud.google.com/spanner/docs/
+[doxygen-link]: https://cloud.google.com/cpp/docs/reference/spanner/latest/
+[source-link]: https://github.com/googleapis/google-cloud-cpp/tree/main/google/cloud/spanner

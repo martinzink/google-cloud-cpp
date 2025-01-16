@@ -20,72 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TALENT_COMPANY_CONNECTION_H
 
 #include "google/cloud/talent/company_connection_idempotency_policy.h"
-#include "google/cloud/talent/internal/company_retry_traits.h"
-#include "google/cloud/talent/internal/company_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/talent/v4/company_connection.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CompanyServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        talent_internal::CompanyServiceRetryTraits>;
+/// @deprecated Use talent_v4::MakeCompanyServiceConnection directly.
+using ::google::cloud::talent_v4::MakeCompanyServiceConnection;
 
-using CompanyServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        talent_internal::CompanyServiceRetryTraits>;
+/// @deprecated Use talent_v4::CompanyServiceConnection directly.
+using ::google::cloud::talent_v4::CompanyServiceConnection;
 
-using CompanyServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        talent_internal::CompanyServiceRetryTraits>;
+/// @deprecated Use talent_v4::CompanyServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::talent_v4::CompanyServiceLimitedErrorCountRetryPolicy;
 
-class CompanyServiceConnection {
- public:
-  virtual ~CompanyServiceConnection() = 0;
+/// @deprecated Use talent_v4::CompanyServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::talent_v4::CompanyServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::talent::v4::Company> CreateCompany(
-      google::cloud::talent::v4::CreateCompanyRequest const& request);
-
-  virtual StatusOr<google::cloud::talent::v4::Company> GetCompany(
-      google::cloud::talent::v4::GetCompanyRequest const& request);
-
-  virtual StatusOr<google::cloud::talent::v4::Company> UpdateCompany(
-      google::cloud::talent::v4::UpdateCompanyRequest const& request);
-
-  virtual Status DeleteCompany(
-      google::cloud::talent::v4::DeleteCompanyRequest const& request);
-
-  virtual StreamRange<google::cloud::talent::v4::Company> ListCompanies(
-      google::cloud::talent::v4::ListCompaniesRequest request);
-};
-
-std::shared_ptr<CompanyServiceConnection> MakeCompanyServiceConnection(
-    Options options = {});
+/// @deprecated Use talent_v4::CompanyServiceRetryPolicy directly.
+using ::google::cloud::talent_v4::CompanyServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace talent_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<talent::CompanyServiceConnection> MakeCompanyServiceConnection(
-    std::shared_ptr<CompanyServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace talent_internal
 }  // namespace cloud
 }  // namespace google
 

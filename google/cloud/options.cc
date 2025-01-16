@@ -19,6 +19,7 @@
 #include <iterator>
 #include <set>
 #include <unordered_map>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -35,7 +36,10 @@ void CheckExpectedOptionsImpl(std::set<std::type_index> const& expected,
   }
 }
 
+bool IsEmpty(Options const& options) { return options.m_.empty(); }
+
 Options MergeOptions(Options preferred, Options alternatives) {
+  if (preferred.m_.empty()) return alternatives;
   preferred.m_.insert(std::make_move_iterator(alternatives.m_.begin()),
                       std::make_move_iterator(alternatives.m_.end()));
   return preferred;
@@ -46,16 +50,21 @@ namespace {
 // The prevailing options for the current operation.  Thread local, so
 // additional propagation must be done whenever work for the operation
 // is done in another thread.
-Options& ThreadLocalOptions() {
-  thread_local Options current_options;
+ImmutableOptions& ThreadLocalOptions() {
+  thread_local auto current_options = MakeImmutableOptions(Options{});
   return current_options;
 }
 
 }  // namespace
 
-Options const& CurrentOptions() { return ThreadLocalOptions(); }
+Options const& CurrentOptions() { return *ThreadLocalOptions(); }
 
-OptionsSpan::OptionsSpan(Options opts) : opts_(std::move(opts)) {
+ImmutableOptions SaveCurrentOptions() { return ThreadLocalOptions(); }
+
+OptionsSpan::OptionsSpan(Options opts)
+    : OptionsSpan(MakeImmutableOptions(std::move(opts))) {}
+
+OptionsSpan::OptionsSpan(ImmutableOptions opts) : opts_(std::move(opts)) {
   using std::swap;
   swap(opts_, ThreadLocalOptions());
 }

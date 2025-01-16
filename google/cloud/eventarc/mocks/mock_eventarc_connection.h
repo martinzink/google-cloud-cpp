@@ -20,40 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_EVENTARC_MOCKS_MOCK_EVENTARC_CONNECTION_H
 
 #include "google/cloud/eventarc/eventarc_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/eventarc/v1/mocks/mock_eventarc_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in eventarc_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace eventarc_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockEventarcConnection : public eventarc::EventarcConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::eventarc::v1::Trigger>, GetTrigger,
-              (google::cloud::eventarc::v1::GetTriggerRequest const& request),
-              (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::eventarc::v1::Trigger>, ListTriggers,
-              (google::cloud::eventarc::v1::ListTriggersRequest request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::eventarc::v1::Trigger>>, CreateTrigger,
-      (google::cloud::eventarc::v1::CreateTriggerRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::eventarc::v1::Trigger>>, UpdateTrigger,
-      (google::cloud::eventarc::v1::UpdateTriggerRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::eventarc::v1::Trigger>>, DeleteTrigger,
-      (google::cloud::eventarc::v1::DeleteTriggerRequest const& request),
-      (override));
-};
+/// @deprecated Use eventarc_v1_mocks::MockEventarcConnection directly.
+using ::google::cloud::eventarc_v1_mocks::MockEventarcConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace eventarc_mocks

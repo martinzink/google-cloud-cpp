@@ -19,94 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TALENT_JOB_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TALENT_JOB_CONNECTION_H
 
-#include "google/cloud/talent/internal/job_retry_traits.h"
-#include "google/cloud/talent/internal/job_stub.h"
 #include "google/cloud/talent/job_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/talent/v4/job_connection.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using JobServiceRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    talent_internal::JobServiceRetryTraits>;
+/// @deprecated Use talent_v4::MakeJobServiceConnection directly.
+using ::google::cloud::talent_v4::MakeJobServiceConnection;
 
-using JobServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        talent_internal::JobServiceRetryTraits>;
+/// @deprecated Use talent_v4::JobServiceConnection directly.
+using ::google::cloud::talent_v4::JobServiceConnection;
 
-using JobServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        talent_internal::JobServiceRetryTraits>;
+/// @deprecated Use talent_v4::JobServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::talent_v4::JobServiceLimitedErrorCountRetryPolicy;
 
-class JobServiceConnection {
- public:
-  virtual ~JobServiceConnection() = 0;
+/// @deprecated Use talent_v4::JobServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::talent_v4::JobServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::talent::v4::Job> CreateJob(
-      google::cloud::talent::v4::CreateJobRequest const& request);
-
-  virtual future<StatusOr<google::cloud::talent::v4::BatchCreateJobsResponse>>
-  BatchCreateJobs(
-      google::cloud::talent::v4::BatchCreateJobsRequest const& request);
-
-  virtual StatusOr<google::cloud::talent::v4::Job> GetJob(
-      google::cloud::talent::v4::GetJobRequest const& request);
-
-  virtual StatusOr<google::cloud::talent::v4::Job> UpdateJob(
-      google::cloud::talent::v4::UpdateJobRequest const& request);
-
-  virtual future<StatusOr<google::cloud::talent::v4::BatchUpdateJobsResponse>>
-  BatchUpdateJobs(
-      google::cloud::talent::v4::BatchUpdateJobsRequest const& request);
-
-  virtual Status DeleteJob(
-      google::cloud::talent::v4::DeleteJobRequest const& request);
-
-  virtual future<StatusOr<google::cloud::talent::v4::BatchDeleteJobsResponse>>
-  BatchDeleteJobs(
-      google::cloud::talent::v4::BatchDeleteJobsRequest const& request);
-
-  virtual StreamRange<google::cloud::talent::v4::Job> ListJobs(
-      google::cloud::talent::v4::ListJobsRequest request);
-
-  virtual StatusOr<google::cloud::talent::v4::SearchJobsResponse> SearchJobs(
-      google::cloud::talent::v4::SearchJobsRequest const& request);
-
-  virtual StatusOr<google::cloud::talent::v4::SearchJobsResponse>
-  SearchJobsForAlert(
-      google::cloud::talent::v4::SearchJobsRequest const& request);
-};
-
-std::shared_ptr<JobServiceConnection> MakeJobServiceConnection(
-    Options options = {});
+/// @deprecated Use talent_v4::JobServiceRetryPolicy directly.
+using ::google::cloud::talent_v4::JobServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace talent_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<talent::JobServiceConnection> MakeJobServiceConnection(
-    std::shared_ptr<JobServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace talent_internal
 }  // namespace cloud
 }  // namespace google
 

@@ -111,7 +111,7 @@ start_emulator() {
     cat gcs_emulator.log
     exit 1
   fi
-  export CLOUD_STORAGE_GRPC_ENDPOINT="localhost:${grpc_port}"
+  export CLOUD_STORAGE_EXPERIMENTAL_GRPC_TESTBENCH_ENDPOINT="localhost:${grpc_port}"
 }
 
 # Create the testbench resources used in integration tests
@@ -124,6 +124,10 @@ create_testbench_resources() {
       -H "Content-Type: application/json" \
       "${CLOUD_STORAGE_EMULATOR_ENDPOINT}/storage/v1/b?project=${GOOGLE_CLOUD_PROJECT}"
   printf '{"name": "%s"}' "${GOOGLE_CLOUD_CPP_STORAGE_TEST_DESTINATION_BUCKET_NAME}" |
+    curl -s -o /dev/null -X POST --data-binary @- \
+      -H "Content-Type: application/json" \
+      "${CLOUD_STORAGE_EMULATOR_ENDPOINT}/storage/v1/b?project=${GOOGLE_CLOUD_PROJECT}"
+  printf '{"name": "%s"}' "${GOOGLE_CLOUD_CPP_STORAGE_TEST_FOLDER_BUCKET_NAME}" |
     curl -s -o /dev/null -X POST --data-binary @- \
       -H "Content-Type: application/json" \
       "${CLOUD_STORAGE_EMULATOR_ENDPOINT}/storage/v1/b?project=${GOOGLE_CLOUD_PROJECT}"

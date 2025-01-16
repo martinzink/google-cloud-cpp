@@ -20,66 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RECOMMENDER_MOCKS_MOCK_RECOMMENDER_CONNECTION_H
 
 #include "google/cloud/recommender/recommender_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/recommender/v1/mocks/mock_recommender_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in recommender_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace recommender_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockRecommenderConnection : public recommender::RecommenderConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::recommender::v1::Insight>,
-              ListInsights,
-              (google::cloud::recommender::v1::ListInsightsRequest request),
-              (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::recommender::v1::Insight>, GetInsight,
-      (google::cloud::recommender::v1::GetInsightRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::recommender::v1::Insight>,
-              MarkInsightAccepted,
-              (google::cloud::recommender::v1::MarkInsightAcceptedRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(
-      StreamRange<google::cloud::recommender::v1::Recommendation>,
-      ListRecommendations,
-      (google::cloud::recommender::v1::ListRecommendationsRequest request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::recommender::v1::Recommendation>,
-      GetRecommendation,
-      (google::cloud::recommender::v1::GetRecommendationRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::recommender::v1::Recommendation>,
-      MarkRecommendationClaimed,
-      (google::cloud::recommender::v1::MarkRecommendationClaimedRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::recommender::v1::Recommendation>,
-      MarkRecommendationSucceeded,
-      (google::cloud::recommender::v1::MarkRecommendationSucceededRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::recommender::v1::Recommendation>,
-      MarkRecommendationFailed,
-      (google::cloud::recommender::v1::MarkRecommendationFailedRequest const&
-           request),
-      (override));
-};
+/// @deprecated Use recommender_v1_mocks::MockRecommenderConnection directly.
+using ::google::cloud::recommender_v1_mocks::MockRecommenderConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace recommender_mocks

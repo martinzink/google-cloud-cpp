@@ -19,90 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RECOMMENDER_RECOMMENDER_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RECOMMENDER_RECOMMENDER_CONNECTION_H
 
-#include "google/cloud/recommender/internal/recommender_retry_traits.h"
-#include "google/cloud/recommender/internal/recommender_stub.h"
 #include "google/cloud/recommender/recommender_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/recommender/v1/recommender_connection.h"
 
 namespace google {
 namespace cloud {
 namespace recommender {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using RecommenderRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    recommender_internal::RecommenderRetryTraits>;
+/// @deprecated Use recommender_v1::MakeRecommenderConnection directly.
+using ::google::cloud::recommender_v1::MakeRecommenderConnection;
 
-using RecommenderLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        recommender_internal::RecommenderRetryTraits>;
+/// @deprecated Use recommender_v1::RecommenderConnection directly.
+using ::google::cloud::recommender_v1::RecommenderConnection;
 
-using RecommenderLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        recommender_internal::RecommenderRetryTraits>;
+/// @deprecated Use recommender_v1::RecommenderLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::recommender_v1::RecommenderLimitedErrorCountRetryPolicy;
 
-class RecommenderConnection {
- public:
-  virtual ~RecommenderConnection() = 0;
+/// @deprecated Use recommender_v1::RecommenderLimitedTimeRetryPolicy directly.
+using ::google::cloud::recommender_v1::RecommenderLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::recommender::v1::Insight> ListInsights(
-      google::cloud::recommender::v1::ListInsightsRequest request);
-
-  virtual StatusOr<google::cloud::recommender::v1::Insight> GetInsight(
-      google::cloud::recommender::v1::GetInsightRequest const& request);
-
-  virtual StatusOr<google::cloud::recommender::v1::Insight> MarkInsightAccepted(
-      google::cloud::recommender::v1::MarkInsightAcceptedRequest const&
-          request);
-
-  virtual StreamRange<google::cloud::recommender::v1::Recommendation>
-  ListRecommendations(
-      google::cloud::recommender::v1::ListRecommendationsRequest request);
-
-  virtual StatusOr<google::cloud::recommender::v1::Recommendation>
-  GetRecommendation(
-      google::cloud::recommender::v1::GetRecommendationRequest const& request);
-
-  virtual StatusOr<google::cloud::recommender::v1::Recommendation>
-  MarkRecommendationClaimed(
-      google::cloud::recommender::v1::MarkRecommendationClaimedRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::recommender::v1::Recommendation>
-  MarkRecommendationSucceeded(
-      google::cloud::recommender::v1::MarkRecommendationSucceededRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::recommender::v1::Recommendation>
-  MarkRecommendationFailed(
-      google::cloud::recommender::v1::MarkRecommendationFailedRequest const&
-          request);
-};
-
-std::shared_ptr<RecommenderConnection> MakeRecommenderConnection(
-    Options options = {});
+/// @deprecated Use recommender_v1::RecommenderRetryPolicy directly.
+using ::google::cloud::recommender_v1::RecommenderRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace recommender
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace recommender_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<recommender::RecommenderConnection> MakeRecommenderConnection(
-    std::shared_ptr<RecommenderStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace recommender_internal
 }  // namespace cloud
 }  // namespace google
 

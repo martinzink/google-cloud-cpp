@@ -21,11 +21,15 @@
 #include "google/cloud/bigtable/admin/internal/bigtable_table_admin_connection_impl.h"
 #include "google/cloud/bigtable/admin/internal/bigtable_table_admin_option_defaults.h"
 #include "google/cloud/bigtable/admin/internal/bigtable_table_admin_stub_factory.h"
+#include "google/cloud/bigtable/admin/internal/bigtable_table_admin_tracing_connection.h"
 #include "google/cloud/background_threads.h"
 #include "google/cloud/common_options.h"
+#include "google/cloud/credentials.h"
 #include "google/cloud/grpc_options.h"
 #include "google/cloud/internal/pagination_range.h"
+#include "google/cloud/internal/unified_grpc_credentials.h"
 #include <memory>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -41,9 +45,9 @@ BigtableTableAdminConnection::CreateTable(
 }
 
 StreamRange<google::bigtable::admin::v2::Table>
-    BigtableTableAdminConnection::ListTables(
-        google::bigtable::admin::v2::
-            ListTablesRequest) {  // NOLINT(performance-unnecessary-value-param)
+BigtableTableAdminConnection::ListTables(
+    google::bigtable::admin::v2::
+        ListTablesRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::bigtable::admin::v2::Table>>();
 }
@@ -54,8 +58,121 @@ BigtableTableAdminConnection::GetTable(
   return Status(StatusCode::kUnimplemented, "not implemented");
 }
 
+future<StatusOr<google::bigtable::admin::v2::Table>>
+BigtableTableAdminConnection::UpdateTable(
+    google::bigtable::admin::v2::UpdateTableRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Table>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableTableAdminConnection::UpdateTable(
+    NoAwaitTag, google::bigtable::admin::v2::UpdateTableRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::Table>>
+BigtableTableAdminConnection::UpdateTable(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Table>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 Status BigtableTableAdminConnection::DeleteTable(
     google::bigtable::admin::v2::DeleteTableRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+future<StatusOr<google::bigtable::admin::v2::Table>>
+BigtableTableAdminConnection::UndeleteTable(
+    google::bigtable::admin::v2::UndeleteTableRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Table>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableTableAdminConnection::UndeleteTable(
+    NoAwaitTag, google::bigtable::admin::v2::UndeleteTableRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::Table>>
+BigtableTableAdminConnection::UndeleteTable(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Table>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::AuthorizedView>>
+BigtableTableAdminConnection::CreateAuthorizedView(
+    google::bigtable::admin::v2::CreateAuthorizedViewRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::AuthorizedView>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableTableAdminConnection::CreateAuthorizedView(
+    NoAwaitTag,
+    google::bigtable::admin::v2::CreateAuthorizedViewRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::AuthorizedView>>
+BigtableTableAdminConnection::CreateAuthorizedView(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::AuthorizedView>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StreamRange<google::bigtable::admin::v2::AuthorizedView>
+BigtableTableAdminConnection::ListAuthorizedViews(
+    google::bigtable::admin::v2::
+        ListAuthorizedViewsRequest) {  // NOLINT(performance-unnecessary-value-param)
+  return google::cloud::internal::MakeUnimplementedPaginationRange<
+      StreamRange<google::bigtable::admin::v2::AuthorizedView>>();
+}
+
+StatusOr<google::bigtable::admin::v2::AuthorizedView>
+BigtableTableAdminConnection::GetAuthorizedView(
+    google::bigtable::admin::v2::GetAuthorizedViewRequest const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+future<StatusOr<google::bigtable::admin::v2::AuthorizedView>>
+BigtableTableAdminConnection::UpdateAuthorizedView(
+    google::bigtable::admin::v2::UpdateAuthorizedViewRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::AuthorizedView>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableTableAdminConnection::UpdateAuthorizedView(
+    NoAwaitTag,
+    google::bigtable::admin::v2::UpdateAuthorizedViewRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::AuthorizedView>>
+BigtableTableAdminConnection::UpdateAuthorizedView(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::AuthorizedView>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+Status BigtableTableAdminConnection::DeleteAuthorizedView(
+    google::bigtable::admin::v2::DeleteAuthorizedViewRequest const&) {
   return Status(StatusCode::kUnimplemented, "not implemented");
 }
 
@@ -90,6 +207,21 @@ BigtableTableAdminConnection::CreateBackup(
       Status(StatusCode::kUnimplemented, "not implemented"));
 }
 
+StatusOr<google::longrunning::Operation>
+BigtableTableAdminConnection::CreateBackup(
+    NoAwaitTag, google::bigtable::admin::v2::CreateBackupRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::Backup>>
+BigtableTableAdminConnection::CreateBackup(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Backup>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
 StatusOr<google::bigtable::admin::v2::Backup>
 BigtableTableAdminConnection::GetBackup(
     google::bigtable::admin::v2::GetBackupRequest const&) {
@@ -108,9 +240,9 @@ Status BigtableTableAdminConnection::DeleteBackup(
 }
 
 StreamRange<google::bigtable::admin::v2::Backup>
-    BigtableTableAdminConnection::ListBackups(
-        google::bigtable::admin::v2::
-            ListBackupsRequest) {  // NOLINT(performance-unnecessary-value-param)
+BigtableTableAdminConnection::ListBackups(
+    google::bigtable::admin::v2::
+        ListBackupsRequest) {  // NOLINT(performance-unnecessary-value-param)
   return google::cloud::internal::MakeUnimplementedPaginationRange<
       StreamRange<google::bigtable::admin::v2::Backup>>();
 }
@@ -120,6 +252,44 @@ BigtableTableAdminConnection::RestoreTable(
     google::bigtable::admin::v2::RestoreTableRequest const&) {
   return google::cloud::make_ready_future<
       StatusOr<google::bigtable::admin::v2::Table>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableTableAdminConnection::RestoreTable(
+    NoAwaitTag, google::bigtable::admin::v2::RestoreTableRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::Table>>
+BigtableTableAdminConnection::RestoreTable(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Table>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::Backup>>
+BigtableTableAdminConnection::CopyBackup(
+    google::bigtable::admin::v2::CopyBackupRequest const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Backup>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableTableAdminConnection::CopyBackup(
+    NoAwaitTag, google::bigtable::admin::v2::CopyBackupRequest const&) {
+  return StatusOr<google::longrunning::Operation>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<StatusOr<google::bigtable::admin::v2::Backup>>
+BigtableTableAdminConnection::CopyBackup(
+    google::longrunning::Operation const&) {
+  return google::cloud::make_ready_future<
+      StatusOr<google::bigtable::admin::v2::Backup>>(
       Status(StatusCode::kUnimplemented, "not implemented"));
 }
 
@@ -150,39 +320,22 @@ BigtableTableAdminConnection::AsyncCheckConsistency(
 std::shared_ptr<BigtableTableAdminConnection> MakeBigtableTableAdminConnection(
     Options options) {
   internal::CheckExpectedOptions<CommonOptionList, GrpcOptionList,
+                                 UnifiedCredentialsOptionList,
                                  BigtableTableAdminPolicyOptionList>(options,
                                                                      __func__);
   options = bigtable_admin_internal::BigtableTableAdminDefaultOptions(
       std::move(options));
   auto background = internal::MakeBackgroundThreadsFactory(options)();
+  auto auth = internal::CreateAuthenticationStrategy(background->cq(), options);
   auto stub = bigtable_admin_internal::CreateDefaultBigtableTableAdminStub(
-      background->cq(), options);
-  return std::make_shared<
-      bigtable_admin_internal::BigtableTableAdminConnectionImpl>(
-      std::move(background), std::move(stub), std::move(options));
+      std::move(auth), options);
+  return bigtable_admin_internal::MakeBigtableTableAdminTracingConnection(
+      std::make_shared<
+          bigtable_admin_internal::BigtableTableAdminConnectionImpl>(
+          std::move(background), std::move(stub), std::move(options)));
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigtable_admin
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace bigtable_admin_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<bigtable_admin::BigtableTableAdminConnection>
-MakeBigtableTableAdminConnection(std::shared_ptr<BigtableTableAdminStub> stub,
-                                 Options options) {
-  options = BigtableTableAdminDefaultOptions(std::move(options));
-  auto background = internal::MakeBackgroundThreadsFactory(options)();
-  return std::make_shared<
-      bigtable_admin_internal::BigtableTableAdminConnectionImpl>(
-      std::move(background), std::move(stub), std::move(options));
-}
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace bigtable_admin_internal
 }  // namespace cloud
 }  // namespace google

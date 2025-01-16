@@ -21,40 +21,29 @@
 
 #include "google/cloud/resourcemanager/projects_connection.h"
 #include "google/cloud/resourcemanager/projects_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/resourcemanager/v3/projects_options.h"
 
 namespace google {
 namespace cloud {
 namespace resourcemanager {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ProjectsRetryPolicyOption {
-  using Type = std::shared_ptr<ProjectsRetryPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::ProjectsPollingPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::ProjectsPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProjectsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::ProjectsBackoffPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::ProjectsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProjectsPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// resourcemanager_v3::ProjectsConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::
+    ProjectsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProjectsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ProjectsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::ProjectsPolicyOptionList directly.
+using ::google::cloud::resourcemanager_v3::ProjectsPolicyOptionList;
 
-using ProjectsPolicyOptionList =
-    OptionList<ProjectsRetryPolicyOption, ProjectsBackoffPolicyOption,
-               ProjectsPollingPolicyOption,
-               ProjectsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use resourcemanager_v3::ProjectsRetryPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::ProjectsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace resourcemanager

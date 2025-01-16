@@ -20,72 +20,36 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_CONTAINERANALYSIS_CONTAINER_ANALYSIS_CONNECTION_H
 
 #include "google/cloud/containeranalysis/container_analysis_connection_idempotency_policy.h"
-#include "google/cloud/containeranalysis/internal/container_analysis_retry_traits.h"
-#include "google/cloud/containeranalysis/internal/container_analysis_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/containeranalysis/v1/container_analysis_connection.h"
 
 namespace google {
 namespace cloud {
 namespace containeranalysis {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ContainerAnalysisRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        containeranalysis_internal::ContainerAnalysisRetryTraits>;
+/// @deprecated Use containeranalysis_v1::MakeContainerAnalysisConnection
+/// directly.
+using ::google::cloud::containeranalysis_v1::MakeContainerAnalysisConnection;
 
-using ContainerAnalysisLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        containeranalysis_internal::ContainerAnalysisRetryTraits>;
+/// @deprecated Use containeranalysis_v1::ContainerAnalysisConnection directly.
+using ::google::cloud::containeranalysis_v1::ContainerAnalysisConnection;
 
-using ContainerAnalysisLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        containeranalysis_internal::ContainerAnalysisRetryTraits>;
+/// @deprecated Use
+/// containeranalysis_v1::ContainerAnalysisLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::containeranalysis_v1::
+    ContainerAnalysisLimitedErrorCountRetryPolicy;
 
-class ContainerAnalysisConnection {
- public:
-  virtual ~ContainerAnalysisConnection() = 0;
+/// @deprecated Use
+/// containeranalysis_v1::ContainerAnalysisLimitedTimeRetryPolicy directly.
+using ::google::cloud::containeranalysis_v1::
+    ContainerAnalysisLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::iam::v1::Policy> SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::TestIamPermissionsResponse>
-  TestIamPermissions(google::iam::v1::TestIamPermissionsRequest const& request);
-
-  virtual StatusOr<
-      google::devtools::containeranalysis::v1::VulnerabilityOccurrencesSummary>
-  GetVulnerabilityOccurrencesSummary(
-      google::devtools::containeranalysis::v1::
-          GetVulnerabilityOccurrencesSummaryRequest const& request);
-};
-
-std::shared_ptr<ContainerAnalysisConnection> MakeContainerAnalysisConnection(
-    Options options = {});
+/// @deprecated Use containeranalysis_v1::ContainerAnalysisRetryPolicy directly.
+using ::google::cloud::containeranalysis_v1::ContainerAnalysisRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace containeranalysis
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace containeranalysis_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<containeranalysis::ContainerAnalysisConnection>
-MakeContainerAnalysisConnection(std::shared_ptr<ContainerAnalysisStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace containeranalysis_internal
 }  // namespace cloud
 }  // namespace google
 

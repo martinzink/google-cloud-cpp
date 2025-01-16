@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! [START pubsub_quickstart_publisher]
+//! [START pubsub_quickstart_publisher] [all]
 #include "google/cloud/pubsub/publisher.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -28,18 +27,19 @@ int main(int argc, char* argv[]) try {
 
   // Create a namespace alias to make the code easier to read.
   namespace pubsub = ::google::cloud::pubsub;
+
   auto publisher = pubsub::Publisher(
       pubsub::MakePublisherConnection(pubsub::Topic(project_id, topic_id)));
   auto id =
       publisher
           .Publish(pubsub::MessageBuilder{}.SetData("Hello World!").Build())
           .get();
-  if (!id) throw std::runtime_error(id.status().message());
+  if (!id) throw std::move(id).status();
   std::cout << "Hello World published with id=" << *id << "\n";
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
-//! [END pubsub_quickstart_publisher]
+//! [END pubsub_quickstart_publisher] [all]

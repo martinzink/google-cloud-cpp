@@ -20,35 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DOCUMENTAI_MOCKS_MOCK_DOCUMENT_PROCESSOR_CONNECTION_H
 
 #include "google/cloud/documentai/document_processor_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/documentai/v1/mocks/mock_document_processor_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in documentai_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace documentai_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockDocumentProcessorServiceConnection
-    : public documentai::DocumentProcessorServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::documentai::v1::ProcessResponse>,
-              ProcessDocument,
-              (google::cloud::documentai::v1::ProcessRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::documentai::v1::BatchProcessResponse>>,
-      BatchProcessDocuments,
-      (google::cloud::documentai::v1::BatchProcessRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::documentai::v1::ReviewDocumentResponse>>,
-      ReviewDocument,
-      (google::cloud::documentai::v1::ReviewDocumentRequest const& request),
-      (override));
-};
+/// @deprecated Use documentai_v1_mocks::MockDocumentProcessorServiceConnection
+/// directly.
+using ::google::cloud::documentai_v1_mocks::
+    MockDocumentProcessorServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace documentai_mocks

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO(#12987): Remove this file after the deprecation period expires
+#include "google/cloud/internal/disable_deprecation_warnings.inc"
 #include "google/cloud/pubsub/topic_admin_client.h"
 #include "google/cloud/pubsub/internal/defaults.h"
 
@@ -23,9 +25,8 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 TopicAdminClient::TopicAdminClient(
     std::shared_ptr<TopicAdminConnection> connection, Options opts)
     : connection_(std::move(connection)),
-      options_(internal::MergeOptions(
-          std::move(opts),
-          pubsub_internal::DefaultCommonOptions(connection_->options()))) {}
+      options_(
+          internal::MergeOptions(std::move(opts), connection_->options())) {}
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace pubsub

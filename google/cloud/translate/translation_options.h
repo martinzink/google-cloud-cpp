@@ -21,41 +21,31 @@
 
 #include "google/cloud/translate/translation_connection.h"
 #include "google/cloud/translate/translation_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/translate/v3/translation_options.h"
 
 namespace google {
 namespace cloud {
 namespace translate {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct TranslationServiceRetryPolicyOption {
-  using Type = std::shared_ptr<TranslationServiceRetryPolicy>;
-};
+/// @deprecated Use translate_v3::TranslationServicePollingPolicyOption
+/// directly.
+using ::google::cloud::translate_v3::TranslationServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TranslationServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use translate_v3::TranslationServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::translate_v3::TranslationServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TranslationServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// translate_v3::TranslationServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::translate_v3::
+    TranslationServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TranslationServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<TranslationServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use translate_v3::TranslationServicePolicyOptionList directly.
+using ::google::cloud::translate_v3::TranslationServicePolicyOptionList;
 
-using TranslationServicePolicyOptionList =
-    OptionList<TranslationServiceRetryPolicyOption,
-               TranslationServiceBackoffPolicyOption,
-               TranslationServicePollingPolicyOption,
-               TranslationServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use translate_v3::TranslationServiceRetryPolicyOption directly.
+using ::google::cloud::translate_v3::TranslationServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace translate

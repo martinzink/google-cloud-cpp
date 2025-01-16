@@ -22,6 +22,7 @@
 #include "google/cloud/internal/populate_grpc_options.h"
 #include "google/cloud/internal/user_agent_prefix.h"
 #include "google/cloud/options.h"
+#include "absl/strings/numbers.h"
 #include <chrono>
 #include <limits>
 #include <thread>
@@ -36,14 +37,18 @@ using ms = std::chrono::milliseconds;
 
 std::size_t DefaultThreadCount() {
   auto constexpr kDefaultThreadCount = 4;
+  // On 32-bit machines the address space is quickly consumed by background
+  // threads. Create just a few threads by default on such platforms. If the
+  // application needs more threads, it can override this default.
+  if (std::numeric_limits<std::size_t>::digits < 64) return kDefaultThreadCount;
   auto const n = std::thread::hardware_concurrency();
   return n == 0 ? kDefaultThreadCount : n;
 }
 
 Options DefaultCommonOptions(Options opts) {
   opts = internal::PopulateCommonOptions(
-      std::move(opts), "", "PUBSUB_EMULATOR_HOST", "pubsub.googleapis.com");
-  opts = internal::PopulateGrpcOptions(std::move(opts), "PUBSUB_EMULATOR_HOST");
+      std::move(opts), "", "PUBSUB_EMULATOR_HOST", "", "pubsub.googleapis.com");
+  opts = internal::PopulateGrpcOptions(std::move(opts));
 
   if (!opts.has<GrpcNumChannelsOption>()) {
     opts.set<GrpcNumChannelsOption>(static_cast<int>(DefaultThreadCount()));
@@ -55,7 +60,7 @@ Options DefaultCommonOptions(Options opts) {
   if (!opts.has<pubsub::BackoffPolicyOption>()) {
     opts.set<pubsub::BackoffPolicyOption>(
         pubsub::ExponentialBackoffPolicy(std::chrono::milliseconds(100),
-                                         std::chrono::seconds(60), 1.3)
+                                         std::chrono::seconds(60), 4)
             .clone());
   }
   if (opts.get<GrpcBackgroundThreadPoolSizeOption>() == 0) {
@@ -98,6 +103,16 @@ Options DefaultPublisherOptionsOnly(Options opts) {
     opts.set<pubsub::FullPublisherActionOption>(
         pubsub::FullPublisherAction::kBlocks);
   }
+  if (!opts.has<pubsub::CompressionAlgorithmOption>()) {
+    opts.set<pubsub::CompressionAlgorithmOption>(GRPC_COMPRESS_DEFLATE);
+  }
+  auto e = internal::GetEnv("OTEL_SPAN_LINK_COUNT_LIMIT");
+  size_t link_count;
+  if (e && absl::SimpleAtoi(e.value(), &link_count)) {
+    opts.set<pubsub::MaxOtelLinkCountOption>(link_count);
+  } else if (!opts.has<pubsub::MaxOtelLinkCountOption>()) {
+    opts.set<pubsub::MaxOtelLinkCountOption>(128);
+  }
 
   return opts;
 }
@@ -107,38 +122,35 @@ Options DefaultSubscriberOptions(Options opts) {
 }
 
 Options DefaultSubscriberOptionsOnly(Options opts) {
-  if (!opts.has<pubsub::MaxDeadlineTimeOption>()) {
-    opts.set<pubsub::MaxDeadlineTimeOption>(seconds(0));
-  }
-  if (!opts.has<pubsub::MaxDeadlineExtensionOption>()) {
-    opts.set<pubsub::MaxDeadlineExtensionOption>(seconds(600));
-  }
-  if (!opts.has<pubsub::MaxOutstandingMessagesOption>()) {
-    opts.set<pubsub::MaxOutstandingMessagesOption>(1000);
-  }
-  if (!opts.has<pubsub::MaxOutstandingBytesOption>()) {
-    opts.set<pubsub::MaxOutstandingBytesOption>(100 * 1024 * 1024L);
-  }
+  auto defaults =
+      Options{}
+          .set<pubsub::MaxDeadlineTimeOption>(seconds(0))
+          .set<pubsub::MaxDeadlineExtensionOption>(seconds(600))
+          .set<pubsub::MinDeadlineExtensionOption>(seconds(60))
+          .set<pubsub::MaxOutstandingMessagesOption>(1000)
+          .set<pubsub::MaxOutstandingBytesOption>(100 * 1024 * 1024L)
+          .set<pubsub::ShutdownPollingPeriodOption>(seconds(5))
+          // Subscribers are special: by default we want to retry essentially
+          // forever because (a) the service will disconnect the streaming pull
+          // from time to time, but that is not a "failure", (b) applications
+          // can change this behavior if they need, and this is easier than some
+          // hard-coded "treat these disconnects as non-failures" code.
+          .set<pubsub::RetryPolicyOption>(pubsub::LimitedErrorCountRetryPolicy(
+                                              (std::numeric_limits<int>::max)())
+                                              .clone());
+  opts = google::cloud::internal::MergeOptions(std::move(opts),
+                                               std::move(defaults));
+
+  // Enforce constraints
   if (opts.get<pubsub::MaxConcurrencyOption>() == 0) {
     opts.set<pubsub::MaxConcurrencyOption>(DefaultThreadCount());
   }
-  if (!opts.has<pubsub::ShutdownPollingPeriodOption>()) {
-    opts.set<pubsub::ShutdownPollingPeriodOption>(seconds(5));
-  }
-  // Subscribers are special: by default we want to retry essentially forever
-  // because (a) the service will disconnect the streaming pull from time to
-  // time, but that is not a "failure", (b) applications can change this
-  // behavior if they need, and this is easier than some hard-coded "treat these
-  // disconnects as non-failures" code.
-  if (!opts.has<pubsub::RetryPolicyOption>()) {
-    opts.set<pubsub::RetryPolicyOption>(
-        pubsub::LimitedErrorCountRetryPolicy((std::numeric_limits<int>::max)())
-            .clone());
-  }
 
-  // Enforce constraints
-  auto& extension = opts.lookup<pubsub::MaxDeadlineExtensionOption>();
-  extension = (std::max)((std::min)(extension, seconds(600)), seconds(10));
+  auto& max = opts.lookup<pubsub::MaxDeadlineExtensionOption>();
+  max = (std::max)((std::min)(max, seconds(600)), seconds(10));
+
+  auto& min = opts.lookup<pubsub::MinDeadlineExtensionOption>();
+  min = (std::max)((std::min)(min, max), seconds(10));
 
   auto& messages = opts.lookup<pubsub::MaxOutstandingMessagesOption>();
   messages = std::max<std::int64_t>(0, messages);

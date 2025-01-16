@@ -19,69 +19,41 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATACATALOG_POLICY_TAG_MANAGER_SERIALIZATION_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATACATALOG_POLICY_TAG_MANAGER_SERIALIZATION_CONNECTION_H
 
-#include "google/cloud/datacatalog/internal/policy_tag_manager_serialization_retry_traits.h"
-#include "google/cloud/datacatalog/internal/policy_tag_manager_serialization_stub.h"
 #include "google/cloud/datacatalog/policy_tag_manager_serialization_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/datacatalog/v1/policy_tag_manager_serialization_connection.h"
 
 namespace google {
 namespace cloud {
 namespace datacatalog {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using PolicyTagManagerSerializationRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        datacatalog_internal::PolicyTagManagerSerializationRetryTraits>;
+/// @deprecated Use datacatalog_v1::MakePolicyTagManagerSerializationConnection
+/// directly.
+using ::google::cloud::datacatalog_v1::
+    MakePolicyTagManagerSerializationConnection;
 
-using PolicyTagManagerSerializationLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        datacatalog_internal::PolicyTagManagerSerializationRetryTraits>;
+/// @deprecated Use datacatalog_v1::PolicyTagManagerSerializationConnection
+/// directly.
+using ::google::cloud::datacatalog_v1::PolicyTagManagerSerializationConnection;
 
-using PolicyTagManagerSerializationLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        datacatalog_internal::PolicyTagManagerSerializationRetryTraits>;
+/// @deprecated Use
+/// datacatalog_v1::PolicyTagManagerSerializationLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::datacatalog_v1::
+    PolicyTagManagerSerializationLimitedErrorCountRetryPolicy;
 
-class PolicyTagManagerSerializationConnection {
- public:
-  virtual ~PolicyTagManagerSerializationConnection() = 0;
+/// @deprecated Use
+/// datacatalog_v1::PolicyTagManagerSerializationLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::datacatalog_v1::
+    PolicyTagManagerSerializationLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::datacatalog::v1::Taxonomy> ReplaceTaxonomy(
-      google::cloud::datacatalog::v1::ReplaceTaxonomyRequest const& request);
-
-  virtual StatusOr<google::cloud::datacatalog::v1::ImportTaxonomiesResponse>
-  ImportTaxonomies(
-      google::cloud::datacatalog::v1::ImportTaxonomiesRequest const& request);
-
-  virtual StatusOr<google::cloud::datacatalog::v1::ExportTaxonomiesResponse>
-  ExportTaxonomies(
-      google::cloud::datacatalog::v1::ExportTaxonomiesRequest const& request);
-};
-
-std::shared_ptr<PolicyTagManagerSerializationConnection>
-MakePolicyTagManagerSerializationConnection(Options options = {});
+/// @deprecated Use datacatalog_v1::PolicyTagManagerSerializationRetryPolicy
+/// directly.
+using ::google::cloud::datacatalog_v1::PolicyTagManagerSerializationRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace datacatalog
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace datacatalog_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<datacatalog::PolicyTagManagerSerializationConnection>
-MakePolicyTagManagerSerializationConnection(
-    std::shared_ptr<PolicyTagManagerSerializationStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace datacatalog_internal
 }  // namespace cloud
 }  // namespace google
 

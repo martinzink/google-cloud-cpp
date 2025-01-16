@@ -19,94 +19,35 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_WORKFLOW_TEMPLATE_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_WORKFLOW_TEMPLATE_CONNECTION_H
 
-#include "google/cloud/dataproc/internal/workflow_template_retry_traits.h"
-#include "google/cloud/dataproc/internal/workflow_template_stub.h"
+#include "google/cloud/dataproc/v1/workflow_template_connection.h"
 #include "google/cloud/dataproc/workflow_template_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using WorkflowTemplateServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        dataproc_internal::WorkflowTemplateServiceRetryTraits>;
+/// @deprecated Use dataproc_v1::MakeWorkflowTemplateServiceConnection directly.
+using ::google::cloud::dataproc_v1::MakeWorkflowTemplateServiceConnection;
 
-using WorkflowTemplateServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        dataproc_internal::WorkflowTemplateServiceRetryTraits>;
+/// @deprecated Use dataproc_v1::WorkflowTemplateServiceConnection directly.
+using ::google::cloud::dataproc_v1::WorkflowTemplateServiceConnection;
 
-using WorkflowTemplateServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        dataproc_internal::WorkflowTemplateServiceRetryTraits>;
+/// @deprecated Use
+/// dataproc_v1::WorkflowTemplateServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::dataproc_v1::
+    WorkflowTemplateServiceLimitedErrorCountRetryPolicy;
 
-class WorkflowTemplateServiceConnection {
- public:
-  virtual ~WorkflowTemplateServiceConnection() = 0;
+/// @deprecated Use dataproc_v1::WorkflowTemplateServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::
+    WorkflowTemplateServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::dataproc::v1::WorkflowTemplate>
-  CreateWorkflowTemplate(
-      google::cloud::dataproc::v1::CreateWorkflowTemplateRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::WorkflowTemplate>
-  GetWorkflowTemplate(
-      google::cloud::dataproc::v1::GetWorkflowTemplateRequest const& request);
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::WorkflowMetadata>>
-  InstantiateWorkflowTemplate(
-      google::cloud::dataproc::v1::InstantiateWorkflowTemplateRequest const&
-          request);
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::WorkflowMetadata>>
-  InstantiateInlineWorkflowTemplate(
-      google::cloud::dataproc::v1::
-          InstantiateInlineWorkflowTemplateRequest const& request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::WorkflowTemplate>
-  UpdateWorkflowTemplate(
-      google::cloud::dataproc::v1::UpdateWorkflowTemplateRequest const&
-          request);
-
-  virtual StreamRange<google::cloud::dataproc::v1::WorkflowTemplate>
-  ListWorkflowTemplates(
-      google::cloud::dataproc::v1::ListWorkflowTemplatesRequest request);
-
-  virtual Status DeleteWorkflowTemplate(
-      google::cloud::dataproc::v1::DeleteWorkflowTemplateRequest const&
-          request);
-};
-
-std::shared_ptr<WorkflowTemplateServiceConnection>
-MakeWorkflowTemplateServiceConnection(Options options = {});
+/// @deprecated Use dataproc_v1::WorkflowTemplateServiceRetryPolicy directly.
+using ::google::cloud::dataproc_v1::WorkflowTemplateServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace dataproc_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<dataproc::WorkflowTemplateServiceConnection>
-MakeWorkflowTemplateServiceConnection(
-    std::shared_ptr<WorkflowTemplateServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace dataproc_internal
 }  // namespace cloud
 }  // namespace google
 

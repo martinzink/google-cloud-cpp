@@ -20,34 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_MOCKS_MOCK_BATCH_CONTROLLER_CONNECTION_H
 
 #include "google/cloud/dataproc/batch_controller_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/dataproc/v1/mocks/mock_batch_controller_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in dataproc_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace dataproc_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockBatchControllerConnection
-    : public dataproc::BatchControllerConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::dataproc::v1::Batch>>, CreateBatch,
-              (google::cloud::dataproc::v1::CreateBatchRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::dataproc::v1::Batch>, GetBatch,
-              (google::cloud::dataproc::v1::GetBatchRequest const& request),
-              (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::dataproc::v1::Batch>, ListBatches,
-              (google::cloud::dataproc::v1::ListBatchesRequest request),
-              (override));
-
-  MOCK_METHOD(Status, DeleteBatch,
-              (google::cloud::dataproc::v1::DeleteBatchRequest const& request),
-              (override));
-};
+/// @deprecated Use dataproc_v1_mocks::MockBatchControllerConnection directly.
+using ::google::cloud::dataproc_v1_mocks::MockBatchControllerConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc_mocks

@@ -20,58 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_MOCKS_MOCK_CLUSTER_CONTROLLER_CONNECTION_H
 
 #include "google/cloud/dataproc/cluster_controller_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/dataproc/v1/mocks/mock_cluster_controller_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in dataproc_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace dataproc_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockClusterControllerConnection
-    : public dataproc::ClusterControllerConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::dataproc::v1::Cluster>>, CreateCluster,
-      (google::cloud::dataproc::v1::CreateClusterRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::dataproc::v1::Cluster>>, UpdateCluster,
-      (google::cloud::dataproc::v1::UpdateClusterRequest const& request),
-      (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::dataproc::v1::Cluster>>,
-              StopCluster,
-              (google::cloud::dataproc::v1::StopClusterRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::dataproc::v1::Cluster>>,
-              StartCluster,
-              (google::cloud::dataproc::v1::StartClusterRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::dataproc::v1::ClusterOperationMetadata>>,
-      DeleteCluster,
-      (google::cloud::dataproc::v1::DeleteClusterRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::dataproc::v1::Cluster>, GetCluster,
-              (google::cloud::dataproc::v1::GetClusterRequest const& request),
-              (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::dataproc::v1::Cluster>, ListClusters,
-              (google::cloud::dataproc::v1::ListClustersRequest request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::dataproc::v1::DiagnoseClusterResults>>,
-      DiagnoseCluster,
-      (google::cloud::dataproc::v1::DiagnoseClusterRequest const& request),
-      (override));
-};
+/// @deprecated Use dataproc_v1_mocks::MockClusterControllerConnection directly.
+using ::google::cloud::dataproc_v1_mocks::MockClusterControllerConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc_mocks

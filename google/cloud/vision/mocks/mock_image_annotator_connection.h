@@ -20,44 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VISION_MOCKS_MOCK_IMAGE_ANNOTATOR_CONNECTION_H
 
 #include "google/cloud/vision/image_annotator_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/vision/v1/mocks/mock_image_annotator_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in vision_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace vision_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockImageAnnotatorConnection : public vision::ImageAnnotatorConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::vision::v1::BatchAnnotateImagesResponse>,
-      BatchAnnotateImages,
-      (google::cloud::vision::v1::BatchAnnotateImagesRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::vision::v1::BatchAnnotateFilesResponse>,
-      BatchAnnotateFiles,
-      (google::cloud::vision::v1::BatchAnnotateFilesRequest const& request),
-      (override));
-
-  MOCK_METHOD(future<StatusOr<
-                  google::cloud::vision::v1::AsyncBatchAnnotateImagesResponse>>,
-              AsyncBatchAnnotateImages,
-              (google::cloud::vision::v1::AsyncBatchAnnotateImagesRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(
-      future<
-          StatusOr<google::cloud::vision::v1::AsyncBatchAnnotateFilesResponse>>,
-      AsyncBatchAnnotateFiles,
-      (google::cloud::vision::v1::AsyncBatchAnnotateFilesRequest const&
-           request),
-      (override));
-};
+/// @deprecated Use vision_v1_mocks::MockImageAnnotatorConnection directly.
+using ::google::cloud::vision_v1_mocks::MockImageAnnotatorConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace vision_mocks

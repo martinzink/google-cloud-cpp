@@ -23,6 +23,7 @@
 #include "google/cloud/version.h"
 #include "absl/functional/function_ref.h"
 #include <chrono>
+#include <memory>
 
 namespace google {
 namespace cloud {
@@ -71,8 +72,8 @@ class CompletionQueueImpl {
   virtual void StartOperation(std::shared_ptr<AsyncGrpcOperation> op,
                               absl::FunctionRef<void(void*)> start) = 0;
 
-  /// The underlying gRPC completion queue.
-  virtual grpc::CompletionQueue& cq() = 0;
+  /// The underlying gRPC completion queue, if it exists.
+  virtual grpc::CompletionQueue* cq() = 0;
 };
 
 }  // namespace internal

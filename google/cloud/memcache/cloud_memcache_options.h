@@ -21,40 +21,29 @@
 
 #include "google/cloud/memcache/cloud_memcache_connection.h"
 #include "google/cloud/memcache/cloud_memcache_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/memcache/v1/cloud_memcache_options.h"
 
 namespace google {
 namespace cloud {
 namespace memcache {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CloudMemcacheRetryPolicyOption {
-  using Type = std::shared_ptr<CloudMemcacheRetryPolicy>;
-};
+/// @deprecated Use memcache_v1::CloudMemcachePollingPolicyOption directly.
+using ::google::cloud::memcache_v1::CloudMemcachePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudMemcacheBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use memcache_v1::CloudMemcacheBackoffPolicyOption directly.
+using ::google::cloud::memcache_v1::CloudMemcacheBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudMemcachePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use memcache_v1::CloudMemcacheConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::memcache_v1::
+    CloudMemcacheConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudMemcacheConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CloudMemcacheConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use memcache_v1::CloudMemcachePolicyOptionList directly.
+using ::google::cloud::memcache_v1::CloudMemcachePolicyOptionList;
 
-using CloudMemcachePolicyOptionList =
-    OptionList<CloudMemcacheRetryPolicyOption, CloudMemcacheBackoffPolicyOption,
-               CloudMemcachePollingPolicyOption,
-               CloudMemcacheConnectionIdempotencyPolicyOption>;
+/// @deprecated Use memcache_v1::CloudMemcacheRetryPolicyOption directly.
+using ::google::cloud::memcache_v1::CloudMemcacheRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace memcache

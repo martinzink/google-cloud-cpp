@@ -20,25 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_POLICYTROUBLESHOOTER_MOCKS_MOCK_IAM_CHECKER_CONNECTION_H
 
 #include "google/cloud/policytroubleshooter/iam_checker_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/policytroubleshooter/v1/mocks/mock_iam_checker_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in policytroubleshooter_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace policytroubleshooter_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockIamCheckerConnection
-    : public policytroubleshooter::IamCheckerConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::policytroubleshooter::v1::
-                           TroubleshootIamPolicyResponse>,
-              TroubleshootIamPolicy,
-              (google::cloud::policytroubleshooter::v1::
-                   TroubleshootIamPolicyRequest const& request),
-              (override));
-};
+/// @deprecated Use policytroubleshooter_v1_mocks::MockIamCheckerConnection
+/// directly.
+using ::google::cloud::policytroubleshooter_v1_mocks::MockIamCheckerConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace policytroubleshooter_mocks

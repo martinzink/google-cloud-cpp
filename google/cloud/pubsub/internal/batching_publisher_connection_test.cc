@@ -35,6 +35,7 @@ namespace {
 using ::google::cloud::testing_util::AsyncSequencer;
 using ::google::cloud::testing_util::IsOk;
 using ::google::cloud::testing_util::StatusIs;
+using ::testing::_;
 using ::testing::AnyOf;
 using ::testing::AtLeast;
 using ::testing::Contains;
@@ -60,11 +61,47 @@ std::vector<std::string> MessagesData(
   return data;
 }
 
+TEST(BatchingPublisherConnectionTest, FastDestructor) {
+  auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
+  pubsub::Topic const topic("test-project", "test-topic");
+
+  AsyncSequencer<void> async;
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
+  // This test will never get a chance to flush its message.
+  EXPECT_CALL(*mock, AsyncPublish).Times(0);
+
+  google::cloud::internal::AutomaticallyCreatedBackgroundThreads background;
+  // Make this so large that the test times out before the message hold expires.
+  // This ensures that the two messages will be sent in one batch.
+  auto constexpr kMaxHoldTime = std::chrono::hours(24);
+  auto const ordering_key = std::string{};
+  auto publisher = BatchingPublisherConnection::Create(
+      topic,
+      DefaultPublisherOptions(
+          Options{}
+              .set<pubsub::MaxBatchMessagesOption>(4)
+              .set<pubsub::MaxHoldTimeOption>(kMaxHoldTime)),
+      ordering_key, mock, background.cq());
+
+  // Publishing a message starts the batch timer.
+  auto pending = publisher->Publish(
+      {pubsub::MessageBuilder{}.SetData("test-data-0").Build()});
+
+  auto const start = std::chrono::steady_clock::now();
+  publisher.reset();
+  auto const elapsed = std::chrono::steady_clock::now() - start;
+  // Considering that the timer is configured to wait 24 hours, shutting down in
+  // 30s is good enough. It also avoids flakiness introduced by more precise
+  // measurements.
+  EXPECT_LE(elapsed, std::chrono::seconds(30));
+}
+
 TEST(BatchingPublisherConnectionTest, DefaultMakesProgress) {
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
   pubsub::Topic const topic("test-project", "test-topic");
 
   AsyncSequencer<void> async;
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .Times(AtLeast(1))
       .WillRepeatedly([&](google::pubsub::v1::PublishRequest const& request) {
@@ -131,6 +168,7 @@ TEST(BatchingPublisherConnectionTest, BatchByMessageCount) {
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
   pubsub::Topic const topic("test-project", "test-topic");
 
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillOnce([&](google::pubsub::v1::PublishRequest const& request) {
         EXPECT_EQ(topic.FullName(), request.topic());
@@ -183,6 +221,7 @@ TEST(BatchingPublisherConnectionTest, BatchByMessageSize) {
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
   pubsub::Topic const topic("test-project", "test-topic");
 
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillOnce([&](google::pubsub::v1::PublishRequest const& request) {
         EXPECT_EQ(topic.FullName(), request.topic());
@@ -240,6 +279,7 @@ TEST(BatchingPublisherConnectionTest, BatchByMessageSizeLargeMessageBreak) {
   // publisher should first flush the existing batch and then send the full
   // message.
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillOnce([&](google::pubsub::v1::PublishRequest const& request) {
         EXPECT_EQ(topic.FullName(), request.topic());
@@ -315,6 +355,7 @@ TEST(BatchingPublisherConnectionTest, BatchByMessageSizeOversizedSingleton) {
       };
 
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillOnce([&](google::pubsub::v1::PublishRequest const& request) {
         EXPECT_EQ(topic.FullName(), request.topic());
@@ -396,6 +437,7 @@ TEST(BatchingPublisherConnectionTest, BatchTorture) {
       };
 
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillRepeatedly([&](google::pubsub::v1::PublishRequest const& request) {
         EXPECT_EQ(topic.FullName(), request.topic());
@@ -434,9 +476,8 @@ TEST(BatchingPublisherConnectionTest, BatchTorture) {
     for (auto& r : results) EXPECT_STATUS_OK(r.get());
   };
   std::vector<std::thread> workers(4);
-  std::generate(workers.begin(), workers.end(), [&] {
-    return std::thread{worker, 1000};
-  });
+  std::generate(workers.begin(), workers.end(),
+                [&] { return std::thread{worker, 1000}; });
   publisher->Flush({});
   for (auto& w : workers) w.join();
 }
@@ -445,6 +486,7 @@ TEST(BatchingPublisherConnectionTest, BatchByMaximumHoldTime) {
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
   pubsub::Topic const topic("test-project", "test-topic");
 
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillOnce([&](google::pubsub::v1::PublishRequest const& request) {
         EXPECT_EQ(topic.FullName(), request.topic());
@@ -499,6 +541,7 @@ TEST(BatchingPublisherConnectionTest, BatchByFlush) {
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
   pubsub::Topic const topic("test-project", "test-topic");
 
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillOnce([&](google::pubsub::v1::PublishRequest const& request) {
         EXPECT_EQ(topic.FullName(), request.topic());
@@ -577,6 +620,7 @@ TEST(BatchingPublisherConnectionTest, HandleError) {
   pubsub::Topic const topic("test-project", "test-topic");
 
   auto const error_status = Status(StatusCode::kPermissionDenied, "uh-oh");
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillRepeatedly([&](google::pubsub::v1::PublishRequest const&) {
         return make_ready_future(
@@ -604,6 +648,7 @@ TEST(BatchingPublisherConnectionTest, HandleInvalidResponse) {
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
   pubsub::Topic const topic("test-project", "test-topic");
 
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillRepeatedly([&](google::pubsub::v1::PublishRequest const&) {
         google::pubsub::v1::PublishResponse response;
@@ -628,11 +673,13 @@ TEST(BatchingPublisherConnectionTest, HandleInvalidResponse) {
 
 TEST(BatchingPublisherConnectionTest, HandleErrorWithOrderingPartialBatch) {
   auto mock = std::make_shared<pubsub_testing::MockBatchSink>();
+
   pubsub::Topic const topic("test-project", "test-topic");
 
   auto const error_status = Status(StatusCode::kPermissionDenied, "uh-oh");
 
   AsyncSequencer<void> async;
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   EXPECT_CALL(*mock, AsyncPublish)
       .WillOnce([&](google::pubsub::v1::PublishRequest const&) {
         return async.PushBack().then([error_status](future<void>) {
@@ -682,6 +729,7 @@ TEST(BatchingPublisherConnectionTest, HandleErrorWithOrderingResume) {
   auto const error_status = Status(StatusCode::kPermissionDenied, "uh-oh");
 
   AsyncSequencer<void> async;
+  EXPECT_CALL(*mock, AddMessage(_)).Times(AtLeast(1));
   {
     ::testing::InSequence sequence;
     EXPECT_CALL(*mock, AsyncPublish)

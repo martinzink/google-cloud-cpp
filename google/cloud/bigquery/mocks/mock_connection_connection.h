@@ -19,65 +19,21 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_MOCKS_MOCK_CONNECTION_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_MOCKS_MOCK_CONNECTION_CONNECTION_H
 
+#include "google/cloud/bigquery/connection/v1/mocks/mock_connection_connection.h"
 #include "google/cloud/bigquery/connection_connection.h"
-#include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in bigquery_connection_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace bigquery_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockConnectionServiceConnection
-    : public bigquery::ConnectionServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::bigquery::connection::v1::Connection>,
-      CreateConnection,
-      (google::cloud::bigquery::connection::v1::CreateConnectionRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::bigquery::connection::v1::Connection>,
-      GetConnection,
-      (google::cloud::bigquery::connection::v1::GetConnectionRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      StreamRange<google::cloud::bigquery::connection::v1::Connection>,
-      ListConnections,
-      (google::cloud::bigquery::connection::v1::ListConnectionsRequest request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::bigquery::connection::v1::Connection>,
-      UpdateConnection,
-      (google::cloud::bigquery::connection::v1::UpdateConnectionRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      Status, DeleteConnection,
-      (google::cloud::bigquery::connection::v1::DeleteConnectionRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::Policy>, GetIamPolicy,
-              (google::iam::v1::GetIamPolicyRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::Policy>, SetIamPolicy,
-              (google::iam::v1::SetIamPolicyRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::TestIamPermissionsResponse>,
-              TestIamPermissions,
-              (google::iam::v1::TestIamPermissionsRequest const& request),
-              (override));
-};
+/// @deprecated Use
+/// bigquery_connection_v1_mocks::MockConnectionServiceConnection directly.
+using ::google::cloud::bigquery_connection_v1_mocks::
+    MockConnectionServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigquery_mocks

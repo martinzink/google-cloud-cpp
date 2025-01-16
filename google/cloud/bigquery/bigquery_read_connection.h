@@ -20,31 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_BIGQUERY_READ_CONNECTION_H
 
 #include "google/cloud/bigquery/bigquery_read_connection_idempotency_policy.h"
-#include "google/cloud/bigquery/internal/bigquery_read_retry_traits.h"
-#include "google/cloud/bigquery/internal/bigquery_read_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/bigquery/storage/v1/bigquery_read_connection.h"
 
 namespace google {
 namespace cloud {
 namespace bigquery {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using BigQueryReadRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        bigquery_internal::BigQueryReadRetryTraits>;
+/// @deprecated Use bigquery_storage_v1::MakeBigQueryReadConnection directly.
+using ::google::cloud::bigquery_storage_v1::MakeBigQueryReadConnection;
 
-using BigQueryReadLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        bigquery_internal::BigQueryReadRetryTraits>;
+/// @deprecated Use bigquery_storage_v1::BigQueryReadConnection directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryReadConnection;
 
-using BigQueryReadLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        bigquery_internal::BigQueryReadRetryTraits>;
+/// @deprecated Use
+/// bigquery_storage_v1::BigQueryReadLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::bigquery_storage_v1::
+    BigQueryReadLimitedErrorCountRetryPolicy;
+
+/// @deprecated Use bigquery_storage_v1::BigQueryReadLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryReadLimitedTimeRetryPolicy;
+
+/// @deprecated Use bigquery_storage_v1::BigQueryReadRetryPolicy directly.
+using ::google::cloud::bigquery_storage_v1::BigQueryReadRetryPolicy;
 
 GOOGLE_CLOUD_CPP_DEPRECATED(
     "applications should not need this."
@@ -54,48 +53,8 @@ void BigQueryReadReadRowsStreamingUpdater(
     google::cloud::bigquery::storage::v1::ReadRowsResponse const& response,
     google::cloud::bigquery::storage::v1::ReadRowsRequest& request);
 
-class BigQueryReadConnection {
- public:
-  virtual ~BigQueryReadConnection() = 0;
-
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::bigquery::storage::v1::ReadSession>
-  CreateReadSession(
-      google::cloud::bigquery::storage::v1::CreateReadSessionRequest const&
-          request);
-
-  virtual StreamRange<google::cloud::bigquery::storage::v1::ReadRowsResponse>
-  ReadRows(
-      google::cloud::bigquery::storage::v1::ReadRowsRequest const& request);
-
-  virtual StatusOr<
-      google::cloud::bigquery::storage::v1::SplitReadStreamResponse>
-  SplitReadStream(
-      google::cloud::bigquery::storage::v1::SplitReadStreamRequest const&
-          request);
-};
-
-std::shared_ptr<BigQueryReadConnection> MakeBigQueryReadConnection(
-    Options options = {});
-
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-namespace gcpcxxV1 = GOOGLE_CLOUD_CPP_NS;  // NOLINT(misc-unused-alias-decls)
 }  // namespace bigquery
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace bigquery_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<bigquery::BigQueryReadConnection> MakeBigQueryReadConnection(
-    std::shared_ptr<BigQueryReadStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-namespace gcpcxxV1 = GOOGLE_CLOUD_CPP_NS;  // NOLINT(misc-unused-alias-decls)
-}  // namespace bigquery_internal
 }  // namespace cloud
 }  // namespace google
 

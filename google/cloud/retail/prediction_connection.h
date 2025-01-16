@@ -19,61 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_PREDICTION_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_PREDICTION_CONNECTION_H
 
-#include "google/cloud/retail/internal/prediction_retry_traits.h"
-#include "google/cloud/retail/internal/prediction_stub.h"
 #include "google/cloud/retail/prediction_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/retail/v2/prediction_connection.h"
 
 namespace google {
 namespace cloud {
 namespace retail {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using PredictionServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        retail_internal::PredictionServiceRetryTraits>;
+/// @deprecated Use retail_v2::MakePredictionServiceConnection directly.
+using ::google::cloud::retail_v2::MakePredictionServiceConnection;
 
-using PredictionServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        retail_internal::PredictionServiceRetryTraits>;
+/// @deprecated Use retail_v2::PredictionServiceConnection directly.
+using ::google::cloud::retail_v2::PredictionServiceConnection;
 
-using PredictionServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        retail_internal::PredictionServiceRetryTraits>;
+/// @deprecated Use retail_v2::PredictionServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::retail_v2::PredictionServiceLimitedErrorCountRetryPolicy;
 
-class PredictionServiceConnection {
- public:
-  virtual ~PredictionServiceConnection() = 0;
+/// @deprecated Use retail_v2::PredictionServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::retail_v2::PredictionServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::retail::v2::PredictResponse> Predict(
-      google::cloud::retail::v2::PredictRequest const& request);
-};
-
-std::shared_ptr<PredictionServiceConnection> MakePredictionServiceConnection(
-    Options options = {});
+/// @deprecated Use retail_v2::PredictionServiceRetryPolicy directly.
+using ::google::cloud::retail_v2::PredictionServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace retail_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<retail::PredictionServiceConnection>
-MakePredictionServiceConnection(std::shared_ptr<PredictionServiceStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace retail_internal
 }  // namespace cloud
 }  // namespace google
 

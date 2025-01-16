@@ -19,37 +19,23 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DOCUMENTAI_DOCUMENT_PROCESSOR_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DOCUMENTAI_DOCUMENT_PROCESSOR_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/documentai/v1/document_processor_service.grpc.pb.h>
-#include <memory>
+#include "google/cloud/documentai/v1/document_processor_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace documentai {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class DocumentProcessorServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~DocumentProcessorServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// documentai_v1::MakeDefaultDocumentProcessorServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::documentai_v1::
+    MakeDefaultDocumentProcessorServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<DocumentProcessorServiceConnectionIdempotencyPolicy>
-  clone() const = 0;
-
-  virtual google::cloud::Idempotency ProcessDocument(
-      google::cloud::documentai::v1::ProcessRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency BatchProcessDocuments(
-      google::cloud::documentai::v1::BatchProcessRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ReviewDocument(
-      google::cloud::documentai::v1::ReviewDocumentRequest const& request) = 0;
-};
-
-std::unique_ptr<DocumentProcessorServiceConnectionIdempotencyPolicy>
-MakeDefaultDocumentProcessorServiceConnectionIdempotencyPolicy();
+/// @deprecated Use
+/// documentai_v1::DocumentProcessorServiceConnectionIdempotencyPolicy directly.
+using ::google::cloud::documentai_v1::
+    DocumentProcessorServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace documentai

@@ -20,37 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TALENT_MOCKS_MOCK_TENANT_CONNECTION_H
 
 #include "google/cloud/talent/tenant_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/talent/v4/mocks/mock_tenant_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in talent_v4_mocks instead of the aliases
+///     defined in this namespace.
 namespace talent_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockTenantServiceConnection : public talent::TenantServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::talent::v4::Tenant>, CreateTenant,
-              (google::cloud::talent::v4::CreateTenantRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::talent::v4::Tenant>, GetTenant,
-              (google::cloud::talent::v4::GetTenantRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::talent::v4::Tenant>, UpdateTenant,
-              (google::cloud::talent::v4::UpdateTenantRequest const& request),
-              (override));
-
-  MOCK_METHOD(Status, DeleteTenant,
-              (google::cloud::talent::v4::DeleteTenantRequest const& request),
-              (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::talent::v4::Tenant>, ListTenants,
-              (google::cloud::talent::v4::ListTenantsRequest request),
-              (override));
-};
+/// @deprecated Use talent_v4_mocks::MockTenantServiceConnection directly.
+using ::google::cloud::talent_v4_mocks::MockTenantServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent_mocks

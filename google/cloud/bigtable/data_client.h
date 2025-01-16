@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,14 +24,20 @@
 
 namespace google {
 namespace cloud {
+// Forward declare some classes so we can be friends.
+namespace bigtable_internal {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+class BulkMutator;
+class LegacyAsyncRowReader;
+class LegacyRowReader;
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace bigtable_internal
 namespace bigtable {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-// Forward declare some classes so we can be friends.
 class Table;
 namespace internal {
 class AsyncRetryBulkApply;
-class AsyncRowSampler;
-class BulkMutator;
+class LegacyAsyncRowSampler;
 class LoggingDataClient;
 }  // namespace internal
 
@@ -52,6 +58,10 @@ class LoggingDataClient;
  * workflows with Google Cloud Platform. These operations can take many
  * milliseconds, therefore applications should try to reuse the same
  * `DataClient` instances when possible.
+ *
+ * @deprecated #google::cloud::bigtable::DataConnection is the preferred way to
+ *     communicate with the Bigtable Data API. To migrate existing code, see
+ *     @ref migrating-from-dataclient "Migrating from DataClient".
  */
 class DataClient {
  public:
@@ -65,20 +75,37 @@ class DataClient {
    *
    * Intended to access rarely used services in the same endpoints as the
    * Bigtable admin interfaces, for example, the google.longrunning.Operations.
+   *
+   * @deprecated This member function is scheduled for deletion and `DataClient`
+   *     will be marked as `final`. Do not extend this class. Application
+   *     developers who need to configure the gRPC Channel can pass any of the
+   *     following options into `MakeDataClient(...)`:
+   *       * `google::cloud::GrpcChannelArgumentsOption`
+   *       * `google::cloud::GrpcChannelArgumentsNativeOption`
    */
+  GOOGLE_CLOUD_CPP_BIGTABLE_DATA_CLIENT_DEPRECATED("Channel()")
   virtual std::shared_ptr<grpc::Channel> Channel() = 0;
 
   /**
    * Reset and create new Channels.
    *
-   * Currently this is only used in testing.  In the future, we expect this,
-   * or a similar member function, will be needed to handle errors that require
-   * a new connection, or an explicit refresh of the credentials.
+   * @deprecated This member function is scheduled for deletion and `DataClient`
+   *     will be marked as `final`. Do not extend this class. The client library
+   *     will handle all interactions with the gRPC channels.
    */
+  GOOGLE_CLOUD_CPP_BIGTABLE_DATA_CLIENT_DEPRECATED("reset()")
   virtual void reset() = 0;
 
   /**
    * The thread factory this client was created with.
+   *
+   * @deprecated This member function is scheduled for deletion and `DataClient`
+   *     will be marked as `final`. Do not extend this class. Application
+   *     developers who need to configure the background threads can pass any
+   *     of the following options into `MakeDataClient(...)`:
+   *       * `google::cloud::GrpcBackgroundThreadPoolSizeOption`
+   *       * `google::cloud::GrpcCompletionQueueOption`
+   *       * `google::cloud::GrpcBackgroundThreadFactoryOption`
    */
   virtual google::cloud::BackgroundThreadsFactory
   BackgroundThreadsFactory() = 0;
@@ -90,14 +117,13 @@ class DataClient {
  protected:
   friend class Table;
   friend class internal::AsyncRetryBulkApply;
-  friend class internal::AsyncRowSampler;
-  friend class internal::BulkMutator;
-  friend class RowReader;
-  template <typename RowFunctor, typename FinishFunctor>
-  friend class AsyncRowReader;
+  friend class internal::LegacyAsyncRowSampler;
+  friend class bigtable_internal::BulkMutator;
+  friend class bigtable_internal::LegacyRowReader;
+  friend class bigtable_internal::LegacyAsyncRowReader;
   friend class internal::LoggingDataClient;
 
-  //@{
+  ///@{
   /// @name the `google.bigtable.v2.Bigtable` wrappers.
   virtual grpc::Status MutateRow(
       grpc::ClientContext* context,
@@ -171,7 +197,7 @@ class DataClient {
   PrepareAsyncMutateRows(grpc::ClientContext* context,
                          google::bigtable::v2::MutateRowsRequest const& request,
                          grpc::CompletionQueue* cq) = 0;
-  //@}
+  ///@}
 };
 
 /// Create a new data client configured via @p options.
@@ -185,6 +211,7 @@ std::shared_ptr<DataClient> MakeDataClient(std::string project_id,
  * @deprecated use the `MakeDataClient` method which accepts
  * `google::cloud::Options` instead.
  */
+GOOGLE_CLOUD_CPP_DEPRECATED("use `MakeDataClient` instead")
 std::shared_ptr<DataClient> CreateDefaultDataClient(std::string project_id,
                                                     std::string instance_id,
                                                     ClientOptions options);

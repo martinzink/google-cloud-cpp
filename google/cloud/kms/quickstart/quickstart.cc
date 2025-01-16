@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/kms/key_management_client.h"
-#include "google/cloud/project.h"
+//! [all]
+#include "google/cloud/kms/v1/key_management_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -23,19 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace kms = ::google::cloud::kms;
+  auto const location = google::cloud::Location(argv[1], argv[2]);
+
+  namespace kms = ::google::cloud::kms_v1;
   auto client = kms::KeyManagementServiceClient(
       kms::MakeKeyManagementServiceConnection());
 
-  auto const parent =
-      std::string{"projects/"} + argv[1] + "/locations/" + argv[2];
-  for (auto r : client.ListKeyRings(parent)) {
-    if (!r) throw std::runtime_error(r.status().message());
-    std::cout << r->DebugString() << "\n";
+  for (auto kr : client.ListKeyRings(location.FullName())) {
+    if (!kr) throw std::move(kr).status();
+    std::cout << kr->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

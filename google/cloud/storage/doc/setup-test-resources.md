@@ -1,8 +1,8 @@
 # GCS C++ client integration test resources
 
-To run the integration tests against the production environment one must setup
-a number of resources. This document describes how to do so, assuming you have
-an existing project in Google Cloud Platform.
+To run the integration tests against the production environment one must setup a
+number of resources. This document describes how to do so, assuming you have an
+existing project in Google Cloud Platform.
 
 ## Setting up a Project
 
@@ -170,7 +170,6 @@ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 
 If you are using a service account to access GCP (as opposed to an authorized
 user), then replace the previous command with:
-
 
 ```console
 gcloud projects add-iam-policy-binding ${PROJECT_ID} \

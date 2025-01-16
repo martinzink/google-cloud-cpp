@@ -21,35 +21,34 @@
 
 #include "google/cloud/artifactregistry/artifact_registry_connection.h"
 #include "google/cloud/artifactregistry/artifact_registry_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/artifactregistry/v1/artifact_registry_options.h"
 
 namespace google {
 namespace cloud {
 namespace artifactregistry {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ArtifactRegistryRetryPolicyOption {
-  using Type = std::shared_ptr<ArtifactRegistryRetryPolicy>;
-};
+/// @deprecated Use artifactregistry_v1::ArtifactRegistryPollingPolicyOption
+/// directly.
+using ::google::cloud::artifactregistry_v1::ArtifactRegistryPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ArtifactRegistryBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use artifactregistry_v1::ArtifactRegistryBackoffPolicyOption
+/// directly.
+using ::google::cloud::artifactregistry_v1::ArtifactRegistryBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ArtifactRegistryConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ArtifactRegistryConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use
+/// artifactregistry_v1::ArtifactRegistryConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::artifactregistry_v1::
+    ArtifactRegistryConnectionIdempotencyPolicyOption;
 
-using ArtifactRegistryPolicyOptionList =
-    OptionList<ArtifactRegistryRetryPolicyOption,
-               ArtifactRegistryBackoffPolicyOption,
-               ArtifactRegistryConnectionIdempotencyPolicyOption>;
+/// @deprecated Use artifactregistry_v1::ArtifactRegistryPolicyOptionList
+/// directly.
+using ::google::cloud::artifactregistry_v1::ArtifactRegistryPolicyOptionList;
+
+/// @deprecated Use artifactregistry_v1::ArtifactRegistryRetryPolicyOption
+/// directly.
+using ::google::cloud::artifactregistry_v1::ArtifactRegistryRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace artifactregistry

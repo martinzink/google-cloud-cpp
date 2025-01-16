@@ -21,40 +21,28 @@
 
 #include "google/cloud/redis/cloud_redis_connection.h"
 #include "google/cloud/redis/cloud_redis_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/redis/v1/cloud_redis_options.h"
 
 namespace google {
 namespace cloud {
 namespace redis {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CloudRedisRetryPolicyOption {
-  using Type = std::shared_ptr<CloudRedisRetryPolicy>;
-};
+/// @deprecated Use redis_v1::CloudRedisPollingPolicyOption directly.
+using ::google::cloud::redis_v1::CloudRedisPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudRedisBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use redis_v1::CloudRedisBackoffPolicyOption directly.
+using ::google::cloud::redis_v1::CloudRedisBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudRedisPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use redis_v1::CloudRedisConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::redis_v1::CloudRedisConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudRedisConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CloudRedisConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use redis_v1::CloudRedisPolicyOptionList directly.
+using ::google::cloud::redis_v1::CloudRedisPolicyOptionList;
 
-using CloudRedisPolicyOptionList =
-    OptionList<CloudRedisRetryPolicyOption, CloudRedisBackoffPolicyOption,
-               CloudRedisPollingPolicyOption,
-               CloudRedisConnectionIdempotencyPolicyOption>;
+/// @deprecated Use redis_v1::CloudRedisRetryPolicyOption directly.
+using ::google::cloud::redis_v1::CloudRedisRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace redis

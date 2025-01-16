@@ -21,40 +21,28 @@
 
 #include "google/cloud/appengine/services_connection.h"
 #include "google/cloud/appengine/services_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/appengine/v1/services_options.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ServicesRetryPolicyOption {
-  using Type = std::shared_ptr<ServicesRetryPolicy>;
-};
+/// @deprecated Use appengine_v1::ServicesPollingPolicyOption directly.
+using ::google::cloud::appengine_v1::ServicesPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ServicesBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use appengine_v1::ServicesBackoffPolicyOption directly.
+using ::google::cloud::appengine_v1::ServicesBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ServicesPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use appengine_v1::ServicesConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::appengine_v1::ServicesConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ServicesConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ServicesConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use appengine_v1::ServicesPolicyOptionList directly.
+using ::google::cloud::appengine_v1::ServicesPolicyOptionList;
 
-using ServicesPolicyOptionList =
-    OptionList<ServicesRetryPolicyOption, ServicesBackoffPolicyOption,
-               ServicesPollingPolicyOption,
-               ServicesConnectionIdempotencyPolicyOption>;
+/// @deprecated Use appengine_v1::ServicesRetryPolicyOption directly.
+using ::google::cloud::appengine_v1::ServicesRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine

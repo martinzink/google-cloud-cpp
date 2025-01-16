@@ -19,55 +19,23 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_WORKFLOW_TEMPLATE_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_WORKFLOW_TEMPLATE_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/dataproc/v1/workflow_templates.grpc.pb.h>
-#include <memory>
+#include "google/cloud/dataproc/v1/workflow_template_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class WorkflowTemplateServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~WorkflowTemplateServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// dataproc_v1::MakeDefaultWorkflowTemplateServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::
+    MakeDefaultWorkflowTemplateServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<WorkflowTemplateServiceConnectionIdempotencyPolicy>
-  clone() const = 0;
-
-  virtual google::cloud::Idempotency CreateWorkflowTemplate(
-      google::cloud::dataproc::v1::CreateWorkflowTemplateRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetWorkflowTemplate(
-      google::cloud::dataproc::v1::GetWorkflowTemplateRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency InstantiateWorkflowTemplate(
-      google::cloud::dataproc::v1::InstantiateWorkflowTemplateRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency InstantiateInlineWorkflowTemplate(
-      google::cloud::dataproc::v1::
-          InstantiateInlineWorkflowTemplateRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency UpdateWorkflowTemplate(
-      google::cloud::dataproc::v1::UpdateWorkflowTemplateRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency ListWorkflowTemplates(
-      google::cloud::dataproc::v1::ListWorkflowTemplatesRequest request) = 0;
-
-  virtual google::cloud::Idempotency DeleteWorkflowTemplate(
-      google::cloud::dataproc::v1::DeleteWorkflowTemplateRequest const&
-          request) = 0;
-};
-
-std::unique_ptr<WorkflowTemplateServiceConnectionIdempotencyPolicy>
-MakeDefaultWorkflowTemplateServiceConnectionIdempotencyPolicy();
+/// @deprecated Use
+/// dataproc_v1::WorkflowTemplateServiceConnectionIdempotencyPolicy directly.
+using ::google::cloud::dataproc_v1::
+    WorkflowTemplateServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc

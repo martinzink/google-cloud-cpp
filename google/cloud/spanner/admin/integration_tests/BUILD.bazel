@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:public"])
+load(":spanner_admin_integration_tests.bzl", "spanner_admin_integration_tests")
+load(":spanner_admin_integration_tests_rest.bzl", "spanner_admin_integration_tests_rest")
+
+package(default_visibility = ["//visibility:private"])
 
 licenses(["notice"])  # Apache 2.0
-
-load(":spanner_admin_integration_tests.bzl", "spanner_admin_integration_tests")
 
 [cc_test(
     name = test.replace("/", "_").replace(".cc", ""),
@@ -27,8 +28,24 @@ load(":spanner_admin_integration_tests.bzl", "spanner_admin_integration_tests")
     ],
     deps = [
         "//:spanner",
-        "//google/cloud/spanner:spanner_client_testing",
-        "//google/cloud/testing_util:google_cloud_cpp_testing_grpc",
+        "//google/cloud/spanner:spanner_client_testing_private",
+        "//google/cloud/testing_util:google_cloud_cpp_testing_grpc_private",
         "@com_google_googletest//:gtest_main",
     ],
 ) for test in spanner_admin_integration_tests]
+
+[cc_test(
+    name = test.replace("/", "_").replace(".cc", ""),
+    timeout = "eternal",
+    srcs = [test],
+    tags = [
+        "http-transcoding-test",
+        "integration-test",
+    ],
+    deps = [
+        "//google/cloud/spanner:google_cloud_cpp_spanner_rest",
+        "//google/cloud/spanner:spanner_client_testing_private",
+        "//google/cloud/testing_util:google_cloud_cpp_testing_grpc_private",
+        "@com_google_googletest//:gtest_main",
+    ],
+) for test in spanner_admin_integration_tests_rest]

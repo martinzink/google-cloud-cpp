@@ -21,41 +21,29 @@
 
 #include "google/cloud/retail/user_event_connection.h"
 #include "google/cloud/retail/user_event_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/retail/v2/user_event_options.h"
 
 namespace google {
 namespace cloud {
 namespace retail {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct UserEventServiceRetryPolicyOption {
-  using Type = std::shared_ptr<UserEventServiceRetryPolicy>;
-};
+/// @deprecated Use retail_v2::UserEventServicePollingPolicyOption directly.
+using ::google::cloud::retail_v2::UserEventServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct UserEventServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use retail_v2::UserEventServiceBackoffPolicyOption directly.
+using ::google::cloud::retail_v2::UserEventServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct UserEventServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use retail_v2::UserEventServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::retail_v2::
+    UserEventServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct UserEventServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<UserEventServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use retail_v2::UserEventServicePolicyOptionList directly.
+using ::google::cloud::retail_v2::UserEventServicePolicyOptionList;
 
-using UserEventServicePolicyOptionList =
-    OptionList<UserEventServiceRetryPolicyOption,
-               UserEventServiceBackoffPolicyOption,
-               UserEventServicePollingPolicyOption,
-               UserEventServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use retail_v2::UserEventServiceRetryPolicyOption directly.
+using ::google::cloud::retail_v2::UserEventServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail

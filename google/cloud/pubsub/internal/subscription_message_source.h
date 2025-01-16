@@ -15,6 +15,7 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_INTERNAL_SUBSCRIPTION_MESSAGE_SOURCE_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_INTERNAL_SUBSCRIPTION_MESSAGE_SOURCE_H
 
+#include "google/cloud/pubsub/internal/batch_callback.h"
 #include "google/cloud/pubsub/version.h"
 #include "google/cloud/future.h"
 #include "google/cloud/status.h"
@@ -26,9 +27,6 @@ namespace google {
 namespace cloud {
 namespace pubsub_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-using MessageCallback =
-    std::function<void(google::pubsub::v1::ReceivedMessage)>;
 
 /**
  * Defines the interface for one-message-at-a-time sources.
@@ -43,7 +41,7 @@ class SubscriptionMessageSource {
 
   /// Start the source, set up the callback. Calling multiple times should have
   /// no effect, only the first callback is used.
-  virtual void Start(MessageCallback) = 0;
+  virtual void Start(std::shared_ptr<BatchCallback> callback) = 0;
 
   /// Shutdown the source, cancel any outstanding requests and or timers. No
   /// callbacks should be generated after this call.
@@ -58,7 +56,7 @@ class SubscriptionMessageSource {
    * The application has successfully handled this message and no new deliveries
    * are necessary.
    */
-  virtual void AckMessage(std::string const& ack_id) = 0;
+  virtual future<Status> AckMessage(std::string const& ack_id) = 0;
 
   /**
    * Reject the message associated with @p ack_id.
@@ -67,7 +65,7 @@ class SubscriptionMessageSource {
    * allows the service to re-deliver it, subject to the topic and subscription
    * configuration.
    */
-  virtual void NackMessage(std::string const& ack_id) = 0;
+  virtual future<Status> NackMessage(std::string const& ack_id) = 0;
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

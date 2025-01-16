@@ -37,9 +37,9 @@ void HelloWorldTableAdmin(std::vector<std::string> const& argv) {
         "hello-world-table-admin <project-id> <instance-id> "
         "<table-id>"};
   }
-  std::string const project_id = argv[0];
-  std::string const instance_id = argv[1];
-  std::string const table_id = argv[2];
+  std::string const& project_id = argv[0];
+  std::string const& instance_id = argv[1];
+  std::string const& table_id = argv[2];
 
   //! [aliases]
   namespace cbt = ::google::cloud::bigtable;
@@ -55,18 +55,14 @@ void HelloWorldTableAdmin(std::vector<std::string> const& argv) {
 
   //! [create table]
   // Define the schema
-  google::bigtable::admin::v2::GcRule gc_max_versions;
-  gc_max_versions.set_max_num_versions(10);
-
-  google::bigtable::admin::v2::GcRule gc_max_age;
   auto constexpr kSecondsPerDay =
       std::chrono::seconds(std::chrono::hours(24)).count();
-  gc_max_age.mutable_max_age()->set_seconds(3 * kSecondsPerDay);
 
   google::bigtable::admin::v2::Table t;
   auto& families = *t.mutable_column_families();
-  *families["fam"].mutable_gc_rule() = gc_max_versions;
-  *families["foo"].mutable_gc_rule() = gc_max_age;
+  families["fam"].mutable_gc_rule()->set_max_num_versions(10);
+  families["foo"].mutable_gc_rule()->mutable_max_age()->set_seconds(
+      3 * kSecondsPerDay);
 
   std::cout << "Creating a table:\n";
   std::string instance_name = cbt::InstanceName(project_id, instance_id);
@@ -80,9 +76,8 @@ void HelloWorldTableAdmin(std::vector<std::string> const& argv) {
   google::bigtable::admin::v2::ListTablesRequest list_req;
   list_req.set_parent(instance_name);
   list_req.set_view(google::bigtable::admin::v2::Table::NAME_ONLY);
-  auto tables = admin.ListTables(std::move(list_req));
-  for (auto const& table : tables) {
-    if (!table) throw std::runtime_error(table.status().message());
+  for (auto& table : admin.ListTables(std::move(list_req))) {
+    if (!table) throw std::move(table).status();
     std::cout << "    " << table->name() << "\n";
   }
   std::cout << "DONE\n";
@@ -95,7 +90,7 @@ void HelloWorldTableAdmin(std::vector<std::string> const& argv) {
   get_req.set_view(google::bigtable::admin::v2::Table::FULL);
   StatusOr<google::bigtable::admin::v2::Table> table =
       admin.GetTable(std::move(get_req));
-  if (!table) throw std::runtime_error(table.status().message());
+  if (!table) throw std::move(table).status();
   std::cout << "Table name : " << table->name() << "\n";
 
   std::cout << "List table families and GC rules:\n";
@@ -110,18 +105,15 @@ void HelloWorldTableAdmin(std::vector<std::string> const& argv) {
 
   //! [modify column family]
   std::cout << "Update a column family GC rule:\n";
-  google::bigtable::admin::v2::GcRule updated_gc;
-  updated_gc.set_max_num_versions(5);
-
   using ::google::bigtable::admin::v2::ModifyColumnFamiliesRequest;
   ModifyColumnFamiliesRequest::Modification mod;
   mod.set_id("fam");
-  *mod.mutable_update()->mutable_gc_rule() = std::move(updated_gc);
+  mod.mutable_update()->mutable_gc_rule()->set_max_num_versions(5);
 
   StatusOr<google::bigtable::admin::v2::Table> updated_schema =
       admin.ModifyColumnFamilies(table->name(), {std::move(mod)});
   if (!updated_schema) {
-    throw std::runtime_error(updated_schema.status().message());
+    throw std::move(updated_schema).status();
   }
   std::cout << "Schema modified to: " << updated_schema->DebugString() << "\n";
   //! [modify column family]

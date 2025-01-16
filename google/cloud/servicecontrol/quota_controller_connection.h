@@ -19,62 +19,34 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICECONTROL_QUOTA_CONTROLLER_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICECONTROL_QUOTA_CONTROLLER_CONNECTION_H
 
-#include "google/cloud/servicecontrol/internal/quota_controller_retry_traits.h"
-#include "google/cloud/servicecontrol/internal/quota_controller_stub.h"
 #include "google/cloud/servicecontrol/quota_controller_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/servicecontrol/v1/quota_controller_connection.h"
 
 namespace google {
 namespace cloud {
 namespace servicecontrol {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using QuotaControllerRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        servicecontrol_internal::QuotaControllerRetryTraits>;
+/// @deprecated Use servicecontrol_v1::MakeQuotaControllerConnection directly.
+using ::google::cloud::servicecontrol_v1::MakeQuotaControllerConnection;
 
-using QuotaControllerLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        servicecontrol_internal::QuotaControllerRetryTraits>;
+/// @deprecated Use servicecontrol_v1::QuotaControllerConnection directly.
+using ::google::cloud::servicecontrol_v1::QuotaControllerConnection;
 
-using QuotaControllerLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        servicecontrol_internal::QuotaControllerRetryTraits>;
+/// @deprecated Use
+/// servicecontrol_v1::QuotaControllerLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::servicecontrol_v1::
+    QuotaControllerLimitedErrorCountRetryPolicy;
 
-class QuotaControllerConnection {
- public:
-  virtual ~QuotaControllerConnection() = 0;
+/// @deprecated Use servicecontrol_v1::QuotaControllerLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::servicecontrol_v1::QuotaControllerLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::api::servicecontrol::v1::AllocateQuotaResponse>
-  AllocateQuota(
-      google::api::servicecontrol::v1::AllocateQuotaRequest const& request);
-};
-
-std::shared_ptr<QuotaControllerConnection> MakeQuotaControllerConnection(
-    Options options = {});
+/// @deprecated Use servicecontrol_v1::QuotaControllerRetryPolicy directly.
+using ::google::cloud::servicecontrol_v1::QuotaControllerRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicecontrol
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace servicecontrol_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<servicecontrol::QuotaControllerConnection>
-MakeQuotaControllerConnection(std::shared_ptr<QuotaControllerStub> stub,
-                              Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace servicecontrol_internal
 }  // namespace cloud
 }  // namespace google
 

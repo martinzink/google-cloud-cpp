@@ -15,6 +15,9 @@
 #include "google/cloud/storage/examples/storage_examples_common.h"
 #include "google/cloud/testing_util/scoped_environment.h"
 #include <gmock/gmock.h>
+#include <random>
+#include <string>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -27,9 +30,9 @@ using ::testing::StartsWith;
 TEST(StorageExamplesCommon, RandomBucket) {
   auto generator = google::cloud::internal::DefaultPRNG(std::random_device{}());
   auto const actual_1 = MakeRandomBucketName(generator);
-  EXPECT_THAT(actual_1, StartsWith("cloud-cpp-testing-examples"));
+  EXPECT_THAT(actual_1, StartsWith(BucketPrefix()));
   auto const actual_2 = MakeRandomBucketName(generator);
-  EXPECT_THAT(actual_2, StartsWith("cloud-cpp-testing-examples"));
+  EXPECT_THAT(actual_2, StartsWith(BucketPrefix()));
   EXPECT_NE(actual_1, actual_2);
 }
 
@@ -101,9 +104,7 @@ TEST(StorageExamplesCommon, CreateCommandEntryNoArguments) {
 
   // Too many args when not using varargs is an error.
   EXPECT_THROW(
-      try {
-        entry.second({"1", "2", "3"});
-      } catch (Usage const& ex) {
+      try { entry.second({"1", "2", "3"}); } catch (Usage const& ex) {
         EXPECT_THAT(ex.what(), HasSubstr("my-test foo bar"));
         throw;
       },

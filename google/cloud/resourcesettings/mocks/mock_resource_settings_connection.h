@@ -20,34 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RESOURCESETTINGS_MOCKS_MOCK_RESOURCE_SETTINGS_CONNECTION_H
 
 #include "google/cloud/resourcesettings/resource_settings_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/resourcesettings/v1/mocks/mock_resource_settings_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in resourcesettings_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace resourcesettings_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockResourceSettingsServiceConnection
-    : public resourcesettings::ResourceSettingsServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StreamRange<google::cloud::resourcesettings::v1::Setting>, ListSettings,
-      (google::cloud::resourcesettings::v1::ListSettingsRequest request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::resourcesettings::v1::Setting>, GetSetting,
-      (google::cloud::resourcesettings::v1::GetSettingRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::resourcesettings::v1::Setting>,
-              UpdateSetting,
-              (google::cloud::resourcesettings::v1::UpdateSettingRequest const&
-                   request),
-              (override));
-};
+/// @deprecated Use
+/// resourcesettings_v1_mocks::MockResourceSettingsServiceConnection directly.
+using ::google::cloud::resourcesettings_v1_mocks::
+    MockResourceSettingsServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace resourcesettings_mocks

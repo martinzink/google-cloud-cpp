@@ -13,7 +13,11 @@
 // limitations under the License.
 
 #include "google/cloud/internal/oauth2_impersonate_service_account_credentials.h"
+#include "google/cloud/internal/make_status.h"
+#include "google/cloud/internal/oauth2_credential_constants.h"
 #include "google/cloud/internal/unified_rest_credentials.h"
+#include "absl/strings/strip.h"
+#include <nlohmann/json.hpp>
 
 namespace google {
 namespace cloud {
@@ -31,45 +35,110 @@ GenerateAccessTokenRequest MakeRequest(
   };
 }
 
-auto constexpr kUseSlack = std::chrono::seconds(30);
-
 }  // namespace
 
-ImpersonateServiceAccountCredentials::ImpersonateServiceAccountCredentials(
-    google::cloud::internal::ImpersonateServiceAccountConfig const& config,
-    CurrentTimeFn current_time_fn)
-    : ImpersonateServiceAccountCredentials(
-          config,
-          MakeMinimalIamCredentialsRestStub(
-              rest_internal::MapCredentials(config.base_credentials())),
-          std::move(current_time_fn)) {}
+StatusOr<ImpersonatedServiceAccountCredentialsInfo>
+ParseImpersonatedServiceAccountCredentials(std::string const& content,
+                                           std::string const& source) {
+  auto credentials = nlohmann::json::parse(content, nullptr, false);
+  if (credentials.is_discarded()) {
+    return internal::InvalidArgumentError(
+        "Invalid ImpersonateServiceAccountCredentials, parsing failed on data "
+        "from " +
+            source,
+        GCP_ERROR_INFO());
+  }
 
-ImpersonateServiceAccountCredentials::ImpersonateServiceAccountCredentials(
-    google::cloud::internal::ImpersonateServiceAccountConfig const& config,
-    std::shared_ptr<MinimalIamCredentialsRest> stub,
-    CurrentTimeFn current_time_fn)
-    : stub_(std::move(stub)),
-      request_(MakeRequest(config)),
-      current_time_fn_(std::move(current_time_fn)) {}
+  ImpersonatedServiceAccountCredentialsInfo info;
 
-StatusOr<std::pair<std::string, std::string>>
-ImpersonateServiceAccountCredentials::AuthorizationHeader() {
-  return AuthorizationHeader(current_time_fn_());
+  auto it = credentials.find("service_account_impersonation_url");
+  if (it == credentials.end()) {
+    return internal::InvalidArgumentError(
+        "Missing `service_account_impersonation_url` field on data from " +
+            source,
+        GCP_ERROR_INFO());
+  }
+  if (!it->is_string()) {
+    return internal::InvalidArgumentError(
+        "Malformed `service_account_impersonation_url` field is not a string "
+        "on data from " +
+            source,
+        GCP_ERROR_INFO());
+  }
+  // We strip the service account from the path URL.
+  auto url = it->get<std::string>();
+  auto slash = url.rfind('/');
+  if (slash == std::string::npos) {
+    return internal::InvalidArgumentError(
+        "Malformed `service_account_impersonation_url` field contents on data "
+        "from " +
+            source,
+        GCP_ERROR_INFO());
+  }
+
+  // In the url, after the last slash, it is in the format of
+  // `service_account[:action]`
+  auto service_account_action = url.substr(slash + 1);
+  auto colon = service_account_action.rfind(':');
+  auto end = colon == std::string::npos ? service_account_action.size() : colon;
+  info.service_account = service_account_action.substr(0, end);
+
+  it = credentials.find("delegates");
+  if (it != credentials.end()) {
+    if (!it->is_array()) {
+      return internal::InvalidArgumentError(
+          "Malformed `delegates` field is not an array on data from " + source,
+          GCP_ERROR_INFO());
+    }
+    for (auto const& delegate : it->items()) {
+      info.delegates.push_back(delegate.value().get<std::string>());
+    }
+  }
+
+  it = credentials.find("quota_project_id");
+  if (it != credentials.end()) {
+    if (!it->is_string()) {
+      return internal::InvalidArgumentError(
+          "Malformed `quota_project_id` field is not a string on data from " +
+              source,
+          GCP_ERROR_INFO());
+    }
+    info.quota_project_id = it->get<std::string>();
+  }
+
+  it = credentials.find("source_credentials");
+  if (it == credentials.end()) {
+    return internal::InvalidArgumentError(
+        "Missing `source_credentials` field on data from " + source,
+        GCP_ERROR_INFO());
+  }
+  if (!it->is_object()) {
+    return internal::InvalidArgumentError(
+        "Malformed `source_credentials` field is not an object on data from " +
+            source,
+        GCP_ERROR_INFO());
+  }
+  info.source_credentials = it->dump();
+
+  return info;
 }
 
-StatusOr<std::pair<std::string, std::string>>
-ImpersonateServiceAccountCredentials::AuthorizationHeader(
-    std::chrono::system_clock::time_point now) {
-  std::unique_lock<std::mutex> lk(mu_);
-  if (now + kUseSlack <= expiration_) return header_;
-  auto response = stub_->GenerateAccessToken(request_);
-  if (!response) {
-    if (current_time_fn_() < expiration_) return header_;
-    return std::move(response).status();
-  }
-  expiration_ = response->expiration;
-  header_ = std::make_pair("Authorization", "Bearer " + response->token);
-  return header_;
+ImpersonateServiceAccountCredentials::ImpersonateServiceAccountCredentials(
+    google::cloud::internal::ImpersonateServiceAccountConfig const& config,
+    HttpClientFactory client_factory)
+    : ImpersonateServiceAccountCredentials(
+          config, MakeMinimalIamCredentialsRestStub(
+                      rest_internal::MapCredentials(*config.base_credentials()),
+                      config.options(), std::move(client_factory))) {}
+
+ImpersonateServiceAccountCredentials::ImpersonateServiceAccountCredentials(
+    google::cloud::internal::ImpersonateServiceAccountConfig const& config,
+    std::shared_ptr<MinimalIamCredentialsRest> stub)
+    : stub_(std::move(stub)), request_(MakeRequest(config)) {}
+
+StatusOr<AccessToken> ImpersonateServiceAccountCredentials::GetToken(
+    std::chrono::system_clock::time_point /*tp*/) {
+  return stub_->GenerateAccessToken(request_);
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

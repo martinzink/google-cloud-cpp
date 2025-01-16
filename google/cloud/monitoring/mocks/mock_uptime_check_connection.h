@@ -20,50 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_MOCKS_MOCK_UPTIME_CHECK_CONNECTION_H
 
 #include "google/cloud/monitoring/uptime_check_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/monitoring/v3/mocks/mock_uptime_check_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in monitoring_v3_mocks instead of the aliases
+///     defined in this namespace.
 namespace monitoring_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockUptimeCheckServiceConnection
-    : public monitoring::UptimeCheckServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::monitoring::v3::UptimeCheckConfig>,
-              ListUptimeCheckConfigs,
-              (google::monitoring::v3::ListUptimeCheckConfigsRequest request),
-              (override));
-
-  MOCK_METHOD(
-      StatusOr<google::monitoring::v3::UptimeCheckConfig>, GetUptimeCheckConfig,
-      (google::monitoring::v3::GetUptimeCheckConfigRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::monitoring::v3::UptimeCheckConfig>,
-      CreateUptimeCheckConfig,
-      (google::monitoring::v3::CreateUptimeCheckConfigRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::monitoring::v3::UptimeCheckConfig>,
-      UpdateUptimeCheckConfig,
-      (google::monitoring::v3::UpdateUptimeCheckConfigRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      Status, DeleteUptimeCheckConfig,
-      (google::monitoring::v3::DeleteUptimeCheckConfigRequest const& request),
-      (override));
-
-  MOCK_METHOD(StreamRange<google::monitoring::v3::UptimeCheckIp>,
-              ListUptimeCheckIps,
-              (google::monitoring::v3::ListUptimeCheckIpsRequest request),
-              (override));
-};
+/// @deprecated Use monitoring_v3_mocks::MockUptimeCheckServiceConnection
+/// directly.
+using ::google::cloud::monitoring_v3_mocks::MockUptimeCheckServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring_mocks

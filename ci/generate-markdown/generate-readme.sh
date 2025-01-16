@@ -16,29 +16,35 @@
 
 set -euo pipefail
 
+if ! type sponge >/dev/null 2>&1; then
+  echo "This script requires sponge(1) to produce its output."
+  echo "Please install this tool and try again."
+  exit 1
+fi
+
+file="README.md"
 (
-  sed '/<!-- inject-quickstart-start -->/q' "README.md"
+  sed '/<!-- inject-quickstart-start -->/q' "${file}"
   echo '```cc'
   # Dumps the contents of quickstart.cc starting at the first #include, so we
   # skip the license header comment.
-  sed -n -e '/END .*quickstart/,$d' -e '/^#/,$p' "google/cloud/storage/quickstart/quickstart.cc"
+  sed -n -e '/END .*quickstart/,$d' -e '\:^//!:d' -e '/^#/,$p' "google/cloud/storage/quickstart/quickstart.cc"
   echo '```'
-  sed -n '/<!-- inject-quickstart-end -->/,$p' "README.md"
-) >"README.md.tmp"
+  sed -n '/<!-- inject-quickstart-end -->/,$p' "${file}"
+) | sponge "${file}"
 
 (
-  mapfile -t libraries < <(bazelisk --batch query \
-    --noshow_progress --noshow_loading_progress \
-    'kind(cc_library, //:all) except filter("experimental|mocks", kind(cc_library, //:all))' |
-    sed -e 's;//:;;' |
-    LC_ALL=C sort)
-  sed '/<!-- inject-GA-libraries-start -->/q' "README.md.tmp"
-  for library in "${libraries[@]}"; do
-    description="$(sed -n '1 s/# \(.*\) C++ Client Library/\1/p' "google/cloud/${library}/README.md")"
-    printf '* [%s](google/cloud/%s/README.md) [[quickstart]](google/cloud/%s/quickstart/README.md)\n' \
-      "${description}" "${library}" "${library}"
+  mapfile -t features < <(cmake -P cmake/print-ga-features.cmake 2>&1 | LC_ALL=C sort | grep -v storage_grpc)
+  sed '/<!-- inject-GA-features-start -->/q' "${file}"
+  for feature in "${features[@]}"; do
+    if [[ "${feature}" == "oauth2" ]]; then
+      description="OAuth2 Access Token Generation"
+    else
+      description="$(sed -n '1 s/# \(.*\) C++ Client Library/\1/p' "google/cloud/${feature}/README.md")"
+    fi
+    printf -- '- [%s](google/cloud/%s/README.md)\n' "${description}" "${feature}"
+    printf -- '  [[quickstart]](google/cloud/%s/quickstart/README.md)\n' "${feature}"
+    printf -- '  [[reference]](https://cloud.google.com/cpp/docs/reference/%s/latest)\n' "${feature}"
   done
-  sed -n '/<!-- inject-GA-libraries-end -->/,$p' "README.md.tmp"
-) >"README.md"
-
-rm README.md.tmp
+  sed -n '/<!-- inject-GA-features-end -->/,$p' "${file}"
+) | sponge "${file}"

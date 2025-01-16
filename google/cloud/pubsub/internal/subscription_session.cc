@@ -13,17 +13,27 @@
 // limitations under the License.
 
 #include "google/cloud/pubsub/internal/subscription_session.h"
+#include "google/cloud/pubsub/ack_handler.h"
+#include "google/cloud/pubsub/exactly_once_ack_handler.h"
+#include "google/cloud/pubsub/internal/ack_handler_wrapper.h"
+#include "google/cloud/pubsub/internal/batch_callback.h"
+#include "google/cloud/pubsub/internal/default_batch_callback.h"
+#include "google/cloud/pubsub/internal/default_message_callback.h"
+#include "google/cloud/pubsub/internal/message_callback.h"
 #include "google/cloud/pubsub/internal/streaming_subscription_batch_source.h"
 #include "google/cloud/pubsub/internal/subscription_lease_management.h"
 #include "google/cloud/pubsub/internal/subscription_message_queue.h"
+#include "google/cloud/pubsub/internal/tracing_message_callback.h"
 #include "google/cloud/log.h"
-#include "absl/memory/memory.h"
+#include "google/cloud/opentelemetry_options.h"
 
 namespace google {
 namespace cloud {
 namespace pubsub_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
+
+using ::google::cloud::pubsub::ExactlyOnceAckHandler;
 
 class SubscriptionSessionImpl
     : public std::enable_shared_from_this<SubscriptionSessionImpl> {
@@ -32,11 +42,19 @@ class SubscriptionSessionImpl
       Options const& opts, CompletionQueue cq,
       std::shared_ptr<SessionShutdownManager> shutdown_manager,
       std::shared_ptr<SubscriptionBatchSource> source,
-      pubsub::SubscriberConnection::SubscribeParams p) {
+      std::shared_ptr<MessageCallback> callback) {
+    if (opts.get<OpenTelemetryTracingOption>()) {
+      callback = MakeTracingMessageCallback(std::move(callback), opts);
+    }
+    std::shared_ptr<BatchCallback> batch_callback =
+        std::make_shared<DefaultBatchCallback>(
+            [](BatchCallback::StreamingPullResponse const&) {},
+            std::move(callback));
     auto queue =
         SubscriptionMessageQueue::Create(shutdown_manager, std::move(source));
     auto concurrency_control = SubscriptionConcurrencyControl::Create(
         cq, shutdown_manager, std::move(queue),
+        opts.get<pubsub::SubscriptionOption>(),
         opts.get<pubsub::MaxConcurrencyOption>());
 
     auto self = std::make_shared<SubscriptionSessionImpl>(
@@ -52,13 +70,48 @@ class SubscriptionSessionImpl
     // 1) Effectively the timer owns "self" and the timer is owned by the
     //    CompletionQueue.
     // 2) When the completion queue is shutdown, the timer is canceled and
-    //    `self` gets a chance to shutdown the pipeline.
+    //    `self` gets a chance to shut down the pipeline.
     self->ScheduleTimer();
-    self->pipeline_->Start(std::move(p.callback));
+    self->pipeline_->Start(std::move(batch_callback));
     return result.then([weak](future<Status> f) {
       if (auto self = weak.lock()) self->ShutdownCompleted();
       return f.get();
     });
+  }
+
+  static future<Status> Create(
+      Options const& opts, CompletionQueue cq,
+      std::shared_ptr<SessionShutdownManager> shutdown_manager,
+      std::shared_ptr<SubscriptionBatchSource> source,
+      pubsub::ApplicationCallback application_callback) {
+    std::shared_ptr<MessageCallback> callback =
+        std::make_shared<DefaultMessageCallback>(
+            [cb = std::move(application_callback)](
+                pubsub::Message m,
+                std::unique_ptr<pubsub::ExactlyOnceAckHandler::Impl> h) {
+              auto wrapper = std::make_unique<AckHandlerWrapper>(
+                  std::move(h), m.message_id());
+              cb(std::move(m), pubsub::AckHandler(std::move(wrapper)));
+            });
+
+    return Create(opts, std::move(cq), std::move(shutdown_manager),
+                  std::move(source), std::move(callback));
+  }
+
+  static future<Status> Create(
+      Options const& opts, CompletionQueue cq,
+      std::shared_ptr<SessionShutdownManager> shutdown_manager,
+      std::shared_ptr<SubscriptionBatchSource> source,
+      pubsub::ExactlyOnceApplicationCallback application_callback) {
+    std::shared_ptr<MessageCallback> callback =
+        std::make_shared<DefaultMessageCallback>(
+            [cb = std::move(application_callback)](
+                pubsub::Message m,
+                std::unique_ptr<ExactlyOnceAckHandler::Impl> h) {
+              cb(std::move(m), pubsub::ExactlyOnceAckHandler(std::move(h)));
+            });
+    return Create(opts, std::move(cq), std::move(shutdown_manager),
+                  std::move(source), std::move(callback));
   }
 
   SubscriptionSessionImpl(
@@ -155,15 +208,17 @@ class SubscriptionSessionImpl
   ShutdownState shutdown_state_ = kNotInShutdown;
   future<void> timer_;
 };
+
 }  // namespace
 
 future<Status> CreateSubscriptionSession(
-    pubsub::Subscription const& subscription, Options const& opts,
-    std::shared_ptr<SubscriberStub> const& stub, CompletionQueue const& cq,
-    std::string client_id, pubsub::SubscriberConnection::SubscribeParams p) {
+    Options const& opts, std::shared_ptr<SubscriberStub> const& stub,
+    CompletionQueue const& cq, std::string client_id,
+    pubsub::ApplicationCallback application_callback) {
   auto shutdown_manager = std::make_shared<SessionShutdownManager>();
   auto batch = std::make_shared<StreamingSubscriptionBatchSource>(
-      cq, shutdown_manager, stub, subscription.FullName(), std::move(client_id),
+      cq, shutdown_manager, stub,
+      opts.get<pubsub::SubscriptionOption>().FullName(), std::move(client_id),
       opts);
   auto lease_management = SubscriptionLeaseManagement::Create(
       cq, shutdown_manager, std::move(batch),
@@ -172,7 +227,26 @@ future<Status> CreateSubscriptionSession(
 
   return SubscriptionSessionImpl::Create(opts, cq, std::move(shutdown_manager),
                                          std::move(lease_management),
-                                         std::move(p));
+                                         std::move(application_callback));
+}
+
+future<Status> CreateSubscriptionSession(
+    Options const& opts, std::shared_ptr<SubscriberStub> const& stub,
+    CompletionQueue const& cq, std::string client_id,
+    pubsub::ExactlyOnceApplicationCallback application_callback) {
+  auto shutdown_manager = std::make_shared<SessionShutdownManager>();
+  auto batch = std::make_shared<StreamingSubscriptionBatchSource>(
+      cq, shutdown_manager, stub,
+      opts.get<pubsub::SubscriptionOption>().FullName(), std::move(client_id),
+      opts);
+  auto lease_management = SubscriptionLeaseManagement::Create(
+      cq, shutdown_manager, std::move(batch),
+      opts.get<pubsub::MaxDeadlineTimeOption>(),
+      opts.get<pubsub::MaxDeadlineExtensionOption>());
+
+  return SubscriptionSessionImpl::Create(opts, cq, std::move(shutdown_manager),
+                                         std::move(lease_management),
+                                         std::move(application_callback));
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

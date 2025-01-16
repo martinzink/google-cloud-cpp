@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "google/cloud/internal/default_completion_queue_impl.h"
+#include "google/cloud/internal/call_context.h"
+#include "google/cloud/internal/make_status.h"
 #include "google/cloud/internal/throw_delegate.h"
-#include "google/cloud/options.h"
-#include "absl/memory/memory.h"
 #include <grpcpp/alarm.h>
 #include <sstream>
 
@@ -47,7 +47,7 @@ namespace {
  * Note that this class is an implementation detail, hidden from the
  * application developers.
  */
-class AsyncTimerFuture : public internal::AsyncGrpcOperation {
+class AsyncTimerFuture : public AsyncGrpcOperation {
  public:
   using ValueType = StatusOr<std::chrono::system_clock::time_point>;
 
@@ -65,12 +65,25 @@ class AsyncTimerFuture : public internal::AsyncGrpcOperation {
 
   void Set(grpc::CompletionQueue& cq,
            std::chrono::system_clock::time_point deadline, void* tag) {
+    std::unique_lock<std::mutex> lk(mu_);
+    if (state_ != kIdle) return;
     deadline_ = deadline;
+    state_ = kSet;
     alarm_.Set(&cq, deadline, tag);
   }
 
   void Cancel() override {
-    OptionsSpan span(options_);
+    ScopedCallContext scope(call_context_);
+    std::unique_lock<std::mutex> lk(mu_);
+    if (state_ == kCancelled) return;
+    if (state_ == kIdle) {
+      state_ = kCancelled;
+      lk.unlock();
+      // Release the lock before (potentially) calling application code.
+      promise_.set_value(Cancelled());
+      return;
+    }
+    state_ = kCancelled;
     alarm_.Cancel();
   }
 
@@ -78,19 +91,23 @@ class AsyncTimerFuture : public internal::AsyncGrpcOperation {
   explicit AsyncTimerFuture() : promise_(null_promise_t{}) {}
 
   bool Notify(bool ok) override {
-    OptionsSpan span(options_);
-    promise_.set_value(ok ? ValueType(deadline_) : Canceled());
+    ScopedCallContext scope(call_context_);
+    promise_.set_value(ok ? ValueType(deadline_) : Cancelled());
     return true;
   }
 
-  static ValueType Canceled() {
-    return Status{StatusCode::kCancelled, "timer canceled"};
+  static ValueType Cancelled() {
+    return internal::CancelledError("timer canceled", GCP_ERROR_INFO());
   }
+
+  enum State { kIdle, kSet, kCancelled };
 
   promise<ValueType> promise_;
   std::chrono::system_clock::time_point deadline_;
+  CallContext call_context_;
+  std::mutex mu_;
+  State state_ = kIdle;
   grpc::Alarm alarm_;
-  Options options_ = CurrentOptions();
 };
 
 }  // namespace
@@ -98,7 +115,7 @@ class AsyncTimerFuture : public internal::AsyncGrpcOperation {
 // A helper class to wake up the asynchronous thread and drain the RunAsync()
 // queue in a loop.
 class DefaultCompletionQueueImpl::WakeUpRunAsyncLoop
-    : public internal::AsyncGrpcOperation {
+    : public AsyncGrpcOperation {
  public:
   explicit WakeUpRunAsyncLoop(std::weak_ptr<DefaultCompletionQueueImpl> w)
       : weak_(std::move(w)) {}
@@ -111,7 +128,7 @@ class DefaultCompletionQueueImpl::WakeUpRunAsyncLoop
 
  private:
   bool Notify(bool ok) override {
-    OptionsSpan span(options_);
+    ScopedCallContext scope(call_context_);
     if (!ok) return true;  // do not run async operations on shutdown CQs
     if (auto self = weak_.lock()) self->DrainRunAsyncLoop();
     return true;
@@ -119,13 +136,13 @@ class DefaultCompletionQueueImpl::WakeUpRunAsyncLoop
 
   std::weak_ptr<DefaultCompletionQueueImpl> weak_;
   grpc::Alarm alarm_;
-  Options options_ = CurrentOptions();
+  CallContext call_context_;
 };
 
 // A helper class to wake up the asynchronous thread and drain the RunAsync()
 // one element at a time.
 class DefaultCompletionQueueImpl::WakeUpRunAsyncOnIdle
-    : public internal::AsyncGrpcOperation {
+    : public AsyncGrpcOperation {
  public:
   explicit WakeUpRunAsyncOnIdle(std::weak_ptr<DefaultCompletionQueueImpl> w)
       : weak_(std::move(w)) {}
@@ -138,7 +155,7 @@ class DefaultCompletionQueueImpl::WakeUpRunAsyncOnIdle
 
  private:
   bool Notify(bool ok) override {
-    OptionsSpan span(options_);
+    ScopedCallContext scope(call_context_);
     if (!ok) return true;  // do not run async operations on shutdown CQs
     if (auto self = weak_.lock()) self->DrainRunAsyncOnIdle();
     return true;
@@ -146,7 +163,7 @@ class DefaultCompletionQueueImpl::WakeUpRunAsyncOnIdle
 
   std::weak_ptr<DefaultCompletionQueueImpl> weak_;
   grpc::Alarm alarm_;
-  Options options_ = CurrentOptions();
+  CallContext call_context_;
 };
 
 DefaultCompletionQueueImpl::DefaultCompletionQueueImpl()
@@ -191,11 +208,9 @@ void DefaultCompletionQueueImpl::Run() {
 }
 
 void DefaultCompletionQueueImpl::Shutdown() {
-  {
-    std::lock_guard<std::mutex> lk(mu_);
-    shutdown_ = true;
-    shutdown_guard_.reset();
-  }
+  std::lock_guard<std::mutex> lk(mu_);
+  shutdown_ = true;
+  shutdown_guard_.reset();
 }
 
 void DefaultCompletionQueueImpl::CancelAll() {
@@ -217,7 +232,8 @@ DefaultCompletionQueueImpl::MakeDeadlineTimer(
     std::chrono::system_clock::time_point deadline) {
   auto p = AsyncTimerFuture::Create();
   auto op = std::move(p.first);
-  StartOperation(op, [&](void* tag) { op->Set(cq(), deadline, tag); });
+  // We know *cq() is always valid as it's implemented in this class.
+  StartOperation(op, [&](void* tag) { op->Set(*cq(), deadline, tag); });
   return std::move(p.second);
 }
 
@@ -243,7 +259,7 @@ void DefaultCompletionQueueImpl::StartOperation(
                  std::move(start));
 }
 
-grpc::CompletionQueue& DefaultCompletionQueueImpl::cq() { return cq_; }
+grpc::CompletionQueue* DefaultCompletionQueueImpl::cq() { return &cq_; }
 
 void DefaultCompletionQueueImpl::StartOperation(
     std::unique_lock<std::mutex> lk, std::shared_ptr<AsyncGrpcOperation> op,
@@ -322,7 +338,7 @@ void DefaultCompletionQueueImpl::DrainRunAsyncOnIdle() {
     return;
   }
   auto op = std::make_shared<WakeUpRunAsyncOnIdle>(shared_from_this());
-  StartOperation(std::move(lk), op, [&](void* tag) { op->Set(cq(), tag); });
+  StartOperation(std::move(lk), op, [&](void* tag) { op->Set(*cq(), tag); });
 }
 
 void DefaultCompletionQueueImpl::WakeUpRunAsyncThread(
@@ -333,7 +349,7 @@ void DefaultCompletionQueueImpl::WakeUpRunAsyncThread(
     ++run_async_pool_size_;
     run_async_pool_hwm_ = (std::max)(run_async_pool_hwm_, run_async_pool_size_);
     auto op = std::make_shared<WakeUpRunAsyncOnIdle>(shared_from_this());
-    StartOperation(std::move(lk), op, [&](void* tag) { op->Set(cq(), tag); });
+    StartOperation(std::move(lk), op, [&](void* tag) { op->Set(*cq(), tag); });
     return;
   }
   // Always leave one thread for I/O
@@ -341,7 +357,7 @@ void DefaultCompletionQueueImpl::WakeUpRunAsyncThread(
   auto op = std::make_shared<WakeUpRunAsyncLoop>(shared_from_this());
   ++run_async_pool_size_;
   run_async_pool_hwm_ = (std::max)(run_async_pool_hwm_, run_async_pool_size_);
-  StartOperation(std::move(lk), op, [&](void* tag) { op->Set(cq(), tag); });
+  StartOperation(std::move(lk), op, [&](void* tag) { op->Set(*cq(), tag); });
 }
 
 }  // namespace internal

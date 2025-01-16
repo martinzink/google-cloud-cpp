@@ -15,10 +15,11 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SPANNER_TESTING_CLEANUP_STALE_INSTANCES_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SPANNER_TESTING_CLEANUP_STALE_INSTANCES_H
 
+#include "google/cloud/spanner/admin/database_admin_client.h"
+#include "google/cloud/spanner/admin/instance_admin_client.h"
 #include "google/cloud/spanner/version.h"
+#include "google/cloud/project.h"
 #include "google/cloud/status.h"
-#include <regex>
-#include <string>
 
 namespace google {
 namespace cloud {
@@ -26,15 +27,21 @@ namespace spanner_testing {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
 /**
- * Delete any instances (and their backups) within the project @p project_id
- * that match the @p instance_name_regex and are named with a YYYY-MM-DD prior
- * to yesterday.
- *
- * instance_name_regex.mark_count() must be (at least) 2, where the first two
- * capture groups are the instance ID and the YYYY-MM-DD fragment respectively.
+ * Deletes any instances (and their backups) within the @p project that
+ * are named with a YYYY-MM-DD component prior to yesterday (in UTC).
  */
-Status CleanupStaleInstances(std::string const& project_id,
-                             std::regex const& instance_name_regex);
+Status CleanupStaleInstances(
+    Project const& project,
+    spanner_admin::InstanceAdminClient instance_admin_client,
+    spanner_admin::DatabaseAdminClient database_admin_client);
+
+/**
+ * Deletes any instance configs within @p project @p that are named with
+ * a YYYY-MM-DD component prior to yesterday (in UTC).
+ */
+Status CleanupStaleInstanceConfigs(
+    Project const& project,
+    spanner_admin::InstanceAdminClient instance_admin_client);
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace spanner_testing

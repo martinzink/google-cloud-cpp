@@ -21,34 +21,26 @@
 
 #include "google/cloud/recommender/recommender_connection.h"
 #include "google/cloud/recommender/recommender_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/recommender/v1/recommender_options.h"
 
 namespace google {
 namespace cloud {
 namespace recommender {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct RecommenderRetryPolicyOption {
-  using Type = std::shared_ptr<RecommenderRetryPolicy>;
-};
+/// @deprecated Use recommender_v1::RecommenderBackoffPolicyOption directly.
+using ::google::cloud::recommender_v1::RecommenderBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct RecommenderBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use recommender_v1::RecommenderConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::recommender_v1::
+    RecommenderConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct RecommenderConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<RecommenderConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use recommender_v1::RecommenderPolicyOptionList directly.
+using ::google::cloud::recommender_v1::RecommenderPolicyOptionList;
 
-using RecommenderPolicyOptionList =
-    OptionList<RecommenderRetryPolicyOption, RecommenderBackoffPolicyOption,
-               RecommenderConnectionIdempotencyPolicyOption>;
+/// @deprecated Use recommender_v1::RecommenderRetryPolicyOption directly.
+using ::google::cloud::recommender_v1::RecommenderRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace recommender

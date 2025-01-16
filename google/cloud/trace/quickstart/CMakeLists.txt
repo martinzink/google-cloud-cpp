@@ -12,10 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# This file shows how to use the Stackdriver Trace API C++ client library from a
+# This file shows how to use the Cloud Trace API C++ client library from a
 # larger CMake project.
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10...3.24)
 project(google-cloud-cpp-trace-quickstart CXX)
 
 find_package(google_cloud_cpp_trace REQUIRED)
@@ -29,4 +29,4 @@ endif ()
 
 # Define your targets.
 add_executable(quickstart quickstart.cc)
-target_link_libraries(quickstart google-cloud-cpp::experimental-trace)
+target_link_libraries(quickstart google-cloud-cpp::trace)

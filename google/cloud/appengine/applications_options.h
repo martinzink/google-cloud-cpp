@@ -21,40 +21,29 @@
 
 #include "google/cloud/appengine/applications_connection.h"
 #include "google/cloud/appengine/applications_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/appengine/v1/applications_options.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ApplicationsRetryPolicyOption {
-  using Type = std::shared_ptr<ApplicationsRetryPolicy>;
-};
+/// @deprecated Use appengine_v1::ApplicationsPollingPolicyOption directly.
+using ::google::cloud::appengine_v1::ApplicationsPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ApplicationsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use appengine_v1::ApplicationsBackoffPolicyOption directly.
+using ::google::cloud::appengine_v1::ApplicationsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ApplicationsPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use appengine_v1::ApplicationsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::appengine_v1::
+    ApplicationsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ApplicationsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ApplicationsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use appengine_v1::ApplicationsPolicyOptionList directly.
+using ::google::cloud::appengine_v1::ApplicationsPolicyOptionList;
 
-using ApplicationsPolicyOptionList =
-    OptionList<ApplicationsRetryPolicyOption, ApplicationsBackoffPolicyOption,
-               ApplicationsPollingPolicyOption,
-               ApplicationsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use appengine_v1::ApplicationsRetryPolicyOption directly.
+using ::google::cloud::appengine_v1::ApplicationsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine

@@ -21,40 +21,29 @@
 
 #include "google/cloud/dataproc/job_controller_connection.h"
 #include "google/cloud/dataproc/job_controller_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/dataproc/v1/job_controller_options.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct JobControllerRetryPolicyOption {
-  using Type = std::shared_ptr<JobControllerRetryPolicy>;
-};
+/// @deprecated Use dataproc_v1::JobControllerPollingPolicyOption directly.
+using ::google::cloud::dataproc_v1::JobControllerPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct JobControllerBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use dataproc_v1::JobControllerBackoffPolicyOption directly.
+using ::google::cloud::dataproc_v1::JobControllerBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct JobControllerPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use dataproc_v1::JobControllerConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::dataproc_v1::
+    JobControllerConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct JobControllerConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<JobControllerConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use dataproc_v1::JobControllerPolicyOptionList directly.
+using ::google::cloud::dataproc_v1::JobControllerPolicyOptionList;
 
-using JobControllerPolicyOptionList =
-    OptionList<JobControllerRetryPolicyOption, JobControllerBackoffPolicyOption,
-               JobControllerPollingPolicyOption,
-               JobControllerConnectionIdempotencyPolicyOption>;
+/// @deprecated Use dataproc_v1::JobControllerRetryPolicyOption directly.
+using ::google::cloud::dataproc_v1::JobControllerRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc

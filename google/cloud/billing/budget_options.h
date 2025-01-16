@@ -21,34 +21,27 @@
 
 #include "google/cloud/billing/budget_connection.h"
 #include "google/cloud/billing/budget_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/billing/budgets/v1/budget_options.h"
 
 namespace google {
 namespace cloud {
 namespace billing {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct BudgetServiceRetryPolicyOption {
-  using Type = std::shared_ptr<BudgetServiceRetryPolicy>;
-};
+/// @deprecated Use billing_budgets_v1::BudgetServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::billing_budgets_v1::BudgetServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct BudgetServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// billing_budgets_v1::BudgetServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::billing_budgets_v1::
+    BudgetServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct BudgetServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<BudgetServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use billing_budgets_v1::BudgetServicePolicyOptionList directly.
+using ::google::cloud::billing_budgets_v1::BudgetServicePolicyOptionList;
 
-using BudgetServicePolicyOptionList =
-    OptionList<BudgetServiceRetryPolicyOption, BudgetServiceBackoffPolicyOption,
-               BudgetServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use billing_budgets_v1::BudgetServiceRetryPolicyOption directly.
+using ::google::cloud::billing_budgets_v1::BudgetServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace billing

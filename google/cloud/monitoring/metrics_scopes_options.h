@@ -21,40 +21,38 @@
 
 #include "google/cloud/monitoring/metrics_scopes_connection.h"
 #include "google/cloud/monitoring/metrics_scopes_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/metricsscope/v1/metrics_scopes_options.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct MetricsScopesRetryPolicyOption {
-  using Type = std::shared_ptr<MetricsScopesRetryPolicy>;
-};
+/// @deprecated Use monitoring_metricsscope_v1::MetricsScopesPollingPolicyOption
+/// directly.
+using ::google::cloud::monitoring_metricsscope_v1::
+    MetricsScopesPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct MetricsScopesBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use monitoring_metricsscope_v1::MetricsScopesBackoffPolicyOption
+/// directly.
+using ::google::cloud::monitoring_metricsscope_v1::
+    MetricsScopesBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct MetricsScopesPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// monitoring_metricsscope_v1::MetricsScopesConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::monitoring_metricsscope_v1::
+    MetricsScopesConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct MetricsScopesConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<MetricsScopesConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use monitoring_metricsscope_v1::MetricsScopesPolicyOptionList
+/// directly.
+using ::google::cloud::monitoring_metricsscope_v1::
+    MetricsScopesPolicyOptionList;
 
-using MetricsScopesPolicyOptionList =
-    OptionList<MetricsScopesRetryPolicyOption, MetricsScopesBackoffPolicyOption,
-               MetricsScopesPollingPolicyOption,
-               MetricsScopesConnectionIdempotencyPolicyOption>;
+/// @deprecated Use monitoring_metricsscope_v1::MetricsScopesRetryPolicyOption
+/// directly.
+using ::google::cloud::monitoring_metricsscope_v1::
+    MetricsScopesRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring

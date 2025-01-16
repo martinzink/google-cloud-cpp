@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include "absl/meta/type_traits.h"
 #include <google/bigtable/admin/v2/bigtable_table_admin.pb.h>
 #include <google/bigtable/admin/v2/table.pb.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -141,13 +142,21 @@ class GcRule {
     return std::move(gc_rule_);
   }
 
-  //@{
+  ///@{
   /// @name Use default constructors and assignments.
   GcRule(GcRule&&) = default;
   GcRule& operator=(GcRule&&) = default;
   GcRule(GcRule const&) = default;
   GcRule& operator=(GcRule const&) = default;
-  //@}
+  ///@}
+
+  friend bool operator==(GcRule const& a, GcRule const& b) noexcept {
+    return google::protobuf::util::MessageDifferencer::Equivalent(a.gc_rule_,
+                                                                  b.gc_rule_);
+  }
+  friend bool operator!=(GcRule const& a, GcRule const& b) noexcept {
+    return !(a == b);
+  }
 
  private:
   GcRule() = default;
@@ -205,14 +214,24 @@ class ColumnFamilyModification {
     return std::move(mod_);
   }
 
-  //@{
+  ///@{
   /// @name Use default constructors and assignments.
   ColumnFamilyModification(ColumnFamilyModification&&) = default;
   ColumnFamilyModification& operator=(ColumnFamilyModification&&) = default;
   ColumnFamilyModification(ColumnFamilyModification const&) = default;
   ColumnFamilyModification& operator=(ColumnFamilyModification const&) =
       default;
-  //@}
+  ///@}
+
+  friend bool operator==(ColumnFamilyModification const& a,
+                         ColumnFamilyModification const& b) noexcept {
+    return google::protobuf::util::MessageDifferencer::Equivalent(a.mod_,
+                                                                  b.mod_);
+  }
+  friend bool operator!=(ColumnFamilyModification const& a,
+                         ColumnFamilyModification const& b) noexcept {
+    return !(a == b);
+  }
 
  private:
   ColumnFamilyModification() = default;

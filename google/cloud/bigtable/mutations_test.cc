@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,29 @@ namespace {
 
 namespace btproto = ::google::bigtable::v2;
 
-using ::google::cloud::testing_util::chrono_literals::operator"" _ms;
-using ::google::cloud::testing_util::chrono_literals::operator"" _us;
+using ::google::cloud::testing_util::chrono_literals::operator""_ms;
+using ::google::cloud::testing_util::chrono_literals::operator""_us;
+
+TEST(SingleRowMutation, Equality) {
+  auto m1 = SingleRowMutation("m1", DeleteFromRow());
+  auto m2 = SingleRowMutation("m2", DeleteFromRow());
+  EXPECT_NE(m1, m2);
+
+  m2 = m1;
+  EXPECT_EQ(m1, m2);
+}
+
+TEST(FailedMutation, Equality) {
+  auto m1 = FailedMutation(Status(), 0);
+  auto m2 = FailedMutation(Status(), 1);
+  auto m3 = FailedMutation(Status(StatusCode::kAborted, "fail"), 0);
+  EXPECT_NE(m1, m2);
+  EXPECT_NE(m1, m3);
+  EXPECT_NE(m2, m3);
+
+  m2 = m1;
+  EXPECT_EQ(m1, m2);
+}
 
 /// @test Verify that SetCell() works as expected.
 TEST(MutationsTest, SetCell) {

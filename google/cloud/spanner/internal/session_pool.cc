@@ -13,15 +13,17 @@
 // limitations under the License.
 
 #include "google/cloud/spanner/internal/session_pool.h"
-#include "google/cloud/spanner/internal/connection_impl.h"
+#include "google/cloud/spanner/internal/route_to_leader.h"
 #include "google/cloud/spanner/internal/session.h"
+#include "google/cloud/spanner/internal/status_utils.h"
 #include "google/cloud/spanner/options.h"
 #include "google/cloud/completion_queue.h"
 #include "google/cloud/internal/async_retry_loop.h"
+#include "google/cloud/internal/make_status.h"
 #include "google/cloud/internal/retry_loop.h"
 #include "google/cloud/log.h"
+#include "google/cloud/options.h"
 #include "google/cloud/status.h"
-#include "absl/memory/memory.h"
 #include <grpcpp/grpcpp.h>
 #include <algorithm>
 #include <chrono>
@@ -34,8 +36,6 @@ namespace google {
 namespace cloud {
 namespace spanner_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-namespace spanner_proto = ::google::spanner::v1;
 
 using ::google::cloud::Idempotency;
 
@@ -77,30 +77,43 @@ SessionPool::SessionPool(spanner::Database db,
 }
 
 void SessionPool::Initialize() {
+  internal::OptionsSpan span(opts_);
+  CreateMultiplexedSession();
   auto const min_sessions = opts_.get<spanner::SessionPoolMinSessionsOption>();
   if (min_sessions > 0) {
     std::unique_lock<std::mutex> lk(mu_);
-    (void)Grow(lk, min_sessions, WaitForSessionAllocation::kWait);
+    Grow(lk, min_sessions, WaitForSessionAllocation::kWait);
   }
   ScheduleBackgroundWork(std::chrono::seconds(5));
 }
 
 SessionPool::~SessionPool() {
-  // All references to this object are via `shared_ptr`; since we're in the
+  // All references to this object are via `shared_ptr`. Since we're in the
   // destructor that implies there can be no concurrent accesses to any member
   // variables, including `current_timer_`.
   //
   // Note that it *is* possible the timer lambda in `ScheduleBackgroundWork`
-  // is executing concurrently. However, since we are in the destructor we know
-  // that the lambda must not have yet successfully finished a call to `lock()`
-  // on the `weak_ptr` to `this` it holds. Any subsequent or in-progress calls
-  // must return `nullptr`, and the lambda will not do any work nor reschedule
-  // the timer.
+  // or the response handler in `RefreshExpiringSessions` are executing
+  // concurrently. However, since we are in the destructor we know that
+  // they must not have successfully finished a call to `lock()` on the
+  // `weak_ptr` to `this` they hold. Any in-progress or subsequent `lock()`
+  // will now return `nullptr`, in which case no work is done.
   current_timer_.cancel();
+
+  // Send fire-and-forget `AsyncDeleteSession()` calls for all sessions.
+  if (HasValidMultiplexedSession(std::unique_lock<std::mutex>(mu_))) {
+    AsyncDeleteSession(cq_, GetStub(*multiplexed_session_),
+                       multiplexed_session_->session_name())
+        .then([](auto result) { auto status = result.get(); });
+  }
+  for (auto const& session : sessions_) {
+    if (session->is_bad()) continue;
+    AsyncDeleteSession(cq_, GetStub(*session), session->session_name())
+        .then([](auto result) { auto status = result.get(); });
+  }
 }
 
 void SessionPool::ScheduleBackgroundWork(std::chrono::seconds relative_time) {
-  // See the comment in the destructor about the thread safety of this method.
   std::weak_ptr<SessionPool> pool = shared_from_this();
   current_timer_ =
       cq_.MakeRelativeTimer(relative_time)
@@ -123,8 +136,9 @@ void SessionPool::DoBackgroundWork() {
 // Ensure the pool size conforms to what was specified in the `SessionOptions`,
 // creating or deleting sessions as necessary.
 void SessionPool::MaintainPoolSize() {
-  std::unique_lock<std::mutex> lk(mu_);
+  CreateMultiplexedSession();
   auto const min_sessions = opts_.get<spanner::SessionPoolMinSessionsOption>();
+  std::unique_lock<std::mutex> lk(mu_);
   if (create_calls_in_progress_ == 0 && total_sessions_ < min_sessions) {
     Grow(lk, total_sessions_ - min_sessions, WaitForSessionAllocation::kNoWait);
   }
@@ -154,20 +168,88 @@ void SessionPool::RefreshExpiringSessions() {
       }
     }
   }
+  std::weak_ptr<SessionPool> pool = shared_from_this();
   for (auto& refresh : sessions_to_refresh) {
-    AsyncRefreshSession(cq_, refresh.first, std::move(refresh.second))
-        .then([](future<StatusOr<spanner_proto::ResultSet>> result) {
-          // We simply discard the response as handling IsSessionNotFound()
-          // by removing the session from the pool is problematic (and would
-          // not eliminate the possibility of IsSessionNotFound() elsewhere).
-          // The last-use time has already been updated to throttle attempts.
-          // TODO(#4026): Re-evaluate these decisions.
-          (void)result.get();
-        });
+    auto handler =
+        [pool, session_name = refresh.second](
+            future<StatusOr<google::spanner::v1::ResultSet>> result) {
+          auto response = result.get();
+          if (!response && IsSessionNotFound(response.status())) {
+            if (auto shared_pool = pool.lock()) {
+              // The pool still exists, but the bad session may no
+              // longer be in the pool because someone else has already
+              // tried to use it, discovered that it is bad, and so did
+              // not return it (or they are in process of doing all that).
+              // But if it is still in the pool, we remove it now.
+              shared_pool->Erase(session_name);
+            }
+          }
+        };
+    AsyncRefreshSession(cq_, std::move(refresh.first),
+                        std::move(refresh.second))
+        .then(std::move(handler));
   }
 }
 
-/**
+void SessionPool::Erase(std::string const& session_name) {
+  std::unique_ptr<Session> target;
+  std::unique_lock<std::mutex> lk(mu_);
+  for (auto& session : sessions_) {
+    if (session->session_name() == session_name) {
+      target = std::move(session);  // deferred deletion
+      session = std::move(sessions_.back());
+      sessions_.pop_back();
+      break;
+    }
+  }
+}
+
+Status SessionPool::CreateMultiplexedSession() {
+  std::unique_lock<std::mutex> lk(mu_);
+  if (!HasValidMultiplexedSession(lk)) {
+    auto stub = GetStub(std::move(lk));
+    auto name = CreateMultiplexedSession(std::move(stub));
+    if (!name) return name.status();
+    auto session = std::make_shared<Session>(*std::move(name),
+                                             /*channel=*/nullptr, clock_);
+    std::unique_lock<std::mutex> lk(mu_);
+    multiplexed_session_ = std::move(session);
+  }
+  return Status{};
+}
+
+StatusOr<std::string> SessionPool::CreateMultiplexedSession(
+    std::shared_ptr<SpannerStub> stub) const {
+  google::spanner::v1::CreateSessionRequest request;
+  request.set_database(db_.FullName());
+  auto* session = request.mutable_session();
+  auto const& labels = opts_.get<spanner::SessionPoolLabelsOption>();
+  if (!labels.empty()) {
+    session->mutable_labels()->insert(labels.begin(), labels.end());
+  }
+  auto const& role = opts_.get<spanner::SessionCreatorRoleOption>();
+  if (!role.empty()) session->set_creator_role(role);
+  session->set_multiplexed(true);
+
+  auto response = RetryLoop(
+      retry_policy_prototype_->clone(), backoff_policy_prototype_->clone(),
+      google::cloud::Idempotency::kIdempotent,
+      [&stub](grpc::ClientContext& context, Options const& options,
+              google::spanner::v1::CreateSessionRequest const& request) {
+        RouteToLeader(context);  // always for CreateSession()
+        return stub->CreateSession(context, options, request);
+      },
+      opts_, request, __func__);
+  if (!response) return std::move(response).status();
+  return response->name();
+}
+
+bool SessionPool::HasValidMultiplexedSession(
+    std::unique_lock<std::mutex> const&) const {
+  return multiplexed_session_ && !multiplexed_session_->is_bad();
+}
+
+/*
  * Grow the session pool by creating up to `sessions_to_create` sessions and
  * adding them to the pool.  Note that `lk` may be released and reacquired in
  * this method.
@@ -179,7 +261,7 @@ Status SessionPool::Grow(std::unique_lock<std::mutex>& lk,
                          int sessions_to_create,
                          WaitForSessionAllocation wait) {
   auto create_counts = ComputeCreateCounts(sessions_to_create);
-  if (!create_counts.ok()) {
+  if (!create_counts.ok() || create_counts->empty()) {
     return create_counts.status();
   }
   create_calls_in_progress_ += static_cast<int>(create_counts->size());
@@ -196,7 +278,8 @@ StatusOr<std::vector<SessionPool::CreateCount>>
 SessionPool::ComputeCreateCounts(int sessions_to_create) {
   if (total_sessions_ == max_pool_size_) {
     // Can't grow the pool since we're already at max size.
-    return Status(StatusCode::kResourceExhausted, "session pool exhausted");
+    return internal::ResourceExhaustedError("session pool exhausted",
+                                            GCP_ERROR_INFO());
   }
 
   // Compute how many Sessions to create on each Channel, trying to keep the
@@ -245,18 +328,20 @@ Status SessionPool::CreateSessions(
     std::vector<CreateCount> const& create_counts,
     WaitForSessionAllocation wait) {
   Status return_status;
+  auto const& labels = opts_.get<spanner::SessionPoolLabelsOption>();
+  auto const& role = opts_.get<spanner::SessionCreatorRoleOption>();
   for (auto const& op : create_counts) {
-    auto const& labels = opts_.get<spanner::SessionPoolLabelsOption>();
     switch (wait) {
       case WaitForSessionAllocation::kWait: {
-        auto status = CreateSessionsSync(op.channel, labels, op.session_count);
+        auto status =
+            CreateSessionsSync(op.channel, labels, role, op.session_count);
         if (!status.ok()) {
           return_status = status;
         }
         break;
       }
       case WaitForSessionAllocation::kNoWait:
-        CreateSessionsAsync(op.channel, labels, op.session_count);
+        CreateSessionsAsync(op.channel, labels, role, op.session_count);
         break;
     }
   }
@@ -264,7 +349,32 @@ Status SessionPool::CreateSessions(
 }
 
 StatusOr<SessionHolder> SessionPool::Allocate(bool dissociate_from_pool) {
+  return Allocate(std::unique_lock<std::mutex>(mu_), dissociate_from_pool);
+}
+
+StatusOr<SessionHolder> SessionPool::Multiplexed() {
   std::unique_lock<std::mutex> lk(mu_);
+  // If we don't have a multiplexed session (yet), use a regular one.
+  if (!HasValidMultiplexedSession(lk)) return Allocate(std::move(lk), false);
+  return multiplexed_session_;
+}
+
+std::shared_ptr<SpannerStub> SessionPool::GetStub(Session const& session) {
+  auto const& channel = session.channel();
+  if (channel) return channel->stub;
+
+  // Multiplexed sessions, or sessions that were created for partitioned
+  // Reads/Queries, do not have their own channel/stub, so return a stub
+  // to use by round-robining between the channels.
+  return GetStub(std::unique_lock<std::mutex>(mu_));
+}
+
+StatusOr<SessionHolder> SessionPool::Allocate(std::unique_lock<std::mutex> lk,
+                                              bool dissociate_from_pool) {
+  // We choose to ignore the internal::CurrentOptions() here as it is
+  // non-deterministic when RPCs to create sessions are actually made.
+  // It is clearer if we just stick with the construction-time Options.
+  internal::OptionsSpan span(opts_);
   for (;;) {
     if (!sessions_.empty()) {
       // return the most recently used session.
@@ -285,7 +395,8 @@ StatusOr<SessionHolder> SessionPool::Allocate(bool dissociate_from_pool) {
     if (total_sessions_ >= max_pool_size_) {
       if (opts_.get<spanner::SessionPoolActionOnExhaustionOption>() ==
           spanner::ActionOnExhaustion::kFail) {
-        return Status(StatusCode::kResourceExhausted, "session pool exhausted");
+        return internal::ResourceExhaustedError("session pool exhausted",
+                                                GCP_ERROR_INFO());
       }
       Wait(lk, [this] {
         return !sessions_.empty() || total_sessions_ < max_pool_size_;
@@ -317,16 +428,8 @@ StatusOr<SessionHolder> SessionPool::Allocate(bool dissociate_from_pool) {
   }
 }
 
-std::shared_ptr<SpannerStub> SessionPool::GetStub(Session const& session) {
-  auto const& channel = session.channel();
-  if (channel) {
-    return channel->stub;
-  }
-
-  // Sessions that were created for partitioned Reads/Queries do not have
-  // their own channel/stub; return a stub to use by round-robining between
-  // the channels.
-  std::unique_lock<std::mutex> lk(mu_);
+std::shared_ptr<SpannerStub> SessionPool::GetStub(
+    std::unique_lock<std::mutex>) {
   auto stub = (*next_dissociated_stub_channel_)->stub;
   if (++next_dissociated_stub_channel_ == channels_.end()) {
     next_dissociated_stub_channel_ = channels_.begin();
@@ -357,37 +460,47 @@ void SessionPool::Release(std::unique_ptr<Session> session) {
 // Creates `num_sessions` on `channel` and adds them to the pool.
 Status SessionPool::CreateSessionsSync(
     std::shared_ptr<Channel> const& channel,
-    std::map<std::string, std::string> const& labels, int num_sessions) {
-  spanner_proto::BatchCreateSessionsRequest request;
+    std::map<std::string, std::string> const& labels, std::string const& role,
+    int num_sessions) {
+  google::spanner::v1::BatchCreateSessionsRequest request;
   request.set_database(db_.FullName());
-  request.mutable_session_template()->mutable_labels()->insert(labels.begin(),
-                                                               labels.end());
+  if (!labels.empty()) {
+    request.mutable_session_template()->mutable_labels()->insert(labels.begin(),
+                                                                 labels.end());
+  }
+  if (!role.empty()) {
+    request.mutable_session_template()->set_creator_role(role);
+  }
   request.set_session_count(std::int32_t{num_sessions});
   auto const& stub = channel->stub;
+  auto const& current = internal::CurrentOptions();
   auto response = RetryLoop(
       retry_policy_prototype_->clone(), backoff_policy_prototype_->clone(),
       google::cloud::Idempotency::kIdempotent,
-      [&stub](grpc::ClientContext& context,
-              spanner_proto::BatchCreateSessionsRequest const& request) {
-        return stub->BatchCreateSessions(context, request);
+      [&stub](grpc::ClientContext& context, Options const& options,
+              google::spanner::v1::BatchCreateSessionsRequest const& request) {
+        RouteToLeader(context);  // always for BatchCreateSessions()
+        return stub->BatchCreateSessions(context, options, request);
       },
-      request, __func__);
+      current, request, __func__);
   return HandleBatchCreateSessionsDone(channel, std::move(response));
 }
 
 void SessionPool::CreateSessionsAsync(
     std::shared_ptr<Channel> const& channel,
-    std::map<std::string, std::string> const& labels, int num_sessions) {
+    std::map<std::string, std::string> const& labels, std::string const& role,
+    int num_sessions) {
   std::weak_ptr<SessionPool> pool = shared_from_this();
-  AsyncBatchCreateSessions(cq_, channel->stub, labels, num_sessions)
-      .then([pool, channel](
-                future<StatusOr<spanner_proto::BatchCreateSessionsResponse>>
-                    result) {
-        if (auto shared_pool = pool.lock()) {
-          shared_pool->HandleBatchCreateSessionsDone(channel,
-                                                     std::move(result).get());
-        }
-      });
+  AsyncBatchCreateSessions(cq_, channel->stub, labels, role, num_sessions)
+      .then(
+          [pool, channel](
+              future<StatusOr<google::spanner::v1::BatchCreateSessionsResponse>>
+                  result) {
+            if (auto shared_pool = pool.lock()) {
+              shared_pool->HandleBatchCreateSessionsDone(
+                  channel, std::move(result).get());
+            }
+          });
 }
 
 SessionHolder SessionPool::MakeSessionHolder(std::unique_ptr<Session> session,
@@ -406,63 +519,78 @@ SessionHolder SessionPool::MakeSessionHolder(std::unique_ptr<Session> session,
   });
 }
 
-future<StatusOr<spanner_proto::BatchCreateSessionsResponse>>
+future<StatusOr<google::spanner::v1::BatchCreateSessionsResponse>>
 SessionPool::AsyncBatchCreateSessions(
     CompletionQueue& cq, std::shared_ptr<SpannerStub> const& stub,
-    std::map<std::string, std::string> const& labels, int num_sessions) {
-  spanner_proto::BatchCreateSessionsRequest request;
+    std::map<std::string, std::string> const& labels, std::string const& role,
+    int num_sessions) {
+  google::spanner::v1::BatchCreateSessionsRequest request;
   request.set_database(db_.FullName());
-  request.mutable_session_template()->mutable_labels()->insert(labels.begin(),
-                                                               labels.end());
+  if (!labels.empty()) {
+    request.mutable_session_template()->mutable_labels()->insert(labels.begin(),
+                                                                 labels.end());
+  }
+  if (!role.empty()) {
+    request.mutable_session_template()->set_creator_role(role);
+  }
   request.set_session_count(std::int32_t{num_sessions});
   return google::cloud::internal::AsyncRetryLoop(
       retry_policy_prototype_->clone(), backoff_policy_prototype_->clone(),
       Idempotency::kIdempotent, cq,
-      [stub](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             spanner_proto::BatchCreateSessionsRequest const& request) {
-        return stub->AsyncBatchCreateSessions(cq, std::move(context), request);
+      [stub](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+             internal::ImmutableOptions options,
+             google::spanner::v1::BatchCreateSessionsRequest const& request) {
+        RouteToLeader(*context);  // always for BatchCreateSessions()
+        return stub->AsyncBatchCreateSessions(cq, std::move(context),
+                                              std::move(options), request);
       },
-      std::move(request), __func__);
+      internal::SaveCurrentOptions(), std::move(request), __func__);
 }
 
 future<Status> SessionPool::AsyncDeleteSession(
     CompletionQueue& cq, std::shared_ptr<SpannerStub> const& stub,
     std::string session_name) {
-  spanner_proto::DeleteSessionRequest request;
+  google::spanner::v1::DeleteSessionRequest request;
   request.set_name(std::move(session_name));
   return google::cloud::internal::AsyncRetryLoop(
       retry_policy_prototype_->clone(), backoff_policy_prototype_->clone(),
       Idempotency::kIdempotent, cq,
-      [stub](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             spanner_proto::DeleteSessionRequest const& request) {
-        return stub->AsyncDeleteSession(cq, std::move(context), request);
+      [stub](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+             google::cloud::internal::ImmutableOptions options,
+             google::spanner::v1::DeleteSessionRequest const& request) {
+        return stub->AsyncDeleteSession(cq, std::move(context),
+                                        std::move(options), request);
       },
-      std::move(request), __func__);
+      internal::SaveCurrentOptions(), std::move(request), __func__);
 }
 
 /// Refresh the session `session_name` by executing a `SELECT 1` query on it.
-future<StatusOr<spanner_proto::ResultSet>> SessionPool::AsyncRefreshSession(
-    CompletionQueue& cq, std::shared_ptr<SpannerStub> const& stub,
-    std::string session_name) {
-  spanner_proto::ExecuteSqlRequest request;
+future<StatusOr<google::spanner::v1::ResultSet>>
+SessionPool::AsyncRefreshSession(CompletionQueue& cq,
+                                 std::shared_ptr<SpannerStub> const& stub,
+                                 std::string session_name) {
+  google::spanner::v1::ExecuteSqlRequest request;
   request.set_session(std::move(session_name));
   // Single-use transaction with strong concurrency.
   request.set_sql("SELECT 1;");
   request.mutable_request_options()->set_priority(
-      spanner_proto::RequestOptions::PRIORITY_LOW);
+      google::spanner::v1::RequestOptions::PRIORITY_LOW);
   return google::cloud::internal::AsyncRetryLoop(
       retry_policy_prototype_->clone(), backoff_policy_prototype_->clone(),
       Idempotency::kIdempotent, cq,
-      [stub](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             spanner_proto::ExecuteSqlRequest const& request) {
-        return stub->AsyncExecuteSql(cq, std::move(context), request);
+      [stub](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+             google::cloud::internal::ImmutableOptions options,
+             google::spanner::v1::ExecuteSqlRequest const& request) {
+        // Read-only transaction, so no route-to-leader.
+        return stub->AsyncExecuteSql(cq, std::move(context), std::move(options),
+                                     request);
       },
-      std::move(request), __func__);
+      internal::SaveCurrentOptions(), std::move(request), __func__);
 }
 
 Status SessionPool::HandleBatchCreateSessionsDone(
     std::shared_ptr<Channel> const& channel,
-    StatusOr<spanner_proto::BatchCreateSessionsResponse> response) {
+    StatusOr<google::spanner::v1::BatchCreateSessionsResponse> response) {
   std::unique_lock<std::mutex> lk(mu_);
   --create_calls_in_progress_;
   if (!response.ok()) {
@@ -474,7 +602,7 @@ Status SessionPool::HandleBatchCreateSessionsDone(
   total_sessions_ += sessions_created;
   sessions_.reserve(sessions_.size() + sessions_created);
   for (auto& session : *response->mutable_session()) {
-    sessions_.push_back(absl::make_unique<Session>(
+    sessions_.push_back(std::make_unique<Session>(
         std::move(*session.mutable_name()), channel, clock_));
   }
   // Shuffle the pool so we distribute returned sessions across channels.

@@ -20,75 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_GROUP_CONNECTION_H
 
 #include "google/cloud/monitoring/group_connection_idempotency_policy.h"
-#include "google/cloud/monitoring/internal/group_retry_traits.h"
-#include "google/cloud/monitoring/internal/group_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/group_connection.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using GroupServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        monitoring_internal::GroupServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MakeGroupServiceConnection directly.
+using ::google::cloud::monitoring_v3::MakeGroupServiceConnection;
 
-using GroupServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        monitoring_internal::GroupServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::GroupServiceConnection directly.
+using ::google::cloud::monitoring_v3::GroupServiceConnection;
 
-using GroupServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        monitoring_internal::GroupServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::GroupServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_v3::GroupServiceLimitedErrorCountRetryPolicy;
 
-class GroupServiceConnection {
- public:
-  virtual ~GroupServiceConnection() = 0;
+/// @deprecated Use monitoring_v3::GroupServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::monitoring_v3::GroupServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::monitoring::v3::Group> ListGroups(
-      google::monitoring::v3::ListGroupsRequest request);
-
-  virtual StatusOr<google::monitoring::v3::Group> GetGroup(
-      google::monitoring::v3::GetGroupRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::Group> CreateGroup(
-      google::monitoring::v3::CreateGroupRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::Group> UpdateGroup(
-      google::monitoring::v3::UpdateGroupRequest const& request);
-
-  virtual Status DeleteGroup(
-      google::monitoring::v3::DeleteGroupRequest const& request);
-
-  virtual StreamRange<google::api::MonitoredResource> ListGroupMembers(
-      google::monitoring::v3::ListGroupMembersRequest request);
-};
-
-std::shared_ptr<GroupServiceConnection> MakeGroupServiceConnection(
-    Options options = {});
+/// @deprecated Use monitoring_v3::GroupServiceRetryPolicy directly.
+using ::google::cloud::monitoring_v3::GroupServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace monitoring_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<monitoring::GroupServiceConnection> MakeGroupServiceConnection(
-    std::shared_ptr<GroupServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace monitoring_internal
 }  // namespace cloud
 }  // namespace google
 

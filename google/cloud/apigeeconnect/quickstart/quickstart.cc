@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/apigeeconnect/connection_client.h"
+//! [all]
+#include "google/cloud/apigeeconnect/v1/connection_client.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -22,19 +22,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace apigeeconnect = ::google::cloud::apigeeconnect;
+  namespace apigeeconnect = ::google::cloud::apigeeconnect_v1;
   auto client = apigeeconnect::ConnectionServiceClient(
       apigeeconnect::MakeConnectionServiceConnection());
 
   auto const parent =
       std::string{"projects/"} + argv[1] + "/endpoints/" + argv[2];
   for (auto r : client.ListConnections(parent)) {
-    if (!r) throw std::runtime_error(r.status().message());
+    if (!r) throw std::move(r).status();
     std::cout << r->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

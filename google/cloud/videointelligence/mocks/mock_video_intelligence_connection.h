@@ -19,26 +19,21 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VIDEOINTELLIGENCE_MOCKS_MOCK_VIDEO_INTELLIGENCE_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VIDEOINTELLIGENCE_MOCKS_MOCK_VIDEO_INTELLIGENCE_CONNECTION_H
 
+#include "google/cloud/videointelligence/v1/mocks/mock_video_intelligence_connection.h"
 #include "google/cloud/videointelligence/video_intelligence_connection.h"
-#include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in videointelligence_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace videointelligence_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockVideoIntelligenceServiceConnection
-    : public videointelligence::VideoIntelligenceServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(future<StatusOr<
-                  google::cloud::videointelligence::v1::AnnotateVideoResponse>>,
-              AnnotateVideo,
-              (google::cloud::videointelligence::v1::AnnotateVideoRequest const&
-                   request),
-              (override));
-};
+/// @deprecated Use
+/// videointelligence_v1_mocks::MockVideoIntelligenceServiceConnection directly.
+using ::google::cloud::videointelligence_v1_mocks::
+    MockVideoIntelligenceServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace videointelligence_mocks

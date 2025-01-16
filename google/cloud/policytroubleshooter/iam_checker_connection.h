@@ -20,60 +20,34 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_POLICYTROUBLESHOOTER_IAM_CHECKER_CONNECTION_H
 
 #include "google/cloud/policytroubleshooter/iam_checker_connection_idempotency_policy.h"
-#include "google/cloud/policytroubleshooter/internal/iam_checker_retry_traits.h"
-#include "google/cloud/policytroubleshooter/internal/iam_checker_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/policytroubleshooter/v1/iam_checker_connection.h"
 
 namespace google {
 namespace cloud {
 namespace policytroubleshooter {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using IamCheckerRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    policytroubleshooter_internal::IamCheckerRetryTraits>;
+/// @deprecated Use policytroubleshooter_v1::MakeIamCheckerConnection directly.
+using ::google::cloud::policytroubleshooter_v1::MakeIamCheckerConnection;
 
-using IamCheckerLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        policytroubleshooter_internal::IamCheckerRetryTraits>;
+/// @deprecated Use policytroubleshooter_v1::IamCheckerConnection directly.
+using ::google::cloud::policytroubleshooter_v1::IamCheckerConnection;
 
-using IamCheckerLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        policytroubleshooter_internal::IamCheckerRetryTraits>;
+/// @deprecated Use
+/// policytroubleshooter_v1::IamCheckerLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::policytroubleshooter_v1::
+    IamCheckerLimitedErrorCountRetryPolicy;
 
-class IamCheckerConnection {
- public:
-  virtual ~IamCheckerConnection() = 0;
+/// @deprecated Use policytroubleshooter_v1::IamCheckerLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::policytroubleshooter_v1::
+    IamCheckerLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<
-      google::cloud::policytroubleshooter::v1::TroubleshootIamPolicyResponse>
-  TroubleshootIamPolicy(google::cloud::policytroubleshooter::v1::
-                            TroubleshootIamPolicyRequest const& request);
-};
-
-std::shared_ptr<IamCheckerConnection> MakeIamCheckerConnection(
-    Options options = {});
+/// @deprecated Use policytroubleshooter_v1::IamCheckerRetryPolicy directly.
+using ::google::cloud::policytroubleshooter_v1::IamCheckerRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace policytroubleshooter
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace policytroubleshooter_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<policytroubleshooter::IamCheckerConnection>
-MakeIamCheckerConnection(std::shared_ptr<IamCheckerStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace policytroubleshooter_internal
 }  // namespace cloud
 }  // namespace google
 

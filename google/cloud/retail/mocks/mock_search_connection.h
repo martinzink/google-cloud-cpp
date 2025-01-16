@@ -20,21 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_MOCKS_MOCK_SEARCH_CONNECTION_H
 
 #include "google/cloud/retail/search_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/retail/v2/mocks/mock_search_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in retail_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace retail_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockSearchServiceConnection : public retail::SearchServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StreamRange<google::cloud::retail::v2::SearchResponse::SearchResult>,
-      Search, (google::cloud::retail::v2::SearchRequest request), (override));
-};
+/// @deprecated Use retail_v2_mocks::MockSearchServiceConnection directly.
+using ::google::cloud::retail_v2_mocks::MockSearchServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail_mocks

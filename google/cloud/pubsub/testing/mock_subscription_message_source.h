@@ -15,6 +15,7 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_TESTING_MOCK_SUBSCRIPTION_MESSAGE_SOURCE_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_TESTING_MOCK_SUBSCRIPTION_MESSAGE_SOURCE_H
 
+#include "google/cloud/pubsub/internal/batch_callback.h"
 #include "google/cloud/pubsub/internal/subscription_message_source.h"
 #include "google/cloud/pubsub/version.h"
 #include <gmock/gmock.h>
@@ -28,11 +29,14 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 class MockSubscriptionMessageSource
     : public pubsub_internal::SubscriptionMessageSource {
  public:
-  MOCK_METHOD(void, Start, (pubsub_internal::MessageCallback), (override));
+  MOCK_METHOD(void, Start, (std::shared_ptr<pubsub_internal::BatchCallback>),
+              (override));
   MOCK_METHOD(void, Shutdown, (), (override));
   MOCK_METHOD(void, Read, (std::size_t max_callbacks), (override));
-  MOCK_METHOD(void, AckMessage, (std::string const& ack_id), (override));
-  MOCK_METHOD(void, NackMessage, (std::string const& ack_id), (override));
+  MOCK_METHOD(future<Status>, AckMessage, (std::string const& ack_id),
+              (override));
+  MOCK_METHOD(future<Status>, NackMessage, (std::string const& ack_id),
+              (override));
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

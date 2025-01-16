@@ -17,7 +17,9 @@
 #include "google/cloud/spanner/create_instance_request_builder.h"
 #include "google/cloud/spanner/instance.h"
 #include "google/cloud/internal/getenv.h"
+#include "google/cloud/internal/make_status.h"
 #include "google/cloud/project.h"
+#include "absl/strings/match.h"
 #include <vector>
 
 namespace google {
@@ -46,11 +48,11 @@ StatusOr<std::string> PickRandomInstance(
   for (auto& instance : client.ListInstances(request)) {
     if (!instance) return std::move(instance).status();
     auto instance_id = instance->name().substr(instance_prefix.size());
-    if (instance_id.rfind("test-instance-", 0) != 0) {
+    if (!absl::StartsWith(instance_id, "test-instance-")) {
       auto emulator = google::cloud::internal::GetEnv("SPANNER_EMULATOR_HOST");
       if (emulator.has_value()) continue;  // server-side filter not supported
-      return Status(StatusCode::kInternal,
-                    "ListInstances erroneously returned " + instance_id);
+      return internal::InternalError("ListInstances erroneously returned " +
+                                     instance_id);
     }
     instance_ids.push_back(std::move(instance_id));
   }
@@ -74,7 +76,8 @@ StatusOr<std::string> PickRandomInstance(
   }
 
   if (instance_ids.empty()) {
-    return Status(StatusCode::kUnavailable, "No available instances");
+    return internal::UnavailableError("No available instances",
+                                      GCP_ERROR_INFO());
   }
 
   auto random_index =

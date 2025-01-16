@@ -15,8 +15,9 @@
 #ifndef GOOGLE_CLOUD_CPP_GENERATOR_INTERNAL_SCAFFOLD_GENERATOR_H
 #define GOOGLE_CLOUD_CPP_GENERATOR_INTERNAL_SCAFFOLD_GENERATOR_H
 
-#include "absl/types/optional.h"
 #include "generator/generator_config.pb.h"
+#include "absl/types/optional.h"
+#include <nlohmann/json.hpp>
 #include <iosfwd>
 #include <map>
 #include <string>
@@ -31,27 +32,87 @@ namespace generator_internal {
  * In `google-cloud-cpp` libraries called `foo` live in the `google/cloud/foo`
  * directory. The names of CMake targets, Bazel rules, pkg-config modules,
  * features, etc. are based on the library name. This function returns the
- * name give a service configuration.
- *
- * This function assumes the service configuration has already been validated.
+ * library name given a service configuration's product path.
  */
-std::string LibraryName(
-    google::cloud::cpp::generator::ServiceConfiguration const& service);
+std::string LibraryName(std::string const& product_path);
 
+/**
+ * Returns the path to the library directory.
+ *
+ * Extract the library path (e.g. `google/cloud/foo/`) from a product path (e.g.
+ * `google/cloud/foo/bar/v1`).
+ */
+std::string LibraryPath(std::string const& product_path);
+
+/**
+ * Returns the relative path to the service from its library path.
+ *
+ * Extract the relative path (e.g. `bar/v1/`) from a product path (e.g.
+ * `google/cloud/foo/bar/v1`).
+ */
+std::string ServiceSubdirectory(std::string const& product_path);
+
+/**
+ * Returns the name of the doxygen refgroup for options in a given product path.
+ *
+ * There is a single refgroup for all options in a library. For example, the
+ * options in `google/cloud/foo/v1/` and `google/cloud/foo/bar/v1` will both map
+ * to the group: `google-cloud-foo-options`.
+ */
+std::string OptionsGroup(std::string const& product_path);
+
+/**
+ * Load the `api-index-v1.json` file stored in the googleapis repository.
+ *
+ * If this is not available, it returns a JSON object with an empty list of
+ * APIs.
+ */
+nlohmann::json LoadApiIndex(std::string const& googleapis_path);
+
+/**
+ * Capture the information about @service as a set of "variables".
+ *
+ * This searches the API index file loaded in @p index for the details about
+ * @p service and generates a map of "variables" representing that information.
+ * If a service config YAML file is available, it loads some key information
+ * from that file too.
+ *
+ * @return a map with the variables needed to generate the build scaffold for
+ *     @p service. We use a map (instead of a more idiomatic / safe `struct`),
+ *     because we will feed this information to the protobuf compiler template
+ *     engine.
+ */
 std::map<std::string, std::string> ScaffoldVars(
-    std::string const& googleapis_path, std::string const& project_root,
-    google::cloud::cpp::generator::ServiceConfiguration const& service);
+    std::string const& yaml_root, nlohmann::json const& index,
+    google::cloud::cpp::generator::ServiceConfiguration const& service,
+    bool experimental);
 
-void MakeDirectory(std::string const& path);
+/// Find out the full path for the service config YAML file from the scaffold
+/// vars.
+std::string ServiceConfigYamlPath(
+    std::string const& root, std::map<std::string, std::string> const& vars);
 
+/**
+ * Generates (if possible) a `.repo-metadata.json` file for @p service.
+ *
+ * If @p allow_placeholders is true then the configuration file will be
+ * generated even if some information is missing.  This is used during the
+ * scaffold generation, and the developer is expected to fill any gaps.
+ */
+void GenerateMetadata(
+    std::map<std::string, std::string> const& vars,
+    std::string const& output_path,
+    google::cloud::cpp::generator::ServiceConfiguration const& service,
+    bool allow_placeholders);
+
+/// Generates the build and documentation scaffold for @p service.
 void GenerateScaffold(
-    std::string const& googleapis_path, std::string const& output_path,
+    std::map<std::string, std::string> const& vars,
+    std::string const& scaffold_templates_path, std::string const& output_path,
     google::cloud::cpp::generator::ServiceConfiguration const& service);
 
-void GenerateCmakeConfigIn(std::ostream& os,
-                           std::map<std::string, std::string> const& variables);
-void GenerateConfigPcIn(std::ostream& os,
-                        std::map<std::string, std::string> const& variables);
+///@{
+/// @name Generators for each scaffold file.
 void GenerateReadme(std::ostream& os,
                     std::map<std::string, std::string> const& variables);
 void GenerateBuild(std::ostream& os,
@@ -59,6 +120,16 @@ void GenerateBuild(std::ostream& os,
 void GenerateCMakeLists(std::ostream& os,
                         std::map<std::string, std::string> const& variables);
 void GenerateDoxygenMainPage(
+    std::ostream& os, std::map<std::string, std::string> const& variables);
+void GenerateDoxygenOptionsPage(
+    std::ostream& os, std::map<std::string, std::string> const& variables);
+void GenerateDoxygenEnvironmentPage(
+    std::ostream& os, std::map<std::string, std::string> const& variables);
+void GenerateOverrideAuthenticationPage(
+    std::ostream& os, std::map<std::string, std::string> const& variables);
+void GenerateOverrideEndpointPage(
+    std::ostream& os, std::map<std::string, std::string> const& variables);
+void GenerateOverrideRetryPoliciesPage(
     std::ostream& os, std::map<std::string, std::string> const& variables);
 void GenerateQuickstartReadme(
     std::ostream& os, std::map<std::string, std::string> const& variables);
@@ -69,9 +140,13 @@ void GenerateQuickstartCMake(
 void GenerateQuickstartMakefile(
     std::ostream& os, std::map<std::string, std::string> const& variables);
 void GenerateQuickstartWorkspace(
-    std::ostream& os, std::map<std::string, std::string> const& variables);
+    std::ostream& os, std::map<std::string, std::string> const& variables,
+    std::string const& contents);
 void GenerateQuickstartBuild(
     std::ostream& os, std::map<std::string, std::string> const& variables);
+void GenerateQuickstartBazelrc(
+    std::ostream& os, std::map<std::string, std::string> const& variables);
+///@}
 
 }  // namespace generator_internal
 }  // namespace cloud

@@ -21,35 +21,26 @@
 
 #include "google/cloud/language/language_connection.h"
 #include "google/cloud/language/language_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/language/v1/language_options.h"
 
 namespace google {
 namespace cloud {
 namespace language {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct LanguageServiceRetryPolicyOption {
-  using Type = std::shared_ptr<LanguageServiceRetryPolicy>;
-};
+/// @deprecated Use language_v1::LanguageServiceBackoffPolicyOption directly.
+using ::google::cloud::language_v1::LanguageServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct LanguageServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// language_v1::LanguageServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::language_v1::
+    LanguageServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct LanguageServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<LanguageServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use language_v1::LanguageServicePolicyOptionList directly.
+using ::google::cloud::language_v1::LanguageServicePolicyOptionList;
 
-using LanguageServicePolicyOptionList =
-    OptionList<LanguageServiceRetryPolicyOption,
-               LanguageServiceBackoffPolicyOption,
-               LanguageServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use language_v1::LanguageServiceRetryPolicyOption directly.
+using ::google::cloud::language_v1::LanguageServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace language

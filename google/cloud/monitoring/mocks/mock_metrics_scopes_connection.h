@@ -20,45 +20,20 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_MOCKS_MOCK_METRICS_SCOPES_CONNECTION_H
 
 #include "google/cloud/monitoring/metrics_scopes_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/monitoring/metricsscope/v1/mocks/mock_metrics_scopes_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in monitoring_metricsscope_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace monitoring_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockMetricsScopesConnection : public monitoring::MetricsScopesConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::monitoring::metricsscope::v1::MetricsScope>,
-      GetMetricsScope,
-      (google::monitoring::metricsscope::v1::GetMetricsScopeRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::monitoring::metricsscope::v1::
-                           ListMetricsScopesByMonitoredProjectResponse>,
-              ListMetricsScopesByMonitoredProject,
-              (google::monitoring::metricsscope::v1::
-                   ListMetricsScopesByMonitoredProjectRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::monitoring::metricsscope::v1::MonitoredProject>>,
-      CreateMonitoredProject,
-      (google::monitoring::metricsscope::v1::
-           CreateMonitoredProjectRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::monitoring::metricsscope::v1::OperationMetadata>>,
-      DeleteMonitoredProject,
-      (google::monitoring::metricsscope::v1::
-           DeleteMonitoredProjectRequest const& request),
-      (override));
-};
+/// @deprecated Use
+/// monitoring_metricsscope_v1_mocks::MockMetricsScopesConnection directly.
+using ::google::cloud::monitoring_metricsscope_v1_mocks::
+    MockMetricsScopesConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring_mocks

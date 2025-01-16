@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/eventarc/eventarc_client.h"
-#include "google/cloud/project.h"
+//! [all]
+#include "google/cloud/eventarc/v1/eventarc_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -23,18 +23,19 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace eventarc = ::google::cloud::eventarc;
+  auto const location = google::cloud::Location(argv[1], argv[2]);
+
+  namespace eventarc = ::google::cloud::eventarc_v1;
   auto client = eventarc::EventarcClient(eventarc::MakeEventarcConnection());
 
-  auto const project = google::cloud::Project(argv[1]);
-  auto const parent = project.FullName() + "/locations/" + argv[2];
-  for (auto t : client.ListTriggers(parent)) {
-    if (!t) throw std::runtime_error(t.status().message());
+  for (auto t : client.ListTriggers(location.FullName())) {
+    if (!t) throw std::move(t).status();
     std::cout << t->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

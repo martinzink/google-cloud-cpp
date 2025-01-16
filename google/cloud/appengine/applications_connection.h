@@ -20,74 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_APPLICATIONS_CONNECTION_H
 
 #include "google/cloud/appengine/applications_connection_idempotency_policy.h"
-#include "google/cloud/appengine/internal/applications_retry_traits.h"
-#include "google/cloud/appengine/internal/applications_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/appengine/v1/applications_connection.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ApplicationsRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        appengine_internal::ApplicationsRetryTraits>;
+/// @deprecated Use appengine_v1::MakeApplicationsConnection directly.
+using ::google::cloud::appengine_v1::MakeApplicationsConnection;
 
-using ApplicationsLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::ApplicationsRetryTraits>;
+/// @deprecated Use appengine_v1::ApplicationsConnection directly.
+using ::google::cloud::appengine_v1::ApplicationsConnection;
 
-using ApplicationsLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::ApplicationsRetryTraits>;
+/// @deprecated Use appengine_v1::ApplicationsLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::appengine_v1::ApplicationsLimitedErrorCountRetryPolicy;
 
-class ApplicationsConnection {
- public:
-  virtual ~ApplicationsConnection() = 0;
+/// @deprecated Use appengine_v1::ApplicationsLimitedTimeRetryPolicy directly.
+using ::google::cloud::appengine_v1::ApplicationsLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::appengine::v1::Application> GetApplication(
-      google::appengine::v1::GetApplicationRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::Application>>
-  CreateApplication(
-      google::appengine::v1::CreateApplicationRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::Application>>
-  UpdateApplication(
-      google::appengine::v1::UpdateApplicationRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::Application>>
-  RepairApplication(
-      google::appengine::v1::RepairApplicationRequest const& request);
-};
-
-std::shared_ptr<ApplicationsConnection> MakeApplicationsConnection(
-    Options options = {});
+/// @deprecated Use appengine_v1::ApplicationsRetryPolicy directly.
+using ::google::cloud::appengine_v1::ApplicationsRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::ApplicationsConnection> MakeApplicationsConnection(
-    std::shared_ptr<ApplicationsStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

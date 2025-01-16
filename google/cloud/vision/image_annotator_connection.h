@@ -20,78 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VISION_IMAGE_ANNOTATOR_CONNECTION_H
 
 #include "google/cloud/vision/image_annotator_connection_idempotency_policy.h"
-#include "google/cloud/vision/internal/image_annotator_retry_traits.h"
-#include "google/cloud/vision/internal/image_annotator_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/vision/v1/image_annotator_connection.h"
 
 namespace google {
 namespace cloud {
 namespace vision {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ImageAnnotatorRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        vision_internal::ImageAnnotatorRetryTraits>;
+/// @deprecated Use vision_v1::MakeImageAnnotatorConnection directly.
+using ::google::cloud::vision_v1::MakeImageAnnotatorConnection;
 
-using ImageAnnotatorLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        vision_internal::ImageAnnotatorRetryTraits>;
+/// @deprecated Use vision_v1::ImageAnnotatorConnection directly.
+using ::google::cloud::vision_v1::ImageAnnotatorConnection;
 
-using ImageAnnotatorLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        vision_internal::ImageAnnotatorRetryTraits>;
+/// @deprecated Use vision_v1::ImageAnnotatorLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::vision_v1::ImageAnnotatorLimitedErrorCountRetryPolicy;
 
-class ImageAnnotatorConnection {
- public:
-  virtual ~ImageAnnotatorConnection() = 0;
+/// @deprecated Use vision_v1::ImageAnnotatorLimitedTimeRetryPolicy directly.
+using ::google::cloud::vision_v1::ImageAnnotatorLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::vision::v1::BatchAnnotateImagesResponse>
-  BatchAnnotateImages(
-      google::cloud::vision::v1::BatchAnnotateImagesRequest const& request);
-
-  virtual StatusOr<google::cloud::vision::v1::BatchAnnotateFilesResponse>
-  BatchAnnotateFiles(
-      google::cloud::vision::v1::BatchAnnotateFilesRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::vision::v1::AsyncBatchAnnotateImagesResponse>>
-  AsyncBatchAnnotateImages(
-      google::cloud::vision::v1::AsyncBatchAnnotateImagesRequest const&
-          request);
-
-  virtual future<
-      StatusOr<google::cloud::vision::v1::AsyncBatchAnnotateFilesResponse>>
-  AsyncBatchAnnotateFiles(
-      google::cloud::vision::v1::AsyncBatchAnnotateFilesRequest const& request);
-};
-
-std::shared_ptr<ImageAnnotatorConnection> MakeImageAnnotatorConnection(
-    Options options = {});
+/// @deprecated Use vision_v1::ImageAnnotatorRetryPolicy directly.
+using ::google::cloud::vision_v1::ImageAnnotatorRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace vision
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace vision_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<vision::ImageAnnotatorConnection> MakeImageAnnotatorConnection(
-    std::shared_ptr<ImageAnnotatorStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace vision_internal
 }  // namespace cloud
 }  // namespace google
 

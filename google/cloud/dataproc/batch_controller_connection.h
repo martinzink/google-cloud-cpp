@@ -20,73 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_BATCH_CONTROLLER_CONNECTION_H
 
 #include "google/cloud/dataproc/batch_controller_connection_idempotency_policy.h"
-#include "google/cloud/dataproc/internal/batch_controller_retry_traits.h"
-#include "google/cloud/dataproc/internal/batch_controller_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/dataproc/v1/batch_controller_connection.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using BatchControllerRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        dataproc_internal::BatchControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::MakeBatchControllerConnection directly.
+using ::google::cloud::dataproc_v1::MakeBatchControllerConnection;
 
-using BatchControllerLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        dataproc_internal::BatchControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::BatchControllerConnection directly.
+using ::google::cloud::dataproc_v1::BatchControllerConnection;
 
-using BatchControllerLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        dataproc_internal::BatchControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::BatchControllerLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::BatchControllerLimitedErrorCountRetryPolicy;
 
-class BatchControllerConnection {
- public:
-  virtual ~BatchControllerConnection() = 0;
+/// @deprecated Use dataproc_v1::BatchControllerLimitedTimeRetryPolicy directly.
+using ::google::cloud::dataproc_v1::BatchControllerLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::Batch>> CreateBatch(
-      google::cloud::dataproc::v1::CreateBatchRequest const& request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::Batch> GetBatch(
-      google::cloud::dataproc::v1::GetBatchRequest const& request);
-
-  virtual StreamRange<google::cloud::dataproc::v1::Batch> ListBatches(
-      google::cloud::dataproc::v1::ListBatchesRequest request);
-
-  virtual Status DeleteBatch(
-      google::cloud::dataproc::v1::DeleteBatchRequest const& request);
-};
-
-std::shared_ptr<BatchControllerConnection> MakeBatchControllerConnection(
-    Options options = {});
+/// @deprecated Use dataproc_v1::BatchControllerRetryPolicy directly.
+using ::google::cloud::dataproc_v1::BatchControllerRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace dataproc_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<dataproc::BatchControllerConnection>
-MakeBatchControllerConnection(std::shared_ptr<BatchControllerStub> stub,
-                              Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace dataproc_internal
 }  // namespace cloud
 }  // namespace google
 

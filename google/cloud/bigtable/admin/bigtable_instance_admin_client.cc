@@ -18,9 +18,9 @@
 
 #include "google/cloud/bigtable/admin/bigtable_instance_admin_client.h"
 #include "google/cloud/bigtable/admin/bigtable_instance_admin_options.h"
-#include "google/cloud/bigtable/admin/internal/bigtable_instance_admin_option_defaults.h"
 #include <memory>
 #include <thread>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -30,10 +30,8 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 BigtableInstanceAdminClient::BigtableInstanceAdminClient(
     std::shared_ptr<BigtableInstanceAdminConnection> connection, Options opts)
     : connection_(std::move(connection)),
-      options_(internal::MergeOptions(
-          std::move(opts),
-          bigtable_admin_internal::BigtableInstanceAdminDefaultOptions(
-              connection_->options()))) {}
+      options_(
+          internal::MergeOptions(std::move(opts), connection_->options())) {}
 BigtableInstanceAdminClient::~BigtableInstanceAdminClient() = default;
 
 future<StatusOr<google::bigtable::admin::v2::Instance>>
@@ -51,12 +49,43 @@ BigtableInstanceAdminClient::CreateInstance(
   return connection_->CreateInstance(request);
 }
 
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::CreateInstance(
+    NoAwaitTag, std::string const& parent, std::string const& instance_id,
+    google::bigtable::admin::v2::Instance const& instance,
+    std::map<std::string, google::bigtable::admin::v2::Cluster> const& clusters,
+    Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  google::bigtable::admin::v2::CreateInstanceRequest request;
+  request.set_parent(parent);
+  request.set_instance_id(instance_id);
+  *request.mutable_instance() = instance;
+  *request.mutable_clusters() = {clusters.begin(), clusters.end()};
+  return connection_->CreateInstance(NoAwaitTag{}, request);
+}
+
 future<StatusOr<google::bigtable::admin::v2::Instance>>
 BigtableInstanceAdminClient::CreateInstance(
     google::bigtable::admin::v2::CreateInstanceRequest const& request,
     Options opts) {
   internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
   return connection_->CreateInstance(request);
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::CreateInstance(
+    NoAwaitTag,
+    google::bigtable::admin::v2::CreateInstanceRequest const& request,
+    Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->CreateInstance(NoAwaitTag{}, request);
+}
+
+future<StatusOr<google::bigtable::admin::v2::Instance>>
+BigtableInstanceAdminClient::CreateInstance(
+    google::longrunning::Operation const& operation, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->CreateInstance(operation);
 }
 
 StatusOr<google::bigtable::admin::v2::Instance>
@@ -111,12 +140,39 @@ BigtableInstanceAdminClient::PartialUpdateInstance(
   return connection_->PartialUpdateInstance(request);
 }
 
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::PartialUpdateInstance(
+    NoAwaitTag, google::bigtable::admin::v2::Instance const& instance,
+    google::protobuf::FieldMask const& update_mask, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  google::bigtable::admin::v2::PartialUpdateInstanceRequest request;
+  *request.mutable_instance() = instance;
+  *request.mutable_update_mask() = update_mask;
+  return connection_->PartialUpdateInstance(NoAwaitTag{}, request);
+}
+
 future<StatusOr<google::bigtable::admin::v2::Instance>>
 BigtableInstanceAdminClient::PartialUpdateInstance(
     google::bigtable::admin::v2::PartialUpdateInstanceRequest const& request,
     Options opts) {
   internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
   return connection_->PartialUpdateInstance(request);
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::PartialUpdateInstance(
+    NoAwaitTag,
+    google::bigtable::admin::v2::PartialUpdateInstanceRequest const& request,
+    Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->PartialUpdateInstance(NoAwaitTag{}, request);
+}
+
+future<StatusOr<google::bigtable::admin::v2::Instance>>
+BigtableInstanceAdminClient::PartialUpdateInstance(
+    google::longrunning::Operation const& operation, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->PartialUpdateInstance(operation);
 }
 
 Status BigtableInstanceAdminClient::DeleteInstance(std::string const& name,
@@ -146,12 +202,40 @@ BigtableInstanceAdminClient::CreateCluster(
   return connection_->CreateCluster(request);
 }
 
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::CreateCluster(
+    NoAwaitTag, std::string const& parent, std::string const& cluster_id,
+    google::bigtable::admin::v2::Cluster const& cluster, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  google::bigtable::admin::v2::CreateClusterRequest request;
+  request.set_parent(parent);
+  request.set_cluster_id(cluster_id);
+  *request.mutable_cluster() = cluster;
+  return connection_->CreateCluster(NoAwaitTag{}, request);
+}
+
 future<StatusOr<google::bigtable::admin::v2::Cluster>>
 BigtableInstanceAdminClient::CreateCluster(
     google::bigtable::admin::v2::CreateClusterRequest const& request,
     Options opts) {
   internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
   return connection_->CreateCluster(request);
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::CreateCluster(
+    NoAwaitTag,
+    google::bigtable::admin::v2::CreateClusterRequest const& request,
+    Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->CreateCluster(NoAwaitTag{}, request);
+}
+
+future<StatusOr<google::bigtable::admin::v2::Cluster>>
+BigtableInstanceAdminClient::CreateCluster(
+    google::longrunning::Operation const& operation, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->CreateCluster(operation);
 }
 
 StatusOr<google::bigtable::admin::v2::Cluster>
@@ -194,6 +278,21 @@ BigtableInstanceAdminClient::UpdateCluster(
   return connection_->UpdateCluster(request);
 }
 
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::UpdateCluster(
+    NoAwaitTag, google::bigtable::admin::v2::Cluster const& request,
+    Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->UpdateCluster(NoAwaitTag{}, request);
+}
+
+future<StatusOr<google::bigtable::admin::v2::Cluster>>
+BigtableInstanceAdminClient::UpdateCluster(
+    google::longrunning::Operation const& operation, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->UpdateCluster(operation);
+}
+
 future<StatusOr<google::bigtable::admin::v2::Cluster>>
 BigtableInstanceAdminClient::PartialUpdateCluster(
     google::bigtable::admin::v2::Cluster const& cluster,
@@ -205,12 +304,39 @@ BigtableInstanceAdminClient::PartialUpdateCluster(
   return connection_->PartialUpdateCluster(request);
 }
 
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::PartialUpdateCluster(
+    NoAwaitTag, google::bigtable::admin::v2::Cluster const& cluster,
+    google::protobuf::FieldMask const& update_mask, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  google::bigtable::admin::v2::PartialUpdateClusterRequest request;
+  *request.mutable_cluster() = cluster;
+  *request.mutable_update_mask() = update_mask;
+  return connection_->PartialUpdateCluster(NoAwaitTag{}, request);
+}
+
 future<StatusOr<google::bigtable::admin::v2::Cluster>>
 BigtableInstanceAdminClient::PartialUpdateCluster(
     google::bigtable::admin::v2::PartialUpdateClusterRequest const& request,
     Options opts) {
   internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
   return connection_->PartialUpdateCluster(request);
+}
+
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::PartialUpdateCluster(
+    NoAwaitTag,
+    google::bigtable::admin::v2::PartialUpdateClusterRequest const& request,
+    Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->PartialUpdateCluster(NoAwaitTag{}, request);
+}
+
+future<StatusOr<google::bigtable::admin::v2::Cluster>>
+BigtableInstanceAdminClient::PartialUpdateCluster(
+    google::longrunning::Operation const& operation, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->PartialUpdateCluster(operation);
 }
 
 Status BigtableInstanceAdminClient::DeleteCluster(std::string const& name,
@@ -292,6 +418,17 @@ BigtableInstanceAdminClient::UpdateAppProfile(
   return connection_->UpdateAppProfile(request);
 }
 
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::UpdateAppProfile(
+    NoAwaitTag, google::bigtable::admin::v2::AppProfile const& app_profile,
+    google::protobuf::FieldMask const& update_mask, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  google::bigtable::admin::v2::UpdateAppProfileRequest request;
+  *request.mutable_app_profile() = app_profile;
+  *request.mutable_update_mask() = update_mask;
+  return connection_->UpdateAppProfile(NoAwaitTag{}, request);
+}
+
 future<StatusOr<google::bigtable::admin::v2::AppProfile>>
 BigtableInstanceAdminClient::UpdateAppProfile(
     google::bigtable::admin::v2::UpdateAppProfileRequest const& request,
@@ -300,12 +437,20 @@ BigtableInstanceAdminClient::UpdateAppProfile(
   return connection_->UpdateAppProfile(request);
 }
 
-Status BigtableInstanceAdminClient::DeleteAppProfile(std::string const& name,
-                                                     Options opts) {
+StatusOr<google::longrunning::Operation>
+BigtableInstanceAdminClient::UpdateAppProfile(
+    NoAwaitTag,
+    google::bigtable::admin::v2::UpdateAppProfileRequest const& request,
+    Options opts) {
   internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
-  google::bigtable::admin::v2::DeleteAppProfileRequest request;
-  request.set_name(name);
-  return connection_->DeleteAppProfile(request);
+  return connection_->UpdateAppProfile(NoAwaitTag{}, request);
+}
+
+future<StatusOr<google::bigtable::admin::v2::AppProfile>>
+BigtableInstanceAdminClient::UpdateAppProfile(
+    google::longrunning::Operation const& operation, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->UpdateAppProfile(operation);
 }
 
 Status BigtableInstanceAdminClient::DeleteAppProfile(
@@ -349,8 +494,10 @@ StatusOr<google::iam::v1::Policy> BigtableInstanceAdminClient::SetIamPolicy(
   google::iam::v1::SetIamPolicyRequest set_request;
   set_request.set_resource(resource);
   auto backoff_policy = internal::CurrentOptions()
-                            .get<BigtableInstanceAdminBackoffPolicyOption>()
-                            ->clone();
+                            .get<BigtableInstanceAdminBackoffPolicyOption>();
+  if (backoff_policy != nullptr) {
+    backoff_policy = backoff_policy->clone();
+  }
   for (;;) {
     auto recent = connection_->GetIamPolicy(get_request);
     if (!recent) {
@@ -358,11 +505,14 @@ StatusOr<google::iam::v1::Policy> BigtableInstanceAdminClient::SetIamPolicy(
     }
     auto policy = updater(*std::move(recent));
     if (!policy) {
-      return Status(StatusCode::kCancelled, "updater did not yield a policy");
+      return internal::CancelledError(
+          "updater did not yield a policy",
+          GCP_ERROR_INFO().WithMetadata("gl-cpp.error.origin", "client"));
     }
     *set_request.mutable_policy() = *std::move(policy);
     auto result = connection_->SetIamPolicy(set_request);
-    if (result || result.status().code() != StatusCode::kAborted) {
+    if (result || result.status().code() != StatusCode::kAborted ||
+        backoff_policy == nullptr) {
       return result;
     }
     std::this_thread::sleep_for(backoff_policy->OnCompletion());
@@ -391,6 +541,22 @@ BigtableInstanceAdminClient::TestIamPermissions(
     google::iam::v1::TestIamPermissionsRequest const& request, Options opts) {
   internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
   return connection_->TestIamPermissions(request);
+}
+
+StreamRange<google::bigtable::admin::v2::HotTablet>
+BigtableInstanceAdminClient::ListHotTablets(std::string const& parent,
+                                            Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  google::bigtable::admin::v2::ListHotTabletsRequest request;
+  request.set_parent(parent);
+  return connection_->ListHotTablets(request);
+}
+
+StreamRange<google::bigtable::admin::v2::HotTablet>
+BigtableInstanceAdminClient::ListHotTablets(
+    google::bigtable::admin::v2::ListHotTabletsRequest request, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->ListHotTablets(std::move(request));
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

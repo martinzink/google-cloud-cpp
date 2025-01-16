@@ -19,76 +19,20 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TASKS_CLOUD_TASKS_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TASKS_CLOUD_TASKS_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/tasks/v2/cloudtasks.grpc.pb.h>
-#include <memory>
+#include "google/cloud/tasks/v2/cloud_tasks_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace tasks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class CloudTasksConnectionIdempotencyPolicy {
- public:
-  virtual ~CloudTasksConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use tasks_v2::MakeDefaultCloudTasksConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::tasks_v2::
+    MakeDefaultCloudTasksConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<CloudTasksConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency ListQueues(
-      google::cloud::tasks::v2::ListQueuesRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetQueue(
-      google::cloud::tasks::v2::GetQueueRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency CreateQueue(
-      google::cloud::tasks::v2::CreateQueueRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency UpdateQueue(
-      google::cloud::tasks::v2::UpdateQueueRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteQueue(
-      google::cloud::tasks::v2::DeleteQueueRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency PurgeQueue(
-      google::cloud::tasks::v2::PurgeQueueRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency PauseQueue(
-      google::cloud::tasks::v2::PauseQueueRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ResumeQueue(
-      google::cloud::tasks::v2::ResumeQueueRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency TestIamPermissions(
-      google::iam::v1::TestIamPermissionsRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ListTasks(
-      google::cloud::tasks::v2::ListTasksRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetTask(
-      google::cloud::tasks::v2::GetTaskRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency CreateTask(
-      google::cloud::tasks::v2::CreateTaskRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteTask(
-      google::cloud::tasks::v2::DeleteTaskRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency RunTask(
-      google::cloud::tasks::v2::RunTaskRequest const& request) = 0;
-};
-
-std::unique_ptr<CloudTasksConnectionIdempotencyPolicy>
-MakeDefaultCloudTasksConnectionIdempotencyPolicy();
+/// @deprecated Use tasks_v2::CloudTasksConnectionIdempotencyPolicy directly.
+using ::google::cloud::tasks_v2::CloudTasksConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace tasks

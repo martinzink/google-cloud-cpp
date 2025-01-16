@@ -20,8 +20,16 @@
 #include "google/cloud/storage/object_metadata.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include <algorithm>
 #include <cinttypes>
+#include <iomanip>
+#include <map>
+#include <memory>
+#include <set>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -111,9 +119,7 @@ std::ostream& operator<<(std::ostream& os, ListObjectsRequest const& r) {
 StatusOr<ListObjectsResponse> ListObjectsResponse::FromHttpResponse(
     std::string const& payload) {
   auto json = nlohmann::json::parse(payload, nullptr, false);
-  if (!json.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
+  if (!json.is_object()) return ExpectedJsonObject(payload, GCP_ERROR_INFO());
 
   ListObjectsResponse result;
   result.next_page_token = json.value("nextPageToken", "");
@@ -129,13 +135,19 @@ StatusOr<ListObjectsResponse> ListObjectsResponse::FromHttpResponse(
   for (auto const& prefix_iterator : json["prefixes"].items()) {
     auto const& prefix = prefix_iterator.value();
     if (!prefix.is_string()) {
-      return Status(StatusCode::kInternal,
-                    "List Objects Response's 'prefix' is not a string.");
+      return google::cloud::internal::InternalError(
+          "List Objects Response's 'prefix' is not a string.",
+          GCP_ERROR_INFO());
     }
     result.prefixes.emplace_back(prefix.get<std::string>());
   }
 
   return result;
+}
+
+StatusOr<ListObjectsResponse> ListObjectsResponse::FromHttpResponse(
+    HttpResponse const& response) {
+  return FromHttpResponse(response.payload);
 }
 
 std::ostream& operator<<(std::ostream& os, ListObjectsResponse const& r) {
@@ -156,18 +168,53 @@ std::ostream& operator<<(std::ostream& os, GetObjectMetadataRequest const& r) {
   return os << "}";
 }
 
+InsertObjectMediaRequest::InsertObjectMediaRequest() { reset_hash_function(); }
+
+InsertObjectMediaRequest::InsertObjectMediaRequest(std::string bucket_name,
+                                                   std::string object_name,
+                                                   absl::string_view payload)
+    : InsertObjectRequestImpl<InsertObjectMediaRequest>(std::move(bucket_name),
+                                                        std::move(object_name)),
+      payload_(payload) {
+  reset_hash_function();
+}
+
+void InsertObjectMediaRequest::reset_hash_function() {
+  hash_function_ = CreateHashFunction(
+      GetOption<Crc32cChecksumValue>(), GetOption<DisableCrc32cChecksum>(),
+      GetOption<MD5HashValue>(), GetOption<DisableMD5Hash>());
+}
+
+void InsertObjectMediaRequest::set_payload(absl::string_view payload) {
+  payload_ = payload;
+  dirty_ = true;
+}
+
+std::string const& InsertObjectMediaRequest::contents() const {
+  if (!dirty_) return contents_;
+  contents_ = std::string{payload_};
+  dirty_ = false;
+  return contents_;
+}
+
+void InsertObjectMediaRequest::set_contents(std::string v) {
+  contents_ = std::move(v);
+  payload_ = contents_;
+  dirty_ = false;
+}
+
+HashValues FinishHashes(InsertObjectMediaRequest const& request) {
+  return request.hash_function().Finish();
+}
+
 std::ostream& operator<<(std::ostream& os, InsertObjectMediaRequest const& r) {
   os << "InsertObjectMediaRequest={bucket_name=" << r.bucket_name()
      << ", object_name=" << r.object_name();
   r.DumpOptions(os, ", ");
-  std::size_t constexpr kMaxDumpSize = 1024;
-  if (r.contents().size() > kMaxDumpSize) {
-    os << ", contents[0..1024]=\n"
-       << BinaryDataAsDebugString(r.contents().data(), kMaxDumpSize);
-  } else {
-    os << ", contents=\n"
-       << BinaryDataAsDebugString(r.contents().data(), r.contents().size());
-  }
+  std::size_t constexpr kMaxDumpSize = 128;
+  auto const payload = r.payload();
+  os << ", contents="
+     << BinaryDataAsDebugString(payload.data(), payload.size(), kMaxDumpSize);
   return os << "}";
 }
 
@@ -194,30 +241,36 @@ bool ReadObjectRangeRequest::RequiresRangeHeader() const {
   return RequiresNoCache();
 }
 
-std::string ReadObjectRangeRequest::RangeHeader() const {
+std::string ReadObjectRangeRequest::RangeHeaderValue() const {
   if (HasOption<ReadRange>() && HasOption<ReadFromOffset>()) {
     auto range = GetOption<ReadRange>().value();
     auto offset = GetOption<ReadFromOffset>().value();
     auto begin = (std::max)(range.begin, offset);
-    return "Range: bytes=" + std::to_string(begin) + "-" +
+    return "bytes=" + std::to_string(begin) + "-" +
            std::to_string(range.end - 1);
   }
   if (HasOption<ReadRange>()) {
     auto range = GetOption<ReadRange>().value();
-    return "Range: bytes=" + std::to_string(range.begin) + "-" +
+    return "bytes=" + std::to_string(range.begin) + "-" +
            std::to_string(range.end - 1);
   }
   if (HasOption<ReadFromOffset>()) {
     auto offset = GetOption<ReadFromOffset>().value();
     if (offset != 0) {
-      return "Range: bytes=" + std::to_string(offset) + "-";
+      return "bytes=" + std::to_string(offset) + "-";
     }
   }
   if (HasOption<ReadLast>()) {
     auto last = GetOption<ReadLast>().value();
-    return "Range: bytes=-" + std::to_string(last);
+    return "bytes=-" + std::to_string(last);
   }
   return "";
+}
+
+std::string ReadObjectRangeRequest::RangeHeader() const {
+  auto value = RangeHeaderValue();
+  if (value.empty()) return "";
+  return "Range: " + value;
 }
 
 std::int64_t ReadObjectRangeRequest::StartingByte() const {
@@ -329,12 +382,26 @@ std::ostream& operator<<(std::ostream& os, RewriteObjectRequest const& r) {
   return os << "}";
 }
 
+std::ostream& operator<<(std::ostream& os, MoveObjectRequest const& r) {
+  os << "MoveObjectRequest={bucket_name=" << r.bucket_name()
+     << ", source_object_name=" << r.source_object_name()
+     << ", destination_object_name=" << r.destination_object_name();
+  r.DumpOptions(os, ", ");
+  return os << "}";
+}
+
+std::ostream& operator<<(std::ostream& os, RestoreObjectRequest const& r) {
+  os << "RestoreObjectRequest={bucket_name=" << r.bucket_name()
+     << ", object_name=" << r.object_name()
+     << ", generation=" << r.generation();
+  r.DumpOptions(os, ", ");
+  return os << "}";
+}
+
 StatusOr<RewriteObjectResponse> RewriteObjectResponse::FromHttpResponse(
     std::string const& payload) {
   auto object = nlohmann::json::parse(payload, nullptr, false);
-  if (!object.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
+  if (!object.is_object()) return ExpectedJsonObject(payload, GCP_ERROR_INFO());
 
   RewriteObjectResponse result;
   auto v = ParseUnsignedLongField(object, "totalBytesRewritten");
@@ -351,6 +418,11 @@ StatusOr<RewriteObjectResponse> RewriteObjectResponse::FromHttpResponse(
     result.resource = std::move(*parsed);
   }
   return result;
+}
+
+StatusOr<RewriteObjectResponse> RewriteObjectResponse::FromHttpResponse(
+    HttpResponse const& response) {
+  return FromHttpResponse(response.payload);
 }
 
 std::ostream& operator<<(std::ostream& os, RewriteObjectResponse const& r) {
@@ -376,9 +448,49 @@ std::ostream& operator<<(std::ostream& os,
   return os << "}";
 }
 
-std::string UploadChunkRequest::RangeHeader() const {
+StatusOr<CreateResumableUploadResponse>
+CreateResumableUploadResponse::FromHttpResponse(HttpResponse response) {
+  if (response.headers.find("location") == response.headers.end()) {
+    return google::cloud::internal::InternalError("Missing location header",
+                                                  GCP_ERROR_INFO());
+  }
+  return CreateResumableUploadResponse{
+      response.headers.find("location")->second};
+}
+
+bool operator==(CreateResumableUploadResponse const& lhs,
+                CreateResumableUploadResponse const& rhs) {
+  return lhs.upload_id == rhs.upload_id;
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         CreateResumableUploadResponse const& r) {
+  return os << "CreateResumableUploadResponse={upload_id=" << r.upload_id
+            << "}";
+}
+
+UploadChunkRequest::UploadChunkRequest(
+    std::string upload_session_url, std::uint64_t offset,
+    ConstBufferSequence payload, std::shared_ptr<HashFunction> hash_function)
+    : upload_session_url_(std::move(upload_session_url)),
+      offset_(offset),
+      payload_(std::move(payload)),
+      hash_function_(std::move(hash_function)) {}
+
+UploadChunkRequest::UploadChunkRequest(
+    std::string upload_session_url, std::uint64_t offset,
+    ConstBufferSequence payload, std::shared_ptr<HashFunction> hash_function,
+    HashValues known_hashes)
+    : upload_session_url_(std::move(upload_session_url)),
+      offset_(offset),
+      upload_size_(offset + TotalBytes(payload)),
+      payload_(std::move(payload)),
+      hash_function_(std::move(hash_function)),
+      known_object_hashes_(std::move(known_hashes)) {}
+
+std::string UploadChunkRequest::RangeHeaderValue() const {
   std::ostringstream os;
-  os << "Content-Range: bytes ";
+  os << "bytes ";
   auto const size = payload_size();
   if (size == 0) {
     // This typically happens when the sender realizes too late that the
@@ -388,19 +500,46 @@ std::string UploadChunkRequest::RangeHeader() const {
     // the range is special in this case.
     os << "*";
   } else {
-    os << range_begin() << "-" << range_begin() + size - 1;
+    os << offset() << "-" << offset() + size - 1;
   }
-  if (!last_chunk_) {
+  if (!upload_size().has_value()) {
     os << "/*";
   } else {
-    os << "/" << source_size();
+    os << "/" << *upload_size();
   }
   return std::move(os).str();
 }
 
+std::string UploadChunkRequest::RangeHeader() const {
+  return "Content-Range: " + RangeHeaderValue();
+}
+
+UploadChunkRequest UploadChunkRequest::RemainingChunk(
+    std::uint64_t new_offset) const {
+  UploadChunkRequest result = *this;
+  if (new_offset < offset_ || new_offset >= offset_ + payload_size()) {
+    result.offset_ = new_offset;
+    result.payload_.clear();
+    return result;
+  }
+  // No chunk can be larger than what fits in memory, and because `new_offset`
+  // is in `[offset_, offset_ + payload_size())`, this static_cast<> is safe:
+  PopFrontBytes(result.payload_,
+                static_cast<std::size_t>(new_offset - result.offset_));
+  result.offset_ = new_offset;
+  return result;
+}
+
+HashValues FinishHashes(UploadChunkRequest const& request) {
+  // Prefer the hashes provided via *Value options in the request. If those
+  // are not set, use the computed hashes from the data.
+  return Merge(request.known_object_hashes(), request.hash_function().Finish());
+}
+
 std::ostream& operator<<(std::ostream& os, UploadChunkRequest const& r) {
   os << "UploadChunkRequest={upload_session_url=" << r.upload_session_url()
-     << ", range=<" << r.RangeHeader() << ">";
+     << ", range=<" << r.RangeHeader() << ">"
+     << ", known_object_hashes={" << Format(r.known_object_hashes()) << "}";
   r.DumpOptions(os, ", ");
   os << ", payload={";
   auto constexpr kMaxOutputBytes = 128;
@@ -418,6 +557,76 @@ std::ostream& operator<<(std::ostream& os,
   os << "QueryResumableUploadRequest={upload_session_url="
      << r.upload_session_url();
   r.DumpOptions(os, ", ");
+  return os << "}";
+}
+
+StatusOr<std::uint64_t> ParseRangeHeader(std::string const& range) {
+  // We expect a `Range:` header in the format described here:
+  //    https://cloud.google.com/storage/docs/json_api/v1/how-tos/resumable-upload
+  // that is the value should match `bytes=0-[0-9]+`:
+  char const prefix[] = "bytes=0-";
+  auto constexpr kPrefixLen = sizeof(prefix) - 1;
+  if (!absl::StartsWith(range, prefix)) {
+    return google::cloud::internal::InternalError(
+        "cannot parse Range header in resumable upload response, value=" +
+            range,
+        GCP_ERROR_INFO());
+  }
+  char const* buffer = range.data() + kPrefixLen;
+  char* endptr;
+  auto constexpr kBytesBase = 10;
+  auto last = std::strtoll(buffer, &endptr, kBytesBase);
+  if (buffer != endptr && *endptr == '\0' && 0 <= last) {
+    return last;
+  }
+  return google::cloud::internal::InternalError(
+      "cannot parse Range header in resumable uload response, value=" + range,
+      GCP_ERROR_INFO());
+}
+
+StatusOr<QueryResumableUploadResponse>
+QueryResumableUploadResponse::FromHttpResponse(HttpResponse response) {
+  QueryResumableUploadResponse result;
+  result.request_metadata = std::move(response.headers);
+  auto done = response.status_code == HttpStatusCode::kOk ||
+              response.status_code == HttpStatusCode::kCreated;
+
+  // For the JSON API, the payload contains the object resource when the upload
+  // is finished. In that case, we try to parse it.
+  if (done && !response.payload.empty()) {
+    auto contents = ObjectMetadataParser::FromString(response.payload);
+    if (!contents) return std::move(contents).status();
+    result.payload = *std::move(contents);
+  }
+  auto r = result.request_metadata.find("range");
+  if (r == result.request_metadata.end()) return result;
+
+  auto last_committed_byte = ParseRangeHeader(r->second);
+  if (!last_committed_byte) return std::move(last_committed_byte).status();
+  result.committed_size = *last_committed_byte + 1;
+
+  return result;
+}
+
+bool operator==(QueryResumableUploadResponse const& lhs,
+                QueryResumableUploadResponse const& rhs) {
+  return lhs.committed_size == rhs.committed_size && lhs.payload == rhs.payload;
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         QueryResumableUploadResponse const& r) {
+  os << "UploadChunkResponse={committed_size=";
+  if (r.committed_size.has_value()) {
+    os << *r.committed_size;
+  } else {
+    os << "{}";
+  }
+  os << ", payload=";
+  if (r.payload.has_value()) {
+    os << *r.payload;
+  } else {
+    os << "{}";
+  }
   return os << "}";
 }
 

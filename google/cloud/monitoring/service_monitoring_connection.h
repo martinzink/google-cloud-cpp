@@ -19,96 +19,37 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_SERVICE_MONITORING_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_SERVICE_MONITORING_CONNECTION_H
 
-#include "google/cloud/monitoring/internal/service_monitoring_retry_traits.h"
-#include "google/cloud/monitoring/internal/service_monitoring_stub.h"
 #include "google/cloud/monitoring/service_monitoring_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/service_monitoring_connection.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ServiceMonitoringServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        monitoring_internal::ServiceMonitoringServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MakeServiceMonitoringServiceConnection
+/// directly.
+using ::google::cloud::monitoring_v3::MakeServiceMonitoringServiceConnection;
 
-using ServiceMonitoringServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        monitoring_internal::ServiceMonitoringServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::ServiceMonitoringServiceConnection directly.
+using ::google::cloud::monitoring_v3::ServiceMonitoringServiceConnection;
 
-using ServiceMonitoringServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        monitoring_internal::ServiceMonitoringServiceRetryTraits>;
+/// @deprecated Use
+/// monitoring_v3::ServiceMonitoringServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_v3::
+    ServiceMonitoringServiceLimitedErrorCountRetryPolicy;
 
-class ServiceMonitoringServiceConnection {
- public:
-  virtual ~ServiceMonitoringServiceConnection() = 0;
+/// @deprecated Use
+/// monitoring_v3::ServiceMonitoringServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::monitoring_v3::
+    ServiceMonitoringServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::monitoring::v3::Service> CreateService(
-      google::monitoring::v3::CreateServiceRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::Service> GetService(
-      google::monitoring::v3::GetServiceRequest const& request);
-
-  virtual StreamRange<google::monitoring::v3::Service> ListServices(
-      google::monitoring::v3::ListServicesRequest request);
-
-  virtual StatusOr<google::monitoring::v3::Service> UpdateService(
-      google::monitoring::v3::UpdateServiceRequest const& request);
-
-  virtual Status DeleteService(
-      google::monitoring::v3::DeleteServiceRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::ServiceLevelObjective>
-  CreateServiceLevelObjective(
-      google::monitoring::v3::CreateServiceLevelObjectiveRequest const&
-          request);
-
-  virtual StatusOr<google::monitoring::v3::ServiceLevelObjective>
-  GetServiceLevelObjective(
-      google::monitoring::v3::GetServiceLevelObjectiveRequest const& request);
-
-  virtual StreamRange<google::monitoring::v3::ServiceLevelObjective>
-  ListServiceLevelObjectives(
-      google::monitoring::v3::ListServiceLevelObjectivesRequest request);
-
-  virtual StatusOr<google::monitoring::v3::ServiceLevelObjective>
-  UpdateServiceLevelObjective(
-      google::monitoring::v3::UpdateServiceLevelObjectiveRequest const&
-          request);
-
-  virtual Status DeleteServiceLevelObjective(
-      google::monitoring::v3::DeleteServiceLevelObjectiveRequest const&
-          request);
-};
-
-std::shared_ptr<ServiceMonitoringServiceConnection>
-MakeServiceMonitoringServiceConnection(Options options = {});
+/// @deprecated Use monitoring_v3::ServiceMonitoringServiceRetryPolicy directly.
+using ::google::cloud::monitoring_v3::ServiceMonitoringServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace monitoring_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<monitoring::ServiceMonitoringServiceConnection>
-MakeServiceMonitoringServiceConnection(
-    std::shared_ptr<ServiceMonitoringServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace monitoring_internal
 }  // namespace cloud
 }  // namespace google
 

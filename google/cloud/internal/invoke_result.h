@@ -15,6 +15,7 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_INVOKE_RESULT_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_INVOKE_RESULT_H
 
+#include "google/cloud/internal/type_traits.h"
 #include "google/cloud/version.h"
 #include <type_traits>
 
@@ -22,20 +23,6 @@ namespace google {
 namespace cloud {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
-/**
- * A helper to detect if expressions are valid and use SFINAE.
- *
- * This class will be introduced in C++17, it makes it easier to write SFINAE
- * expressions, basically you use `void_t< some expression here >` in the SFINAE
- * branch that is trying to test if `some expression here` is valid. If the
- * expression is valid it expands to `void` and your branch continues, if it is
- * invalid it fails and the default SFINAE branch is used.
- *
- * @see https://en.cppreference.com/w/cpp/types/void_t for more details about
- *   this class.
- */
-template <typename...>
-using void_t = void;
 
 /**
  * A helper class to determine the result type of a function-like object.
@@ -106,7 +93,7 @@ struct invoke_impl<MT B::*> {
    * @return the result of `(t.*f)(a...)`.
    */
   template <class T, class... Args,
-            typename std::enable_if<std::is_function<MT>::value, int>::type = 0>
+            std::enable_if_t<std::is_function<MT>::value, int> = 0>
   static auto call(MT B::*f, T&& t, Args&&... a)
       -> decltype((std::forward<T>(t).*f)(std::forward<Args>(a)...));
 };
@@ -132,7 +119,7 @@ struct invoke_impl<MT B::*> {
  * @see https://en.cppreference.com/w/cpp/types/decay for a discussion of
  *     decaying function types.
  */
-template <class F, class... ArgTypes, class Fd = typename std::decay<F>::type>
+template <class F, class... ArgTypes, class Fd = std::decay_t<F>>
 auto invoker_function(F&& f, ArgTypes&&... a)
     -> decltype(invoke_impl<Fd>::call(std::forward<F>(f),
                                       std::forward<ArgTypes>(a)...));

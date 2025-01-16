@@ -21,34 +21,26 @@
 
 #include "google/cloud/composer/image_versions_connection.h"
 #include "google/cloud/composer/image_versions_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/composer/v1/image_versions_options.h"
 
 namespace google {
 namespace cloud {
 namespace composer {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ImageVersionsRetryPolicyOption {
-  using Type = std::shared_ptr<ImageVersionsRetryPolicy>;
-};
+/// @deprecated Use composer_v1::ImageVersionsBackoffPolicyOption directly.
+using ::google::cloud::composer_v1::ImageVersionsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ImageVersionsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use composer_v1::ImageVersionsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::composer_v1::
+    ImageVersionsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ImageVersionsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ImageVersionsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use composer_v1::ImageVersionsPolicyOptionList directly.
+using ::google::cloud::composer_v1::ImageVersionsPolicyOptionList;
 
-using ImageVersionsPolicyOptionList =
-    OptionList<ImageVersionsRetryPolicyOption, ImageVersionsBackoffPolicyOption,
-               ImageVersionsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use composer_v1::ImageVersionsRetryPolicyOption directly.
+using ::google::cloud::composer_v1::ImageVersionsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace composer

@@ -21,35 +21,32 @@
 
 #include "google/cloud/servicedirectory/registration_connection.h"
 #include "google/cloud/servicedirectory/registration_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/servicedirectory/v1/registration_options.h"
 
 namespace google {
 namespace cloud {
 namespace servicedirectory {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct RegistrationServiceRetryPolicyOption {
-  using Type = std::shared_ptr<RegistrationServiceRetryPolicy>;
-};
+/// @deprecated Use servicedirectory_v1::RegistrationServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::servicedirectory_v1::
+    RegistrationServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct RegistrationServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// servicedirectory_v1::RegistrationServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::servicedirectory_v1::
+    RegistrationServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct RegistrationServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<RegistrationServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use servicedirectory_v1::RegistrationServicePolicyOptionList
+/// directly.
+using ::google::cloud::servicedirectory_v1::RegistrationServicePolicyOptionList;
 
-using RegistrationServicePolicyOptionList =
-    OptionList<RegistrationServiceRetryPolicyOption,
-               RegistrationServiceBackoffPolicyOption,
-               RegistrationServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use servicedirectory_v1::RegistrationServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::servicedirectory_v1::
+    RegistrationServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicedirectory

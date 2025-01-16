@@ -13,21 +13,19 @@
 // limitations under the License.
 
 #include "google/cloud/bigtable/instance_admin.h"
+#include "google/cloud/bigtable/testing/random_names.h"
 #include "google/cloud/internal/algorithm.h"
 #include "google/cloud/internal/background_threads_impl.h"
 #include "google/cloud/internal/getenv.h"
 #include "google/cloud/internal/random.h"
+#include "google/cloud/location.h"
 #include "google/cloud/status_or.h"
-#include "google/cloud/testing_util/contains_once.h"
 #include "google/cloud/testing_util/integration_test.h"
 #include "google/cloud/testing_util/scoped_environment.h"
 #include "google/cloud/testing_util/scoped_log.h"
 #include "google/cloud/testing_util/status_matchers.h"
-#include "absl/memory/memory.h"
 #include <google/protobuf/text_format.h>
 #include <gmock/gmock.h>
-// TODO(#5929) - remove once deprecated functions are removed
-#include "google/cloud/internal/disable_deprecation_warnings.inc"
 
 namespace google {
 namespace cloud {
@@ -35,8 +33,9 @@ namespace bigtable {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
+using ::google::cloud::bigtable::testing::RandomInstanceId;
 using ::google::cloud::internal::GetEnv;
-using ::google::cloud::testing_util::ContainsOnce;
+using ::testing::AnyOf;
 using ::testing::Contains;
 using ::testing::HasSubstr;
 using ::testing::Not;
@@ -66,7 +65,7 @@ class InstanceAdminIntegrationTest
 
     auto instance_admin_client = bigtable::MakeInstanceAdminClient(project_id_);
     instance_admin_ =
-        absl::make_unique<bigtable::InstanceAdmin>(instance_admin_client);
+        std::make_unique<bigtable::InstanceAdmin>(instance_admin_client);
   }
 
   std::string project_id_;
@@ -111,12 +110,8 @@ bigtable::InstanceConfig IntegrationTestConfig(
 
 /// @test Verify that default InstanceAdmin::ListClusters works as expected.
 TEST_F(InstanceAdminIntegrationTest, ListAllClustersTest) {
-  auto const id_1 =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
-  auto const id_2 =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
+  auto const id_1 = RandomInstanceId(generator_);
+  auto const id_2 = RandomInstanceId(generator_);
   auto const name_1 = bigtable::InstanceName(project_id_, id_1);
   auto const name_2 = bigtable::InstanceName(project_id_, id_2);
 
@@ -131,8 +126,8 @@ TEST_F(InstanceAdminIntegrationTest, ListAllClustersTest) {
   // Wait for instance creation
   auto instance_1 = instance_1_fut.get();
   auto instance_2 = instance_2_fut.get();
-  EXPECT_STATUS_OK(instance_1);
-  EXPECT_STATUS_OK(instance_2);
+  ASSERT_STATUS_OK(instance_1);
+  ASSERT_STATUS_OK(instance_2);
 
   EXPECT_EQ(instance_1->name(), name_1);
   EXPECT_EQ(instance_2->name(), name_2);
@@ -151,9 +146,7 @@ TEST_F(InstanceAdminIntegrationTest, ListAllClustersTest) {
 
 /// @test Verify that AppProfile CRUD operations work as expected.
 TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteAppProfile) {
-  auto const instance_id =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
+  auto const instance_id = RandomInstanceId(generator_);
   auto const instance_name = bigtable::InstanceName(project_id_, instance_id);
 
   auto config = IntegrationTestConfig(instance_id, zone_a_,
@@ -198,8 +191,8 @@ TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteAppProfile) {
 
   profiles = instance_admin_->ListAppProfiles(instance_id);
   ASSERT_STATUS_OK(profiles);
-  EXPECT_THAT(profile_names(*profiles), ContainsOnce(name_1));
-  EXPECT_THAT(profile_names(*profiles), ContainsOnce(name_2));
+  EXPECT_THAT(profile_names(*profiles), Contains(name_1).Times(1));
+  EXPECT_THAT(profile_names(*profiles), Contains(name_2).Times(1));
 
   profile_1 = instance_admin_->GetAppProfile(instance_id, id_1);
   ASSERT_STATUS_OK(profile_1);
@@ -226,7 +219,7 @@ TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteAppProfile) {
   profiles = instance_admin_->ListAppProfiles(instance_id);
   ASSERT_STATUS_OK(profiles);
   EXPECT_THAT(profile_names(*profiles), Not(Contains(name_1)));
-  EXPECT_THAT(profile_names(*profiles), ContainsOnce(name_2));
+  EXPECT_THAT(profile_names(*profiles), Contains(name_2).Times(1));
 
   ASSERT_STATUS_OK(instance_admin_->DeleteAppProfile(instance_id, id_2, true));
   profiles = instance_admin_->ListAppProfiles(instance_id);
@@ -239,9 +232,7 @@ TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteAppProfile) {
 
 /// @test Verify that Instance CRUD operations work as expected.
 TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteInstanceTest) {
-  auto const instance_id =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
+  auto const instance_id = RandomInstanceId(generator_);
   auto const instance_name = bigtable::InstanceName(project_id_, instance_id);
 
   // Create instance
@@ -249,10 +240,17 @@ TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteInstanceTest) {
   auto instance = instance_admin_->CreateInstance(config).get();
   ASSERT_STATUS_OK(instance);
 
+  auto const zone_a = Location(instance_admin_->project_name(), zone_a_);
+  auto const zone_b = Location(instance_admin_->project_name(), zone_b_);
+
   // List instances
   auto instances = instance_admin_->ListInstances();
   ASSERT_STATUS_OK(instances);
-  ASSERT_TRUE(instances->failed_locations.empty());
+  // If either zone_a_ or zone_b_ are in the list of failed locations then we
+  // cannot proceed.
+  ASSERT_THAT(
+      instances->failed_locations,
+      Not(AnyOf(Contains(zone_a.FullName()), Contains(zone_b.FullName()))));
   EXPECT_TRUE(IsInstancePresent(instances->instances, instance->name()));
 
   // Get instance
@@ -262,7 +260,7 @@ TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteInstanceTest) {
 
   // Update instance
   bigtable::InstanceUpdateConfig instance_update_config(std::move(*instance));
-  auto const updated_display_name = instance_id + " updated";
+  auto const updated_display_name = instance_id.substr(0, 22) + " updated";
   instance_update_config.set_display_name(updated_display_name);
   instance =
       instance_admin_->UpdateInstance(std::move(instance_update_config)).get();
@@ -279,15 +277,17 @@ TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteInstanceTest) {
   // Verify delete
   instances = instance_admin_->ListInstances();
   ASSERT_STATUS_OK(instances);
-  ASSERT_TRUE(instances->failed_locations.empty());
+  // If either zone_a_ or zone_b_ are in the list of failed locations then we
+  // cannot proceed.
+  ASSERT_THAT(
+      instances->failed_locations,
+      Not(AnyOf(Contains(zone_a.FullName()), Contains(zone_b.FullName()))));
   EXPECT_FALSE(IsInstancePresent(instances->instances, instance_name));
 }
 
 /// @test Verify that cluster CRUD operations work as expected.
 TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteClusterTest) {
-  auto const instance_id =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
+  auto const instance_id = RandomInstanceId(generator_);
   auto const cluster_id = instance_id + "-cl2";
   auto const cluster_name =
       bigtable::ClusterName(project_id_, instance_id, cluster_id);
@@ -342,43 +342,9 @@ TEST_F(InstanceAdminIntegrationTest, CreateListGetDeleteClusterTest) {
   ASSERT_STATUS_OK(instance_admin_->DeleteInstance(instance_id));
 }
 
-/// @test Verify that IAM Policy APIs work as expected.
-TEST_F(InstanceAdminIntegrationTest, SetGetTestIamAPIsTest) {
-  auto const instance_id =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
-
-  // Create instance prerequisites for cluster operations
-  auto config = IntegrationTestConfig(instance_id, zone_a_,
-                                      bigtable::InstanceConfig::PRODUCTION, 3);
-  ASSERT_STATUS_OK(instance_admin_->CreateInstance(config).get());
-
-  auto iam_bindings = google::cloud::IamBindings(
-      "roles/bigtable.reader", {"serviceAccount:" + service_account_});
-
-  auto initial_policy =
-      instance_admin_->SetIamPolicy(instance_id, iam_bindings);
-  ASSERT_STATUS_OK(initial_policy);
-
-  auto fetched_policy = instance_admin_->GetIamPolicy(instance_id);
-  ASSERT_STATUS_OK(fetched_policy);
-
-  EXPECT_EQ(initial_policy->version, fetched_policy->version);
-  EXPECT_EQ(initial_policy->etag, fetched_policy->etag);
-
-  auto permission_set = instance_admin_->TestIamPermissions(
-      instance_id, {"bigtable.tables.list", "bigtable.tables.delete"});
-  ASSERT_STATUS_OK(permission_set);
-
-  EXPECT_EQ(2, permission_set->size());
-  EXPECT_STATUS_OK(instance_admin_->DeleteInstance(instance_id));
-}
-
 /// @test Verify that IAM Policy Native APIs work as expected.
 TEST_F(InstanceAdminIntegrationTest, SetGetTestIamNativeAPIsTest) {
-  auto const instance_id =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
+  auto const instance_id = RandomInstanceId(generator_);
 
   // create instance prerequisites for cluster operations
   auto config = IntegrationTestConfig(instance_id, zone_a_,
@@ -414,15 +380,16 @@ TEST_F(InstanceAdminIntegrationTest,
   testing_util::ScopedEnvironment env = {"GOOGLE_CLOUD_CPP_ENABLE_TRACING",
                                          absl::nullopt};
   testing_util::ScopedLog log;
-  auto const instance_id =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
+  auto const instance_id = RandomInstanceId(generator_);
   auto const instance_name = bigtable::InstanceName(project_id_, instance_id);
 
   auto instance_admin_client = bigtable::MakeInstanceAdminClient(
-      project_id_, Options{}.set<TracingComponentsOption>({"rpc"}));
+      project_id_, Options{}.set<LoggingComponentsOption>({"rpc"}));
   auto instance_admin =
-      absl::make_unique<bigtable::InstanceAdmin>(instance_admin_client);
+      std::make_unique<bigtable::InstanceAdmin>(instance_admin_client);
+
+  auto const zone_a = Location(instance_admin_->project_name(), zone_a_);
+  auto const zone_b = Location(instance_admin_->project_name(), zone_b_);
 
   // Create instance
   auto config = IntegrationTestConfig(instance_id, zone_a_);
@@ -432,7 +399,11 @@ TEST_F(InstanceAdminIntegrationTest,
   // Verify create
   auto instances = instance_admin->ListInstances();
   ASSERT_STATUS_OK(instances);
-  ASSERT_TRUE(instances->failed_locations.empty());
+  // If either zone_a_ or zone_b_ are in the list of failed locations then we
+  // cannot proceed.
+  ASSERT_THAT(
+      instances->failed_locations,
+      Not(AnyOf(Contains(zone_a.FullName()), Contains(zone_b.FullName()))));
   EXPECT_TRUE(IsInstancePresent(instances->instances, instance->name()));
 
   // Get instance
@@ -442,7 +413,7 @@ TEST_F(InstanceAdminIntegrationTest,
 
   // Update instance
   bigtable::InstanceUpdateConfig instance_update_config(std::move(*instance));
-  auto const updated_display_name = instance_id + " updated";
+  auto const updated_display_name = instance_id.substr(0, 22) + " updated";
   instance_update_config.set_display_name(updated_display_name);
   instance =
       instance_admin->UpdateInstance(std::move(instance_update_config)).get();
@@ -459,7 +430,11 @@ TEST_F(InstanceAdminIntegrationTest,
   // Verify delete
   instances = instance_admin->ListInstances();
   ASSERT_STATUS_OK(instances);
-  ASSERT_TRUE(instances->failed_locations.empty());
+  // If either zone_a_ or zone_b_ are in the list of failed locations then we
+  // cannot proceed.
+  ASSERT_THAT(
+      instances->failed_locations,
+      Not(AnyOf(Contains(zone_a.FullName()), Contains(zone_b.FullName()))));
   EXPECT_FALSE(IsInstancePresent(instances->instances, instance_name));
 
   auto const log_lines = log.ExtractLines();
@@ -479,15 +454,11 @@ TEST_F(InstanceAdminIntegrationTest, CustomWorkers) {
   CompletionQueue cq;
   auto instance_admin_client = bigtable::MakeInstanceAdminClient(
       project_id_, Options{}.set<GrpcCompletionQueueOption>(cq));
-  instance_admin_ = absl::make_unique<bigtable::InstanceAdmin>(
-      instance_admin_client,
-      *DefaultRPCRetryPolicy({std::chrono::seconds(1), std::chrono::seconds(1),
-                              std::chrono::seconds(1)}));
+  instance_admin_ =
+      std::make_unique<bigtable::InstanceAdmin>(instance_admin_client);
 
   // CompletionQueue `cq` is not being `Run()`, so this should never finish.
-  auto const instance_id =
-      "it-" + google::cloud::internal::Sample(
-                  generator_, 8, "abcdefghijklmnopqrstuvwxyz0123456789");
+  auto const instance_id = RandomInstanceId(generator_);
   auto instance_fut = instance_admin_->CreateInstance(IntegrationTestConfig(
       instance_id, zone_a_, bigtable::InstanceConfig::PRODUCTION, 3));
 

@@ -21,35 +21,31 @@
 
 #include "google/cloud/binaryauthorization/system_policy_v1_connection.h"
 #include "google/cloud/binaryauthorization/system_policy_v1_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/binaryauthorization/v1/system_policy_v1_options.h"
 
 namespace google {
 namespace cloud {
 namespace binaryauthorization {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct SystemPolicyV1RetryPolicyOption {
-  using Type = std::shared_ptr<SystemPolicyV1RetryPolicy>;
-};
+/// @deprecated Use binaryauthorization_v1::SystemPolicyV1BackoffPolicyOption
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    SystemPolicyV1BackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SystemPolicyV1BackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// binaryauthorization_v1::SystemPolicyV1ConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    SystemPolicyV1ConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SystemPolicyV1ConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<SystemPolicyV1ConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use binaryauthorization_v1::SystemPolicyV1PolicyOptionList
+/// directly.
+using ::google::cloud::binaryauthorization_v1::SystemPolicyV1PolicyOptionList;
 
-using SystemPolicyV1PolicyOptionList =
-    OptionList<SystemPolicyV1RetryPolicyOption,
-               SystemPolicyV1BackoffPolicyOption,
-               SystemPolicyV1ConnectionIdempotencyPolicyOption>;
+/// @deprecated Use binaryauthorization_v1::SystemPolicyV1RetryPolicyOption
+/// directly.
+using ::google::cloud::binaryauthorization_v1::SystemPolicyV1RetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace binaryauthorization

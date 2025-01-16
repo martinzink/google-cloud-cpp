@@ -21,40 +21,28 @@
 
 #include "google/cloud/talent/job_connection.h"
 #include "google/cloud/talent/job_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/talent/v4/job_options.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct JobServiceRetryPolicyOption {
-  using Type = std::shared_ptr<JobServiceRetryPolicy>;
-};
+/// @deprecated Use talent_v4::JobServicePollingPolicyOption directly.
+using ::google::cloud::talent_v4::JobServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct JobServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use talent_v4::JobServiceBackoffPolicyOption directly.
+using ::google::cloud::talent_v4::JobServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct JobServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use talent_v4::JobServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::talent_v4::JobServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct JobServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<JobServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use talent_v4::JobServicePolicyOptionList directly.
+using ::google::cloud::talent_v4::JobServicePolicyOptionList;
 
-using JobServicePolicyOptionList =
-    OptionList<JobServiceRetryPolicyOption, JobServiceBackoffPolicyOption,
-               JobServicePollingPolicyOption,
-               JobServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use talent_v4::JobServiceRetryPolicyOption directly.
+using ::google::cloud::talent_v4::JobServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent

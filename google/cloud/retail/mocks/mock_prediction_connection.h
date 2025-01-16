@@ -20,22 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_MOCKS_MOCK_PREDICTION_CONNECTION_H
 
 #include "google/cloud/retail/prediction_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/retail/v2/mocks/mock_prediction_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in retail_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace retail_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockPredictionServiceConnection
-    : public retail::PredictionServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::retail::v2::PredictResponse>, Predict,
-              (google::cloud::retail::v2::PredictRequest const& request),
-              (override));
-};
+/// @deprecated Use retail_v2_mocks::MockPredictionServiceConnection directly.
+using ::google::cloud::retail_v2_mocks::MockPredictionServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail_mocks

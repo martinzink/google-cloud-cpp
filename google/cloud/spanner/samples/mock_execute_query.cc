@@ -17,7 +17,7 @@
 //! [required-includes]
 #include "google/cloud/spanner/client.h"
 #include "google/cloud/spanner/mocks/mock_spanner_connection.h"
-#include "absl/memory/memory.h"
+#include "google/cloud/spanner/mocks/row.h"
 #include <google/protobuf/text_format.h>
 #include <gmock/gmock.h>
 //! [required-includes]
@@ -33,7 +33,7 @@ TEST(MockSpannerClient, SuccessfulExecuteQuery) {
   // Create a mock object to stream the results of a ExecuteQuery.
   //! [create-streaming-source]
   auto source =
-      absl::make_unique<google::cloud::spanner_mocks::MockResultSetSource>();
+      std::make_unique<google::cloud::spanner_mocks::MockResultSetSource>();
   //! [create-streaming-source]
 
   // Setup the return type of the ExecuteQuery results:
@@ -57,12 +57,12 @@ TEST(MockSpannerClient, SuccessfulExecuteQuery) {
   // Setup the mock source to return some values:
   //! [simulate-streaming-results]
   EXPECT_CALL(*source, NextRow())
-      .WillOnce(Return(
-          spanner::MakeTestRow({{"Id", spanner::Value(1)},
-                                {"Greeting", spanner::Value("Hello World")}})))
-      .WillOnce(Return(
-          spanner::MakeTestRow({{"Id", spanner::Value(2)},
-                                {"Greeting", spanner::Value("Hello World")}})))
+      .WillOnce(Return(google::cloud::spanner_mocks::MakeRow(
+          {{"Id", spanner::Value(1)},
+           {"Greeting", spanner::Value("Hello World")}})))
+      .WillOnce(Return(google::cloud::spanner_mocks::MakeRow(
+          {{"Id", spanner::Value(2)},
+           {"Greeting", spanner::Value("Hello World")}})))
       //! [simulate-streaming-results]
       //! [simulate-streaming-end]
       .WillOnce(Return(spanner::Row()));

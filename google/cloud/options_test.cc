@@ -26,6 +26,8 @@ namespace {
 using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::ContainsRegex;
+using ::testing::Optional;
+using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
 struct IntOption {
@@ -93,6 +95,26 @@ TEST(Options, Set) {
   EXPECT_TRUE(opts.has<StringOption>());
   EXPECT_EQ("", opts.get<StringOption>());
   opts.set<StringOption>("foo");
+  EXPECT_EQ("foo", opts.get<StringOption>());
+}
+
+TEST(Options, SetRefRef) {
+  auto opts = Options{}.set<IntOption>({});
+  EXPECT_TRUE(opts.has<IntOption>());
+  EXPECT_EQ(0, opts.get<IntOption>());
+  opts = std::move(opts).set<IntOption>(123);
+  EXPECT_EQ(123, opts.get<IntOption>());
+
+  opts = Options{}.set<BoolOption>({});
+  EXPECT_TRUE(opts.has<BoolOption>());
+  EXPECT_EQ(false, opts.get<BoolOption>());
+  opts = std::move(opts).set<BoolOption>(true);
+  EXPECT_EQ(true, opts.get<BoolOption>());
+
+  opts = Options{}.set<StringOption>({});
+  EXPECT_TRUE(opts.has<StringOption>());
+  EXPECT_EQ("", opts.get<StringOption>());
+  opts = std::move(opts).set<StringOption>("foo");
   EXPECT_EQ("foo", opts.get<StringOption>());
 }
 
@@ -251,6 +273,16 @@ TEST(CheckUnexpectedOptions, OptionsListOneUnexpected) {
               Contains(ContainsRegex("caller: Unexpected option.+FooOption")));
 }
 
+TEST(IsEmpty, Yes) {
+  Options opts;
+  EXPECT_TRUE(internal::IsEmpty(opts));
+}
+
+TEST(IsEmpty, No) {
+  auto opts = Options{}.set<IntOption>(0);
+  EXPECT_FALSE(internal::IsEmpty(opts));
+}
+
 TEST(MergeOptions, Basics) {
   auto a = Options{}.set<StringOption>("from a").set<IntOption>(42);
   auto b = Options{}.set<StringOption>("from b").set<BoolOption>(true);
@@ -258,6 +290,28 @@ TEST(MergeOptions, Basics) {
   EXPECT_EQ(a.get<StringOption>(), "from a");  // From a
   EXPECT_EQ(a.get<BoolOption>(), true);        // From b
   EXPECT_EQ(a.get<IntOption>(), 42);           // From a
+}
+
+TEST(ExtractOption, Basics) {
+  auto opts = Options{}.set<StringOption>("foo").set<IntOption>(42);
+
+  auto b = internal::ExtractOption<BoolOption>(opts);
+  EXPECT_FALSE(opts.has<BoolOption>());
+  EXPECT_TRUE(opts.has<IntOption>());
+  EXPECT_TRUE(opts.has<StringOption>());
+  EXPECT_FALSE(b.has_value());
+
+  auto i = internal::ExtractOption<IntOption>(opts);
+  EXPECT_FALSE(opts.has<BoolOption>());
+  EXPECT_FALSE(opts.has<IntOption>());
+  EXPECT_TRUE(opts.has<StringOption>());
+  EXPECT_THAT(i, Optional(42));
+
+  auto s = internal::ExtractOption<StringOption>(opts);
+  EXPECT_FALSE(opts.has<BoolOption>());
+  EXPECT_FALSE(opts.has<IntOption>());
+  EXPECT_FALSE(opts.has<StringOption>());
+  EXPECT_THAT(s, Optional(StrEq("foo")));
 }
 
 TEST(OptionsSpan, Basics) {
@@ -272,6 +326,22 @@ TEST(OptionsSpan, Basics) {
     EXPECT_EQ(internal::CurrentOptions().get<IntOption>(), 1);
   }
   EXPECT_FALSE(internal::CurrentOptions().has<IntOption>());
+}
+
+TEST(FetchOption, Basics) {
+  auto opts = Options{}.set<StringOption>("foo").set<IntOption>(42);
+  EXPECT_FALSE(opts.has<BoolOption>());
+  EXPECT_TRUE(opts.has<IntOption>());
+  EXPECT_TRUE(opts.has<StringOption>());
+
+  auto b = internal::FetchOption<BoolOption>(opts);
+  EXPECT_FALSE(b.has_value());
+
+  auto i = internal::FetchOption<IntOption>(opts);
+  EXPECT_THAT(i, Optional(42));
+
+  auto s = internal::FetchOption<StringOption>(opts);
+  EXPECT_THAT(s, Optional(StrEq("foo")));
 }
 
 }  // namespace

@@ -14,21 +14,23 @@
 
 #include "google/cloud/pubsub/publisher_connection.h"
 #include "google/cloud/pubsub/internal/batching_publisher_connection.h"
+#include "google/cloud/pubsub/internal/batching_publisher_tracing_connection.h"
+#include "google/cloud/pubsub/internal/containing_publisher_connection.h"
 #include "google/cloud/pubsub/internal/create_channel.h"
 #include "google/cloud/pubsub/internal/default_batch_sink.h"
 #include "google/cloud/pubsub/internal/defaults.h"
 #include "google/cloud/pubsub/internal/flow_controlled_publisher_connection.h"
+#include "google/cloud/pubsub/internal/flow_controlled_publisher_tracing_connection.h"
 #include "google/cloud/pubsub/internal/ordering_key_publisher_connection.h"
-#include "google/cloud/pubsub/internal/publisher_auth.h"
-#include "google/cloud/pubsub/internal/publisher_logging.h"
-#include "google/cloud/pubsub/internal/publisher_metadata.h"
-#include "google/cloud/pubsub/internal/publisher_round_robin.h"
-#include "google/cloud/pubsub/internal/publisher_stub.h"
+#include "google/cloud/pubsub/internal/publisher_stub_factory.h"
+#include "google/cloud/pubsub/internal/publisher_tracing_connection.h"
 #include "google/cloud/pubsub/internal/rejects_with_ordering_key.h"
 #include "google/cloud/pubsub/internal/sequential_batch_sink.h"
+#include "google/cloud/pubsub/internal/tracing_batch_sink.h"
 #include "google/cloud/pubsub/options.h"
-#include "google/cloud/future_void.h"
+#include "google/cloud/credentials.h"
 #include "google/cloud/internal/non_constructible.h"
+#include "google/cloud/internal/opentelemetry.h"
 #include "google/cloud/log.h"
 #include <memory>
 
@@ -37,46 +39,6 @@ namespace cloud {
 namespace pubsub {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
-class ContainingPublisherConnection : public PublisherConnection {
- public:
-  ContainingPublisherConnection(std::shared_ptr<BackgroundThreads> background,
-                                std::shared_ptr<PublisherConnection> child)
-      : background_(std::move(background)), child_(std::move(child)) {}
-
-  ~ContainingPublisherConnection() override = default;
-
-  future<StatusOr<std::string>> Publish(PublishParams p) override {
-    return child_->Publish(std::move(p));
-  }
-  void Flush(FlushParams p) override { child_->Flush(std::move(p)); }
-  void ResumePublish(ResumePublishParams p) override {
-    child_->ResumePublish(std::move(p));
-  }
-
- private:
-  std::shared_ptr<BackgroundThreads> background_;
-  std::shared_ptr<PublisherConnection> child_;
-};
-
-std::shared_ptr<pubsub_internal::PublisherStub> DecoratePublisherStub(
-    Options const& opts,
-    std::shared_ptr<internal::GrpcAuthenticationStrategy> auth,
-    std::vector<std::shared_ptr<pubsub_internal::PublisherStub>> children) {
-  std::shared_ptr<pubsub_internal::PublisherStub> stub =
-      std::make_shared<pubsub_internal::PublisherRoundRobin>(
-          std::move(children));
-  if (auth->RequiresConfigureContext()) {
-    stub = std::make_shared<pubsub_internal::PublisherAuth>(std::move(auth),
-                                                            std::move(stub));
-  }
-  stub = std::make_shared<pubsub_internal::PublisherMetadata>(std::move(stub));
-  if (internal::Contains(opts.get<TracingComponentsOption>(), "rpc")) {
-    GCP_LOG(INFO) << "Enabled logging for gRPC calls";
-    stub = std::make_shared<pubsub_internal::PublisherLogging>(
-        std::move(stub), opts.get<GrpcTracingOptionsOption>());
-  }
-  return stub;
-}
 
 std::shared_ptr<pubsub::PublisherConnection> ConnectionFromDecoratedStub(
     pubsub::Topic topic, Options opts,
@@ -86,26 +48,50 @@ std::shared_ptr<pubsub::PublisherConnection> ConnectionFromDecoratedStub(
     auto cq = background->cq();
     std::shared_ptr<pubsub_internal::BatchSink> sink =
         pubsub_internal::DefaultBatchSink::Create(stub, cq, opts);
+    if (google::cloud::internal::TracingEnabled(opts)) {
+      sink = MakeTracingBatchSink(topic, std::move(sink), opts);
+    }
     if (opts.get<pubsub::MessageOrderingOption>()) {
       auto factory = [topic, opts, sink, cq](std::string const& key) {
+        auto used_sink = sink;
+        if (!key.empty()) {
+          // Only wrap the sink if there is an ordering key.
+          used_sink = pubsub_internal::SequentialBatchSink::Create(
+              std::move(used_sink));
+        }
         return pubsub_internal::BatchingPublisherConnection::Create(
-            topic, opts, key,
-            pubsub_internal::SequentialBatchSink::Create(sink), cq);
+            topic, opts, key, std::move(used_sink), cq);
       };
       return pubsub_internal::OrderingKeyPublisherConnection::Create(
           std::move(factory));
     }
     return pubsub_internal::RejectsWithOrderingKey::Create(
         pubsub_internal::BatchingPublisherConnection::Create(
-            std::move(topic), opts, {}, std::move(sink), std::move(cq)));
+            topic, opts, {}, std::move(sink), std::move(cq)));
   };
+  auto tracing_enabled = google::cloud::internal::TracingEnabled(opts);
   auto connection = make_connection();
+  if (tracing_enabled) {
+    connection = pubsub_internal::MakeBatchingPublisherTracingConnection(
+        std::move(connection));
+  }
   if (opts.get<pubsub::FullPublisherActionOption>() !=
       pubsub::FullPublisherAction::kIgnored) {
     connection = pubsub_internal::FlowControlledPublisherConnection::Create(
         std::move(opts), std::move(connection));
+    if (tracing_enabled) {
+      connection =
+          pubsub_internal::MakeFlowControlledPublisherTracingConnection(
+              std::move(connection));
+    }
   }
-  return std::make_shared<pubsub::ContainingPublisherConnection>(
+
+  if (tracing_enabled) {
+    connection = pubsub_internal::MakePublisherTracingConnection(
+        std::move(topic), std::move(connection));
+  }
+
+  return std::make_shared<pubsub_internal::ContainingPublisherConnection>(
       std::move(background), std::move(connection));
 }
 }  // namespace
@@ -131,22 +117,12 @@ std::shared_ptr<PublisherConnection> MakePublisherConnection(
 std::shared_ptr<PublisherConnection> MakePublisherConnection(Topic topic,
                                                              Options opts) {
   internal::CheckExpectedOptions<CommonOptionList, GrpcOptionList,
-                                 PolicyOptionList, PublisherOptionList>(
-      opts, __func__);
+                                 UnifiedCredentialsOptionList, PolicyOptionList,
+                                 PublisherOptionList>(opts, __func__);
   opts = pubsub_internal::DefaultPublisherOptions(std::move(opts));
-
   auto background = internal::MakeBackgroundThreadsFactory(opts)();
-  auto auth = google::cloud::internal::CreateAuthenticationStrategy(
-      background->cq(), opts);
-  std::vector<std::shared_ptr<pubsub_internal::PublisherStub>> children(
-      opts.get<GrpcNumChannelsOption>());
-  int id = 0;
-  std::generate(children.begin(), children.end(), [&id, &opts, &auth] {
-    return pubsub_internal::CreateDefaultPublisherStub(
-        auth->CreateChannel(opts.get<EndpointOption>(),
-                            pubsub_internal::MakeChannelArguments(opts, id++)));
-  });
-  auto stub = DecoratePublisherStub(opts, std::move(auth), std::move(children));
+  auto stub =
+      pubsub_internal::MakeRoundRobinPublisherStub(background->cq(), opts);
   return ConnectionFromDecoratedStub(std::move(topic), std::move(opts),
                                      std::move(background), std::move(stub));
 }
@@ -173,10 +149,8 @@ std::shared_ptr<pubsub::PublisherConnection> MakeTestPublisherConnection(
     pubsub::Topic topic, Options opts,
     std::vector<std::shared_ptr<PublisherStub>> stubs) {
   auto background = internal::MakeBackgroundThreadsFactory(opts)();
-  auto auth = google::cloud::internal::CreateAuthenticationStrategy(
-      background->cq(), opts);
-  auto stub =
-      pubsub::DecoratePublisherStub(opts, std::move(auth), std::move(stubs));
+  auto stub = pubsub_internal::MakeTestPublisherStub(background->cq(), opts,
+                                                     std::move(stubs));
   return pubsub::ConnectionFromDecoratedStub(std::move(topic), std::move(opts),
                                              std::move(background),
                                              std::move(stub));

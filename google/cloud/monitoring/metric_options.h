@@ -21,34 +21,26 @@
 
 #include "google/cloud/monitoring/metric_connection.h"
 #include "google/cloud/monitoring/metric_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/metric_options.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct MetricServiceRetryPolicyOption {
-  using Type = std::shared_ptr<MetricServiceRetryPolicy>;
-};
+/// @deprecated Use monitoring_v3::MetricServiceBackoffPolicyOption directly.
+using ::google::cloud::monitoring_v3::MetricServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct MetricServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// monitoring_v3::MetricServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::monitoring_v3::
+    MetricServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct MetricServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<MetricServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use monitoring_v3::MetricServicePolicyOptionList directly.
+using ::google::cloud::monitoring_v3::MetricServicePolicyOptionList;
 
-using MetricServicePolicyOptionList =
-    OptionList<MetricServiceRetryPolicyOption, MetricServiceBackoffPolicyOption,
-               MetricServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use monitoring_v3::MetricServiceRetryPolicyOption directly.
+using ::google::cloud::monitoring_v3::MetricServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring

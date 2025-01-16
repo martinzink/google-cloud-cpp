@@ -15,7 +15,9 @@
 #include "google/cloud/storage/object_write_stream.h"
 #include "google/cloud/storage/internal/hash_function.h"
 #include "google/cloud/storage/internal/hash_validator.h"
-#include "absl/memory/memory.h"
+#include "google/cloud/internal/make_status.h"
+#include <memory>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -23,12 +25,9 @@ namespace storage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 std::unique_ptr<internal::ObjectWriteStreambuf> MakeErrorStreambuf() {
-  return absl::make_unique<internal::ObjectWriteStreambuf>(
-      absl::make_unique<internal::ResumableUploadSessionError>(
-          Status(StatusCode::kUnimplemented, "null stream")),
-      /*max_buffer_size=*/0, internal::CreateNullHashFunction(),
-      internal::HashValues{}, internal::CreateNullHashValidator(),
-      AutoFinalizeConfig::kDisabled);
+  return std::make_unique<internal::ObjectWriteStreambuf>(
+      google::cloud::internal::UnimplementedError("null stream",
+                                                  GCP_ERROR_INFO()));
 }
 }  // namespace
 static_assert(std::is_move_assignable<ObjectWriteStream>::value,
@@ -58,12 +57,13 @@ ObjectWriteStream::ObjectWriteStream(ObjectWriteStream&& rhs) noexcept
       // In fact, as that page indicates, the base classes are designed such
       // that derived classes can define their own move constructor and move
       // assignment.
-      buf_(std::move(rhs.buf_)),
-      metadata_(std::move(rhs.metadata_)),
-      headers_(std::move(rhs.headers_)),
-      payload_(std::move(rhs.payload_)) {
-  rhs.buf_ = MakeErrorStreambuf();
-  rhs.set_rdbuf(rhs.buf_.get());
+      buf_(std::move(rhs.buf_)),            // NOLINT(bugprone-use-after-move)
+      metadata_(std::move(rhs.metadata_)),  // NOLINT(bugprone-use-after-move)
+      headers_(std::move(rhs.headers_)),    // NOLINT(bugprone-use-after-move)
+      payload_(std::move(rhs.payload_)) {   // NOLINT(bugprone-use-after-move)
+  auto buf = MakeErrorStreambuf();
+  rhs.set_rdbuf(buf.get());  // NOLINT(bugprone-use-after-move)
+  rhs.buf_ = std::move(buf);
   set_rdbuf(buf_.get());
   if (!buf_) {
     setstate(std::ios::badbit | std::ios::eofbit);
@@ -93,7 +93,7 @@ void ObjectWriteStream::CloseBuf() {
     setstate(std::ios_base::badbit);
     return;
   }
-  headers_ = {};
+  headers_ = std::move(response->request_metadata);
   if (response->payload.has_value()) {
     metadata_ = *std::move(response->payload);
   }

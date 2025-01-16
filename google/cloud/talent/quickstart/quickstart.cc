@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/talent/company_client.h"
+//! [all]
+#include "google/cloud/talent/v4/company_client.h"
 #include "google/cloud/project.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -23,18 +23,19 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace talent = ::google::cloud::talent;
+  namespace talent = ::google::cloud::talent_v4;
   auto client =
       talent::CompanyServiceClient(talent::MakeCompanyServiceConnection());
 
   auto const project = google::cloud::Project(argv[1]);
   for (auto c : client.ListCompanies(project.FullName())) {
-    if (!c) throw std::runtime_error(c.status().message());
+    if (!c) throw std::move(c).status();
     std::cout << c->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

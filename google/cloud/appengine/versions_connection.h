@@ -19,75 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_VERSIONS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_VERSIONS_CONNECTION_H
 
-#include "google/cloud/appengine/internal/versions_retry_traits.h"
-#include "google/cloud/appengine/internal/versions_stub.h"
+#include "google/cloud/appengine/v1/versions_connection.h"
 #include "google/cloud/appengine/versions_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using VersionsRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    appengine_internal::VersionsRetryTraits>;
+/// @deprecated Use appengine_v1::MakeVersionsConnection directly.
+using ::google::cloud::appengine_v1::MakeVersionsConnection;
 
-using VersionsLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::VersionsRetryTraits>;
+/// @deprecated Use appengine_v1::VersionsConnection directly.
+using ::google::cloud::appengine_v1::VersionsConnection;
 
-using VersionsLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::VersionsRetryTraits>;
+/// @deprecated Use appengine_v1::VersionsLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::appengine_v1::VersionsLimitedErrorCountRetryPolicy;
 
-class VersionsConnection {
- public:
-  virtual ~VersionsConnection() = 0;
+/// @deprecated Use appengine_v1::VersionsLimitedTimeRetryPolicy directly.
+using ::google::cloud::appengine_v1::VersionsLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::appengine::v1::Version> ListVersions(
-      google::appengine::v1::ListVersionsRequest request);
-
-  virtual StatusOr<google::appengine::v1::Version> GetVersion(
-      google::appengine::v1::GetVersionRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::Version>> CreateVersion(
-      google::appengine::v1::CreateVersionRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::Version>> UpdateVersion(
-      google::appengine::v1::UpdateVersionRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::OperationMetadataV1>>
-  DeleteVersion(google::appengine::v1::DeleteVersionRequest const& request);
-};
-
-std::shared_ptr<VersionsConnection> MakeVersionsConnection(
-    Options options = {});
+/// @deprecated Use appengine_v1::VersionsRetryPolicy directly.
+using ::google::cloud::appengine_v1::VersionsRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::VersionsConnection> MakeVersionsConnection(
-    std::shared_ptr<VersionsStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

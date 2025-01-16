@@ -17,7 +17,6 @@
 // source: google/spanner/admin/database/v1/spanner_database_admin.proto
 
 #include "google/cloud/spanner/admin/database_admin_connection_idempotency_policy.h"
-#include "absl/memory/memory.h"
 #include <memory>
 
 namespace google {
@@ -30,124 +29,166 @@ using ::google::cloud::Idempotency;
 DatabaseAdminConnectionIdempotencyPolicy::
     ~DatabaseAdminConnectionIdempotencyPolicy() = default;
 
-namespace {
-class DefaultDatabaseAdminConnectionIdempotencyPolicy
-    : public DatabaseAdminConnectionIdempotencyPolicy {
- public:
-  ~DefaultDatabaseAdminConnectionIdempotencyPolicy() override = default;
+std::unique_ptr<DatabaseAdminConnectionIdempotencyPolicy>
+DatabaseAdminConnectionIdempotencyPolicy::clone() const {
+  return std::make_unique<DatabaseAdminConnectionIdempotencyPolicy>(*this);
+}
 
-  /// Create a new copy of this object.
-  std::unique_ptr<DatabaseAdminConnectionIdempotencyPolicy> clone()
-      const override {
-    return absl::make_unique<DefaultDatabaseAdminConnectionIdempotencyPolicy>(
-        *this);
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::ListDatabases(
+    google::spanner::admin::database::v1::ListDatabasesRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
 
-  Idempotency ListDatabases(
-      google::spanner::admin::database::v1::ListDatabasesRequest) override {
-    return Idempotency::kIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::CreateDatabase(
+    google::spanner::admin::database::v1::CreateDatabaseRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency CreateDatabase(
-      google::spanner::admin::database::v1::CreateDatabaseRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::GetDatabase(
+    google::spanner::admin::database::v1::GetDatabaseRequest const&) {
+  return Idempotency::kIdempotent;
+}
 
-  Idempotency GetDatabase(
-      google::spanner::admin::database::v1::GetDatabaseRequest const&)
-      override {
-    return Idempotency::kIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::UpdateDatabase(
+    google::spanner::admin::database::v1::UpdateDatabaseRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency UpdateDatabaseDdl(
-      google::spanner::admin::database::v1::UpdateDatabaseDdlRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::UpdateDatabaseDdl(
+    google::spanner::admin::database::v1::UpdateDatabaseDdlRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency DropDatabase(
-      google::spanner::admin::database::v1::DropDatabaseRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::DropDatabase(
+    google::spanner::admin::database::v1::DropDatabaseRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency GetDatabaseDdl(
-      google::spanner::admin::database::v1::GetDatabaseDdlRequest const&)
-      override {
-    return Idempotency::kIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::GetDatabaseDdl(
+    google::spanner::admin::database::v1::GetDatabaseDdlRequest const&) {
+  return Idempotency::kIdempotent;
+}
 
-  Idempotency SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const&) override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::SetIamPolicy(
+    google::iam::v1::SetIamPolicyRequest const& request) {
+  return request.policy().etag().empty() ? Idempotency::kNonIdempotent
+                                         : Idempotency::kIdempotent;
+}
 
-  Idempotency GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const&) override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::GetIamPolicy(
+    google::iam::v1::GetIamPolicyRequest const&) {
+  return Idempotency::kIdempotent;
+}
 
-  Idempotency TestIamPermissions(
-      google::iam::v1::TestIamPermissionsRequest const&) override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::TestIamPermissions(
+    google::iam::v1::TestIamPermissionsRequest const&) {
+  return Idempotency::kIdempotent;
+}
 
-  Idempotency CreateBackup(
-      google::spanner::admin::database::v1::CreateBackupRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::CreateBackup(
+    google::spanner::admin::database::v1::CreateBackupRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency GetBackup(
-      google::spanner::admin::database::v1::GetBackupRequest const&) override {
-    return Idempotency::kIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::CopyBackup(
+    google::spanner::admin::database::v1::CopyBackupRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency UpdateBackup(
-      google::spanner::admin::database::v1::UpdateBackupRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::GetBackup(
+    google::spanner::admin::database::v1::GetBackupRequest const&) {
+  return Idempotency::kIdempotent;
+}
 
-  Idempotency DeleteBackup(
-      google::spanner::admin::database::v1::DeleteBackupRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::UpdateBackup(
+    google::spanner::admin::database::v1::UpdateBackupRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency ListBackups(
-      google::spanner::admin::database::v1::ListBackupsRequest) override {
-    return Idempotency::kIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::DeleteBackup(
+    google::spanner::admin::database::v1::DeleteBackupRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency RestoreDatabase(
-      google::spanner::admin::database::v1::RestoreDatabaseRequest const&)
-      override {
-    return Idempotency::kNonIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::ListBackups(
+    google::spanner::admin::database::v1::ListBackupsRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
 
-  Idempotency ListDatabaseOperations(
-      google::spanner::admin::database::v1::ListDatabaseOperationsRequest)
-      override {
-    return Idempotency::kIdempotent;
-  }
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::RestoreDatabase(
+    google::spanner::admin::database::v1::RestoreDatabaseRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
-  Idempotency ListBackupOperations(
-      google::spanner::admin::database::v1::ListBackupOperationsRequest)
-      override {
-    return Idempotency::kIdempotent;
-  }
-};
-}  // namespace
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::ListDatabaseOperations(
+    google::spanner::admin::database::v1::
+        ListDatabaseOperationsRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::ListBackupOperations(
+    google::spanner::admin::database::v1::
+        ListBackupOperationsRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::ListDatabaseRoles(
+    google::spanner::admin::database::v1::ListDatabaseRolesRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::CreateBackupSchedule(
+    google::spanner::admin::database::v1::CreateBackupScheduleRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::GetBackupSchedule(
+    google::spanner::admin::database::v1::GetBackupScheduleRequest const&) {
+  return Idempotency::kIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::UpdateBackupSchedule(
+    google::spanner::admin::database::v1::UpdateBackupScheduleRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::DeleteBackupSchedule(
+    google::spanner::admin::database::v1::DeleteBackupScheduleRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::ListBackupSchedules(
+    google::spanner::admin::database::v1::
+        ListBackupSchedulesRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::ListOperations(
+    google::longrunning::ListOperationsRequest) {  // NOLINT
+  return Idempotency::kIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::GetOperation(
+    google::longrunning::GetOperationRequest const&) {
+  return Idempotency::kIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::DeleteOperation(
+    google::longrunning::DeleteOperationRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
+
+Idempotency DatabaseAdminConnectionIdempotencyPolicy::CancelOperation(
+    google::longrunning::CancelOperationRequest const&) {
+  return Idempotency::kNonIdempotent;
+}
 
 std::unique_ptr<DatabaseAdminConnectionIdempotencyPolicy>
 MakeDefaultDatabaseAdminConnectionIdempotencyPolicy() {
-  return absl::make_unique<DefaultDatabaseAdminConnectionIdempotencyPolicy>();
+  return std::make_unique<DatabaseAdminConnectionIdempotencyPolicy>();
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-namespace gcpcxxV1 = GOOGLE_CLOUD_CPP_NS;  // NOLINT(misc-unused-alias-decls)
 }  // namespace spanner_admin
 }  // namespace cloud
 }  // namespace google

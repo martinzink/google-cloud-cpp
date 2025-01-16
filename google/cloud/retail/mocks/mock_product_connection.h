@@ -20,62 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_MOCKS_MOCK_PRODUCT_CONNECTION_H
 
 #include "google/cloud/retail/product_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/retail/v2/mocks/mock_product_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in retail_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace retail_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockProductServiceConnection : public retail::ProductServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::retail::v2::Product>, CreateProduct,
-              (google::cloud::retail::v2::CreateProductRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::retail::v2::Product>, GetProduct,
-              (google::cloud::retail::v2::GetProductRequest const& request),
-              (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::retail::v2::Product>, ListProducts,
-              (google::cloud::retail::v2::ListProductsRequest request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::retail::v2::Product>, UpdateProduct,
-              (google::cloud::retail::v2::UpdateProductRequest const& request),
-              (override));
-
-  MOCK_METHOD(Status, DeleteProduct,
-              (google::cloud::retail::v2::DeleteProductRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::retail::v2::ImportProductsResponse>>,
-      ImportProducts,
-      (google::cloud::retail::v2::ImportProductsRequest const& request),
-      (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::retail::v2::SetInventoryResponse>>,
-              SetInventory,
-              (google::cloud::retail::v2::SetInventoryRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::retail::v2::AddFulfillmentPlacesResponse>>,
-      AddFulfillmentPlaces,
-      (google::cloud::retail::v2::AddFulfillmentPlacesRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<
-          StatusOr<google::cloud::retail::v2::RemoveFulfillmentPlacesResponse>>,
-      RemoveFulfillmentPlaces,
-      (google::cloud::retail::v2::RemoveFulfillmentPlacesRequest const&
-           request),
-      (override));
-};
+/// @deprecated Use retail_v2_mocks::MockProductServiceConnection directly.
+using ::google::cloud::retail_v2_mocks::MockProductServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail_mocks

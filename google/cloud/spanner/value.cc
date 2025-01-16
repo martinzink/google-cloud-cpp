@@ -13,8 +13,13 @@
 // limitations under the License.
 
 #include "google/cloud/spanner/value.h"
+#include "google/cloud/internal/base64_transforms.h"
+#include "google/cloud/internal/debug_string_protobuf.h"
+#include "google/cloud/internal/make_status.h"
 #include "google/cloud/internal/strerror.h"
 #include "absl/time/civil_time.h"
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/message.h>
 #include <cerrno>
 #include <cmath>
 #include <cstdlib>
@@ -44,18 +49,23 @@ bool Equal(google::spanner::v1::Type const& pt1,  // NOLINT(misc-no-recursion)
     case google::spanner::v1::TypeCode::INT64:
       return pv1.string_value() == pv2.string_value();
     case google::spanner::v1::TypeCode::FLOAT64:
-      // NaN should always compare not equal, even to itself.
-      if (pv1.string_value() == "NaN" || pv2.string_value() == "NaN") {
-        return false;
+      if (pv1.kind_case() == google::protobuf::Value::kNumberValue) {
+        return pv1.number_value() == pv2.number_value();
       }
-      return pv1.string_value() == pv2.string_value() &&
-             pv1.number_value() == pv2.number_value();
+      // FLOAT64 NaN values are considered equal for sorting purposes.
+      return pv1.string_value() == pv2.string_value();
     case google::spanner::v1::TypeCode::STRING:
     case google::spanner::v1::TypeCode::BYTES:
     case google::spanner::v1::TypeCode::JSON:
     case google::spanner::v1::TypeCode::DATE:
     case google::spanner::v1::TypeCode::TIMESTAMP:
+      return pv1.string_value() == pv2.string_value();
     case google::spanner::v1::TypeCode::NUMERIC:
+      if (pt1.type_annotation() != pt2.type_annotation()) return false;
+      return pv1.string_value() == pv2.string_value();
+    case google::spanner::v1::TypeCode::PROTO:
+    case google::spanner::v1::TypeCode::ENUM:
+      if (pt1.proto_type_fqn() != pt2.proto_type_fqn()) return false;
       return pv1.string_value() == pv2.string_value();
     case google::spanner::v1::TypeCode::ARRAY: {
       auto const& etype1 = pt1.array_element_type();
@@ -125,6 +135,9 @@ std::ostream& StreamHelper(std::ostream& os,  // NOLINT(misc-no-recursion)
       return os
              << spanner_internal::FromProto(t, v).get<std::int64_t>().value();
 
+    case google::spanner::v1::TypeCode::FLOAT32:
+      return os << spanner_internal::FromProto(t, v).get<float>().value();
+
     case google::spanner::v1::TypeCode::FLOAT64:
       return os << spanner_internal::FromProto(t, v).get<double>().value();
 
@@ -150,6 +163,34 @@ std::ostream& StreamHelper(std::ostream& os,  // NOLINT(misc-no-recursion)
     case google::spanner::v1::TypeCode::DATE:
       return os
              << spanner_internal::FromProto(t, v).get<absl::CivilDay>().value();
+
+    case google::spanner::v1::TypeCode::ENUM:
+      if (auto const* p = google::protobuf::DescriptorPool::generated_pool()) {
+        if (auto const* d = p->FindEnumTypeByName(t.proto_type_fqn())) {
+          auto number = std::stoi(v.string_value());
+          if (std::to_string(number) == v.string_value()) {
+            if (auto const* vd = d->FindValueByNumber(number)) {
+              return os << vd->full_name();
+            }
+          }
+        }
+      }
+      return os << t.proto_type_fqn() << ".{" << v.string_value() << "}";
+
+    case google::spanner::v1::TypeCode::PROTO:
+      if (auto const* p = google::protobuf::DescriptorPool::generated_pool()) {
+        if (auto const* d = p->FindMessageTypeByName(t.proto_type_fqn())) {
+          if (auto bytes = internal::Base64DecodeToBytes(v.string_value())) {
+            auto* f = google::protobuf::MessageFactory::generated_factory();
+            if (auto const* pt = f->GetPrototype(d)) {
+              std::unique_ptr<google::protobuf::Message> m(pt->New());
+              m->ParseFromString(std::string(bytes->begin(), bytes->end()));
+              return os << internal::DebugString(*m, TracingOptions{});
+            }
+          }
+        }
+      }
+      return os << t.proto_type_fqn() << " { <unknown> }";
 
     case google::spanner::v1::TypeCode::ARRAY: {
       char const* delimiter = "";
@@ -207,6 +248,10 @@ bool Value::TypeProtoIs(std::int64_t, google::spanner::v1::Type const& type) {
   return type.code() == google::spanner::v1::TypeCode::INT64;
 }
 
+bool Value::TypeProtoIs(float, google::spanner::v1::Type const& type) {
+  return type.code() == google::spanner::v1::TypeCode::FLOAT32;
+}
+
 bool Value::TypeProtoIs(double, google::spanner::v1::Type const& type) {
   return type.code() == google::spanner::v1::TypeCode::FLOAT64;
 }
@@ -234,11 +279,34 @@ bool Value::TypeProtoIs(Bytes const&, google::spanner::v1::Type const& type) {
 }
 
 bool Value::TypeProtoIs(Json const&, google::spanner::v1::Type const& type) {
-  return type.code() == google::spanner::v1::TypeCode::JSON;
+  return type.code() == google::spanner::v1::TypeCode::JSON &&
+         type.type_annotation() == google::spanner::v1::TypeAnnotationCode::
+                                       TYPE_ANNOTATION_CODE_UNSPECIFIED;
+}
+
+bool Value::TypeProtoIs(JsonB const&, google::spanner::v1::Type const& type) {
+  return type.code() == google::spanner::v1::TypeCode::JSON &&
+         type.type_annotation() ==
+             google::spanner::v1::TypeAnnotationCode::PG_JSONB;
 }
 
 bool Value::TypeProtoIs(Numeric const&, google::spanner::v1::Type const& type) {
-  return type.code() == google::spanner::v1::TypeCode::NUMERIC;
+  return type.code() == google::spanner::v1::TypeCode::NUMERIC &&
+         type.type_annotation() == google::spanner::v1::TypeAnnotationCode::
+                                       TYPE_ANNOTATION_CODE_UNSPECIFIED;
+}
+
+bool Value::TypeProtoIs(PgNumeric const&,
+                        google::spanner::v1::Type const& type) {
+  return type.code() == google::spanner::v1::TypeCode::NUMERIC &&
+         type.type_annotation() ==
+             google::spanner::v1::TypeAnnotationCode::PG_NUMERIC;
+}
+
+bool Value::TypeProtoIs(PgOid const&, google::spanner::v1::Type const& type) {
+  return type.code() == google::spanner::v1::TypeCode::INT64 &&
+         type.type_annotation() ==
+             google::spanner::v1::TypeAnnotationCode::PG_OID;
 }
 
 //
@@ -254,6 +322,12 @@ google::spanner::v1::Type Value::MakeTypeProto(bool) {
 google::spanner::v1::Type Value::MakeTypeProto(std::int64_t) {
   google::spanner::v1::Type t;
   t.set_code(google::spanner::v1::TypeCode::INT64);
+  return t;
+}
+
+google::spanner::v1::Type Value::MakeTypeProto(float) {
+  google::spanner::v1::Type t;
+  t.set_code(google::spanner::v1::TypeCode::FLOAT32);
   return t;
 }
 
@@ -278,12 +352,37 @@ google::spanner::v1::Type Value::MakeTypeProto(Bytes const&) {
 google::spanner::v1::Type Value::MakeTypeProto(Json const&) {
   google::spanner::v1::Type t;
   t.set_code(google::spanner::v1::TypeCode::JSON);
+  // Prefer to leave type_annotation unset over setting it to
+  // TypeAnnotationCode::TYPE_ANNOTATION_CODE_UNSPECIFIED.
+  return t;
+}
+
+google::spanner::v1::Type Value::MakeTypeProto(JsonB const&) {
+  google::spanner::v1::Type t;
+  t.set_code(google::spanner::v1::TypeCode::JSON);
+  t.set_type_annotation(google::spanner::v1::TypeAnnotationCode::PG_JSONB);
   return t;
 }
 
 google::spanner::v1::Type Value::MakeTypeProto(Numeric const&) {
   google::spanner::v1::Type t;
   t.set_code(google::spanner::v1::TypeCode::NUMERIC);
+  // Prefer to leave type_annotation unset over setting it to
+  // TypeAnnotationCode::TYPE_ANNOTATION_CODE_UNSPECIFIED.
+  return t;
+}
+
+google::spanner::v1::Type Value::MakeTypeProto(PgNumeric const&) {
+  google::spanner::v1::Type t;
+  t.set_code(google::spanner::v1::TypeCode::NUMERIC);
+  t.set_type_annotation(google::spanner::v1::TypeAnnotationCode::PG_NUMERIC);
+  return t;
+}
+
+google::spanner::v1::Type Value::MakeTypeProto(PgOid const&) {
+  google::spanner::v1::Type t;
+  t.set_code(google::spanner::v1::TypeCode::INT64);
+  t.set_type_annotation(google::spanner::v1::TypeAnnotationCode::PG_OID);
   return t;
 }
 
@@ -329,6 +428,20 @@ google::protobuf::Value Value::MakeValueProto(std::int64_t i) {
   return v;
 }
 
+google::protobuf::Value Value::MakeValueProto(float f) {
+  google::protobuf::Value v;
+  if (std::isnan(f)) {
+    v.set_string_value("NaN");
+  } else if (std::isinf(f)) {
+    v.set_string_value(f < 0 ? "-Infinity" : "Infinity");
+  } else {
+    // A widening conversion (i.e., a floating-point promotion), but
+    // that's OK as the standard guarantees that the value is unchanged.
+    v.set_number_value(f);
+  }
+  return v;
+}
+
 google::protobuf::Value Value::MakeValueProto(double d) {
   google::protobuf::Value v;
   if (std::isnan(d)) {
@@ -359,9 +472,27 @@ google::protobuf::Value Value::MakeValueProto(Json j) {
   return v;
 }
 
+google::protobuf::Value Value::MakeValueProto(JsonB j) {
+  google::protobuf::Value v;
+  v.set_string_value(std::string(std::move(j)));
+  return v;
+}
+
 google::protobuf::Value Value::MakeValueProto(Numeric n) {
   google::protobuf::Value v;
   v.set_string_value(std::move(n).ToString());
+  return v;
+}
+
+google::protobuf::Value Value::MakeValueProto(PgNumeric n) {
+  google::protobuf::Value v;
+  v.set_string_value(std::move(n).ToString());
+  return v;
+}
+
+google::protobuf::Value Value::MakeValueProto(PgOid n) {
+  google::protobuf::Value v;
+  v.set_string_value(std::to_string(static_cast<std::uint64_t>(n)));
   return v;
 }
 
@@ -404,7 +535,7 @@ google::protobuf::Value Value::MakeValueProto(char const* s) {
 StatusOr<bool> Value::GetValue(bool, google::protobuf::Value const& pv,
                                google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kBoolValue) {
-    return Status(StatusCode::kUnknown, "missing BOOL");
+    return internal::UnknownError("missing BOOL", GCP_ERROR_INFO());
   }
   return pv.bool_value();
 }
@@ -413,23 +544,48 @@ StatusOr<std::int64_t> Value::GetValue(std::int64_t,
                                        google::protobuf::Value const& pv,
                                        google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing INT64");
+    return internal::UnknownError("missing INT64", GCP_ERROR_INFO());
   }
   auto const& s = pv.string_value();
   char* end = nullptr;
   errno = 0;
   std::int64_t x = {std::strtoll(s.c_str(), &end, 10)};
   if (errno != 0) {
-    return Status(StatusCode::kUnknown,
-                  google::cloud::internal::strerror(errno) + ": \"" + s + "\"");
+    return internal::UnknownError(
+        google::cloud::internal::strerror(errno) + ": \"" + s + "\"",
+        GCP_ERROR_INFO());
   }
   if (end == s.c_str()) {
-    return Status(StatusCode::kUnknown, "No numeric conversion: \"" + s + "\"");
+    return internal::UnknownError("No numeric conversion: \"" + s + "\"",
+                                  GCP_ERROR_INFO());
   }
   if (*end != '\0') {
-    return Status(StatusCode::kUnknown, "Trailing data: \"" + s + "\"");
+    return internal::UnknownError("Trailing data: \"" + s + "\"",
+                                  GCP_ERROR_INFO());
   }
   return x;
+}
+
+StatusOr<float> Value::GetValue(float, google::protobuf::Value const& pv,
+                                google::spanner::v1::Type const&) {
+  if (pv.kind_case() == google::protobuf::Value::kNumberValue) {
+    // A narrowing conversion, but that's OK.  If the value originated
+    // as a float, then the conversion through double is required to
+    // produce the same value (and we already assume that a double value
+    // if preserved over the wire).  If the value originated as a double
+    // then we're simply doing the requested narrowing.
+    return static_cast<float>(pv.number_value());
+  }
+  if (pv.kind_case() != google::protobuf::Value::kStringValue) {
+    return internal::UnknownError("missing FLOAT32", GCP_ERROR_INFO());
+  }
+  std::string const& s = pv.string_value();
+  auto const inf = std::numeric_limits<float>::infinity();
+  if (s == "-Infinity") return -inf;
+  if (s == "Infinity") return inf;
+  if (s == "NaN") return std::nanf("");
+  return internal::UnknownError("bad FLOAT32 data: \"" + s + "\"",
+                                GCP_ERROR_INFO());
 }
 
 StatusOr<double> Value::GetValue(double, google::protobuf::Value const& pv,
@@ -438,21 +594,22 @@ StatusOr<double> Value::GetValue(double, google::protobuf::Value const& pv,
     return pv.number_value();
   }
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing FLOAT64");
+    return internal::UnknownError("missing FLOAT64", GCP_ERROR_INFO());
   }
   std::string const& s = pv.string_value();
   auto const inf = std::numeric_limits<double>::infinity();
   if (s == "-Infinity") return -inf;
   if (s == "Infinity") return inf;
   if (s == "NaN") return std::nan("");
-  return Status(StatusCode::kUnknown, "bad FLOAT64 data: \"" + s + "\"");
+  return internal::UnknownError("bad FLOAT64 data: \"" + s + "\"",
+                                GCP_ERROR_INFO());
 }
 
 StatusOr<std::string> Value::GetValue(std::string const&,
                                       google::protobuf::Value const& pv,
                                       google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing STRING");
+    return internal::UnknownError("missing STRING", GCP_ERROR_INFO());
   }
   return pv.string_value();
 }
@@ -461,7 +618,7 @@ StatusOr<std::string> Value::GetValue(std::string const&,
                                       google::protobuf::Value&& pv,
                                       google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing STRING");
+    return internal::UnknownError("missing STRING", GCP_ERROR_INFO());
   }
   return std::move(*pv.mutable_string_value());
 }
@@ -469,7 +626,7 @@ StatusOr<std::string> Value::GetValue(std::string const&,
 StatusOr<Bytes> Value::GetValue(Bytes const&, google::protobuf::Value const& pv,
                                 google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing BYTES");
+    return internal::UnknownError("missing BYTES", GCP_ERROR_INFO());
   }
   auto decoded = spanner_internal::BytesFromBase64(pv.string_value());
   if (!decoded) return decoded.status();
@@ -479,27 +636,54 @@ StatusOr<Bytes> Value::GetValue(Bytes const&, google::protobuf::Value const& pv,
 StatusOr<Json> Value::GetValue(Json const&, google::protobuf::Value const& pv,
                                google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing JSON");
+    return internal::UnknownError("missing JSON", GCP_ERROR_INFO());
   }
   return Json(pv.string_value());
+}
+
+StatusOr<JsonB> Value::GetValue(JsonB const&, google::protobuf::Value const& pv,
+                                google::spanner::v1::Type const&) {
+  if (pv.kind_case() != google::protobuf::Value::kStringValue) {
+    return internal::UnknownError("missing JSONB", GCP_ERROR_INFO());
+  }
+  return JsonB(pv.string_value());
 }
 
 StatusOr<Numeric> Value::GetValue(Numeric const&,
                                   google::protobuf::Value const& pv,
                                   google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing NUMERIC");
+    return internal::UnknownError("missing NUMERIC", GCP_ERROR_INFO());
   }
   auto decoded = MakeNumeric(pv.string_value());
   if (!decoded) return decoded.status();
   return *decoded;
 }
 
+StatusOr<PgNumeric> Value::GetValue(PgNumeric const&,
+                                    google::protobuf::Value const& pv,
+                                    google::spanner::v1::Type const&) {
+  if (pv.kind_case() != google::protobuf::Value::kStringValue) {
+    return internal::UnknownError("missing NUMERIC", GCP_ERROR_INFO());
+  }
+  auto decoded = MakePgNumeric(pv.string_value());
+  if (!decoded) return decoded.status();
+  return *decoded;
+}
+
+StatusOr<PgOid> Value::GetValue(PgOid const&, google::protobuf::Value const& pv,
+                                google::spanner::v1::Type const&) {
+  if (pv.kind_case() != google::protobuf::Value::kStringValue) {
+    return internal::UnknownError("missing OID", GCP_ERROR_INFO());
+  }
+  return PgOid(std::stoull(pv.string_value()));
+}
+
 StatusOr<Timestamp> Value::GetValue(Timestamp,
                                     google::protobuf::Value const& pv,
                                     google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing TIMESTAMP");
+    return internal::UnknownError("missing TIMESTAMP", GCP_ERROR_INFO());
   }
   return spanner_internal::TimestampFromRFC3339(pv.string_value());
 }
@@ -509,7 +693,7 @@ StatusOr<CommitTimestamp> Value::GetValue(CommitTimestamp,
                                           google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue ||
       pv.string_value() != "spanner.commit_timestamp()") {
-    return Status(StatusCode::kUnknown, "invalid commit_timestamp");
+    return internal::UnknownError("invalid commit_timestamp", GCP_ERROR_INFO());
   }
   return CommitTimestamp{};
 }
@@ -518,13 +702,13 @@ StatusOr<absl::CivilDay> Value::GetValue(absl::CivilDay,
                                          google::protobuf::Value const& pv,
                                          google::spanner::v1::Type const&) {
   if (pv.kind_case() != google::protobuf::Value::kStringValue) {
-    return Status(StatusCode::kUnknown, "missing DATE");
+    return internal::UnknownError("missing DATE", GCP_ERROR_INFO());
   }
   auto const& s = pv.string_value();
   absl::CivilDay day;
   if (absl::ParseCivilTime(s, &day)) return day;
-  return Status(StatusCode::kInvalidArgument,
-                s + ": Failed to match RFC3339 full-date");
+  return internal::InvalidArgumentError(
+      s + ": Failed to match RFC3339 full-date", GCP_ERROR_INFO());
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

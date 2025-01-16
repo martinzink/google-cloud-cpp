@@ -19,77 +19,39 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_DASHBOARDS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_DASHBOARDS_CONNECTION_H
 
+#include "google/cloud/monitoring/dashboard/v1/dashboards_connection.h"
 #include "google/cloud/monitoring/dashboards_connection_idempotency_policy.h"
-#include "google/cloud/monitoring/internal/dashboards_retry_traits.h"
-#include "google/cloud/monitoring/internal/dashboards_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using DashboardsServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        monitoring_internal::DashboardsServiceRetryTraits>;
+/// @deprecated Use monitoring_dashboard_v1::MakeDashboardsServiceConnection
+/// directly.
+using ::google::cloud::monitoring_dashboard_v1::MakeDashboardsServiceConnection;
 
-using DashboardsServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        monitoring_internal::DashboardsServiceRetryTraits>;
+/// @deprecated Use monitoring_dashboard_v1::DashboardsServiceConnection
+/// directly.
+using ::google::cloud::monitoring_dashboard_v1::DashboardsServiceConnection;
 
-using DashboardsServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        monitoring_internal::DashboardsServiceRetryTraits>;
+/// @deprecated Use
+/// monitoring_dashboard_v1::DashboardsServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_dashboard_v1::
+    DashboardsServiceLimitedErrorCountRetryPolicy;
 
-class DashboardsServiceConnection {
- public:
-  virtual ~DashboardsServiceConnection() = 0;
+/// @deprecated Use
+/// monitoring_dashboard_v1::DashboardsServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::monitoring_dashboard_v1::
+    DashboardsServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::monitoring::dashboard::v1::Dashboard>
-  CreateDashboard(
-      google::monitoring::dashboard::v1::CreateDashboardRequest const& request);
-
-  virtual StreamRange<google::monitoring::dashboard::v1::Dashboard>
-  ListDashboards(
-      google::monitoring::dashboard::v1::ListDashboardsRequest request);
-
-  virtual StatusOr<google::monitoring::dashboard::v1::Dashboard> GetDashboard(
-      google::monitoring::dashboard::v1::GetDashboardRequest const& request);
-
-  virtual Status DeleteDashboard(
-      google::monitoring::dashboard::v1::DeleteDashboardRequest const& request);
-
-  virtual StatusOr<google::monitoring::dashboard::v1::Dashboard>
-  UpdateDashboard(
-      google::monitoring::dashboard::v1::UpdateDashboardRequest const& request);
-};
-
-std::shared_ptr<DashboardsServiceConnection> MakeDashboardsServiceConnection(
-    Options options = {});
+/// @deprecated Use monitoring_dashboard_v1::DashboardsServiceRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_dashboard_v1::DashboardsServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace monitoring_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<monitoring::DashboardsServiceConnection>
-MakeDashboardsServiceConnection(std::shared_ptr<DashboardsServiceStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace monitoring_internal
 }  // namespace cloud
 }  // namespace google
 

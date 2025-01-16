@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/workflows/workflows_client.h"
-#include "google/cloud/project.h"
+//! [START workflows_client_library] [all]
+#include "google/cloud/workflows/v1/workflows_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -23,19 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace workflows = ::google::cloud::workflows;
+  auto const location = google::cloud::Location(argv[1], argv[2]);
+
+  namespace workflows = ::google::cloud::workflows_v1;
   auto client =
       workflows::WorkflowsClient(workflows::MakeWorkflowsConnection());
 
-  auto const parent =
-      std::string{"projects/"} + argv[1] + "/locations/" + argv[2];
-  for (auto w : client.ListWorkflows(parent)) {
-    if (!w) throw std::runtime_error(w.status().message());
+  for (auto w : client.ListWorkflows(location.FullName())) {
+    if (!w) throw std::move(w).status();
     std::cout << w->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [END workflows_client_library] [all]

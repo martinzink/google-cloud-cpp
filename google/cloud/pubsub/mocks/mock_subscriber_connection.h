@@ -34,6 +34,11 @@ class MockSubscriberConnection : public pubsub::SubscriberConnection {
  public:
   MOCK_METHOD(future<Status>, Subscribe,
               (pubsub::SubscriberConnection::SubscribeParams), (override));
+  MOCK_METHOD(future<Status>, ExactlyOnceSubscribe,
+              (pubsub::SubscriberConnection::ExactlyOnceSubscribeParams),
+              (override));
+  MOCK_METHOD(StatusOr<pubsub::PullResponse>, Pull, (), (override));
+  MOCK_METHOD(google::cloud::Options, options, (), (override));
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

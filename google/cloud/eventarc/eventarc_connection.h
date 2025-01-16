@@ -20,74 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_EVENTARC_EVENTARC_CONNECTION_H
 
 #include "google/cloud/eventarc/eventarc_connection_idempotency_policy.h"
-#include "google/cloud/eventarc/internal/eventarc_retry_traits.h"
-#include "google/cloud/eventarc/internal/eventarc_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/eventarc/v1/eventarc_connection.h"
 
 namespace google {
 namespace cloud {
 namespace eventarc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using EventarcRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    eventarc_internal::EventarcRetryTraits>;
+/// @deprecated Use eventarc_v1::MakeEventarcConnection directly.
+using ::google::cloud::eventarc_v1::MakeEventarcConnection;
 
-using EventarcLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        eventarc_internal::EventarcRetryTraits>;
+/// @deprecated Use eventarc_v1::EventarcConnection directly.
+using ::google::cloud::eventarc_v1::EventarcConnection;
 
-using EventarcLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        eventarc_internal::EventarcRetryTraits>;
+/// @deprecated Use eventarc_v1::EventarcLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::eventarc_v1::EventarcLimitedErrorCountRetryPolicy;
 
-class EventarcConnection {
- public:
-  virtual ~EventarcConnection() = 0;
+/// @deprecated Use eventarc_v1::EventarcLimitedTimeRetryPolicy directly.
+using ::google::cloud::eventarc_v1::EventarcLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::eventarc::v1::Trigger> GetTrigger(
-      google::cloud::eventarc::v1::GetTriggerRequest const& request);
-
-  virtual StreamRange<google::cloud::eventarc::v1::Trigger> ListTriggers(
-      google::cloud::eventarc::v1::ListTriggersRequest request);
-
-  virtual future<StatusOr<google::cloud::eventarc::v1::Trigger>> CreateTrigger(
-      google::cloud::eventarc::v1::CreateTriggerRequest const& request);
-
-  virtual future<StatusOr<google::cloud::eventarc::v1::Trigger>> UpdateTrigger(
-      google::cloud::eventarc::v1::UpdateTriggerRequest const& request);
-
-  virtual future<StatusOr<google::cloud::eventarc::v1::Trigger>> DeleteTrigger(
-      google::cloud::eventarc::v1::DeleteTriggerRequest const& request);
-};
-
-std::shared_ptr<EventarcConnection> MakeEventarcConnection(
-    Options options = {});
+/// @deprecated Use eventarc_v1::EventarcRetryPolicy directly.
+using ::google::cloud::eventarc_v1::EventarcRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace eventarc
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace eventarc_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<eventarc::EventarcConnection> MakeEventarcConnection(
-    std::shared_ptr<EventarcStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace eventarc_internal
 }  // namespace cloud
 }  // namespace google
 

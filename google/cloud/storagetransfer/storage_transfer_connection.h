@@ -19,92 +19,39 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_STORAGETRANSFER_STORAGE_TRANSFER_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_STORAGETRANSFER_STORAGE_TRANSFER_CONNECTION_H
 
-#include "google/cloud/storagetransfer/internal/storage_transfer_retry_traits.h"
-#include "google/cloud/storagetransfer/internal/storage_transfer_stub.h"
 #include "google/cloud/storagetransfer/storage_transfer_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/storagetransfer/v1/storage_transfer_connection.h"
 
 namespace google {
 namespace cloud {
 namespace storagetransfer {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using StorageTransferServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        storagetransfer_internal::StorageTransferServiceRetryTraits>;
+/// @deprecated Use storagetransfer_v1::MakeStorageTransferServiceConnection
+/// directly.
+using ::google::cloud::storagetransfer_v1::MakeStorageTransferServiceConnection;
 
-using StorageTransferServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        storagetransfer_internal::StorageTransferServiceRetryTraits>;
+/// @deprecated Use storagetransfer_v1::StorageTransferServiceConnection
+/// directly.
+using ::google::cloud::storagetransfer_v1::StorageTransferServiceConnection;
 
-using StorageTransferServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        storagetransfer_internal::StorageTransferServiceRetryTraits>;
+/// @deprecated Use
+/// storagetransfer_v1::StorageTransferServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::storagetransfer_v1::
+    StorageTransferServiceLimitedErrorCountRetryPolicy;
 
-class StorageTransferServiceConnection {
- public:
-  virtual ~StorageTransferServiceConnection() = 0;
+/// @deprecated Use
+/// storagetransfer_v1::StorageTransferServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::storagetransfer_v1::
+    StorageTransferServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::storagetransfer::v1::GoogleServiceAccount>
-  GetGoogleServiceAccount(
-      google::storagetransfer::v1::GetGoogleServiceAccountRequest const&
-          request);
-
-  virtual StatusOr<google::storagetransfer::v1::TransferJob> CreateTransferJob(
-      google::storagetransfer::v1::CreateTransferJobRequest const& request);
-
-  virtual StatusOr<google::storagetransfer::v1::TransferJob> UpdateTransferJob(
-      google::storagetransfer::v1::UpdateTransferJobRequest const& request);
-
-  virtual StatusOr<google::storagetransfer::v1::TransferJob> GetTransferJob(
-      google::storagetransfer::v1::GetTransferJobRequest const& request);
-
-  virtual StreamRange<google::storagetransfer::v1::TransferJob>
-  ListTransferJobs(
-      google::storagetransfer::v1::ListTransferJobsRequest request);
-
-  virtual Status PauseTransferOperation(
-      google::storagetransfer::v1::PauseTransferOperationRequest const&
-          request);
-
-  virtual Status ResumeTransferOperation(
-      google::storagetransfer::v1::ResumeTransferOperationRequest const&
-          request);
-
-  virtual future<StatusOr<google::storagetransfer::v1::TransferOperation>>
-  RunTransferJob(
-      google::storagetransfer::v1::RunTransferJobRequest const& request);
-};
-
-std::shared_ptr<StorageTransferServiceConnection>
-MakeStorageTransferServiceConnection(Options options = {});
+/// @deprecated Use storagetransfer_v1::StorageTransferServiceRetryPolicy
+/// directly.
+using ::google::cloud::storagetransfer_v1::StorageTransferServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace storagetransfer
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace storagetransfer_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<storagetransfer::StorageTransferServiceConnection>
-MakeStorageTransferServiceConnection(
-    std::shared_ptr<StorageTransferServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace storagetransfer_internal
 }  // namespace cloud
 }  // namespace google
 

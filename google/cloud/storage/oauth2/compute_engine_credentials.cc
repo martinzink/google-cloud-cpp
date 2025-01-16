@@ -13,36 +13,24 @@
 // limitations under the License.
 
 #include "google/cloud/storage/oauth2/compute_engine_credentials.h"
+#include "google/cloud/internal/oauth2_cached_credentials.h"
+#include "google/cloud/internal/oauth2_compute_engine_credentials.h"
 #include <nlohmann/json.hpp>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace google {
 namespace cloud {
 namespace storage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace oauth2 {
+
 StatusOr<ServiceAccountMetadata> ParseMetadataServerResponse(
     storage::internal::HttpResponse const& response) {
-  auto response_body = nlohmann::json::parse(response.payload, nullptr, false);
-  // Note that the "scopes" attribute will always be present and contain a
-  // JSON array. At minimum, for the request to succeed, the instance must
-  // have been granted the scope that allows it to retrieve info from the
-  // metadata server.
-  if (!response_body.is_object() || response_body.count("email") == 0 ||
-      response_body.count("scopes") == 0) {
-    auto payload =
-        response.payload +
-        "Could not find all required fields in response (email, scopes).";
-    return AsStatus(storage::internal::HttpResponse{
-        storage::internal::HttpStatusCode::kMinInvalidCode, payload,
-        response.headers});
-  }
-  ServiceAccountMetadata metadata;
-  // Do not update any state until all potential errors are handled.
-  metadata.email = response_body.value("email", "");
-  // We need to call the .get<>() helper because the conversion is ambiguous
-  // otherwise.
-  metadata.scopes = response_body["scopes"].get<std::set<std::string>>();
-  return metadata;
+  auto meta = google::cloud::oauth2_internal::ParseMetadataServerResponse(
+      response.payload);
+  return ServiceAccountMetadata{std::move(meta.scopes), std::move(meta.email)};
 }
 
 StatusOr<RefreshingCredentialsWrapper::TemporaryToken>
@@ -52,13 +40,14 @@ ParseComputeEngineRefreshResponse(
   // Response should have the attributes "access_token", "expires_in", and
   // "token_type".
   auto access_token = nlohmann::json::parse(response.payload, nullptr, false);
-  if (!access_token.is_object() || access_token.count("access_token") == 0 or
-      access_token.count("expires_in") == 0 or
+  if (!access_token.is_object() || access_token.count("access_token") == 0 ||
+      access_token.count("expires_in") == 0 ||
       access_token.count("token_type") == 0) {
     auto payload =
         response.payload +
         "Could not find all required fields in response (access_token,"
-        " expires_in, token_type).";
+        " expires_in, token_type) while trying to obtain an access token for"
+        " compute engine credentials.";
     return AsStatus(storage::internal::HttpResponse{response.status_code,
                                                     payload, response.headers});
   }
@@ -66,13 +55,29 @@ ParseComputeEngineRefreshResponse(
   header += access_token.value("token_type", "");
   header += ' ';
   header += access_token.value("access_token", "");
-  auto expires_in =
-      std::chrono::seconds(access_token.value("expires_in", int(0)));
+  auto expires_in = std::chrono::seconds(access_token.value("expires_in", 0));
   auto new_expiration = now + expires_in;
 
   return RefreshingCredentialsWrapper::TemporaryToken{std::move(header),
                                                       new_expiration};
 }
+
+ComputeEngineCredentials<storage::internal::CurlRequestBuilder,
+                         std::chrono::system_clock>::
+    ComputeEngineCredentials(std::string service_account_email)
+    : ComputeEngineCredentials(
+          std::move(service_account_email), [](Options const& o) {
+            return rest_internal::MakeDefaultRestClient(std::string{}, o);
+          }) {}
+
+ComputeEngineCredentials<storage::internal::CurlRequestBuilder,
+                         std::chrono::system_clock>::
+    ComputeEngineCredentials(std::string service_account_email,
+                             oauth2_internal::HttpClientFactory client_factory)
+    : impl_(std::make_shared<oauth2_internal::ComputeEngineCredentials>(
+          std::move(service_account_email), Options{},
+          std::move(client_factory))),
+      cached_(std::make_shared<oauth2_internal::CachedCredentials>(impl_)) {}
 
 }  // namespace oauth2
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

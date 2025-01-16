@@ -15,11 +15,8 @@
 # A minimal CMakeList.txt showing how to use the Cloud Pub/Sub C++ client
 # library in CMake-based projects.
 
-cmake_minimum_required(VERSION 3.5)
-project(google-cloud-cpp-pubsub-quickstart CXX C)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+cmake_minimum_required(VERSION 3.10...3.24)
+project(google-cloud-cpp-pubsub-quickstart CXX)
 
 find_package(google_cloud_cpp_pubsub REQUIRED)
 
@@ -30,6 +27,9 @@ else ()
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif ()
 
-# Once the pubsub_client package is found, define new targets.
+# Once the pubsub_client package is found, define new targets and the
+# dependencies they link.
 add_executable(quickstart quickstart.cc)
 target_link_libraries(quickstart google-cloud-cpp::pubsub)
+add_executable(subscriber_quickstart subscriber_quickstart.cc)
+target_link_libraries(subscriber_quickstart google-cloud-cpp::pubsub)

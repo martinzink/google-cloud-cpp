@@ -21,36 +21,33 @@
 
 #include "google/cloud/datacatalog/policy_tag_manager_serialization_connection.h"
 #include "google/cloud/datacatalog/policy_tag_manager_serialization_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/datacatalog/v1/policy_tag_manager_serialization_options.h"
 
 namespace google {
 namespace cloud {
 namespace datacatalog {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct PolicyTagManagerSerializationRetryPolicyOption {
-  using Type = std::shared_ptr<PolicyTagManagerSerializationRetryPolicy>;
-};
+/// @deprecated Use
+/// datacatalog_v1::PolicyTagManagerSerializationBackoffPolicyOption directly.
+using ::google::cloud::datacatalog_v1::
+    PolicyTagManagerSerializationBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct PolicyTagManagerSerializationBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// datacatalog_v1::PolicyTagManagerSerializationConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::datacatalog_v1::
+    PolicyTagManagerSerializationConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct PolicyTagManagerSerializationConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<PolicyTagManagerSerializationConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use
+/// datacatalog_v1::PolicyTagManagerSerializationPolicyOptionList directly.
+using ::google::cloud::datacatalog_v1::
+    PolicyTagManagerSerializationPolicyOptionList;
 
-using PolicyTagManagerSerializationPolicyOptionList =
-    OptionList<PolicyTagManagerSerializationRetryPolicyOption,
-               PolicyTagManagerSerializationBackoffPolicyOption,
-               PolicyTagManagerSerializationConnectionIdempotencyPolicyOption>;
+/// @deprecated Use
+/// datacatalog_v1::PolicyTagManagerSerializationRetryPolicyOption directly.
+using ::google::cloud::datacatalog_v1::
+    PolicyTagManagerSerializationRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace datacatalog

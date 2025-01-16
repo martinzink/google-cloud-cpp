@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:public"])
+load(":spanner_client_integration_tests.bzl", "spanner_client_integration_tests")
+
+package(default_visibility = ["//visibility:private"])
 
 licenses(["notice"])  # Apache 2.0
-
-load(":spanner_client_integration_tests.bzl", "spanner_client_integration_tests")
 
 [cc_test(
     name = test.replace("/", "_").replace(".cc", ""),
@@ -26,12 +26,14 @@ load(":spanner_client_integration_tests.bzl", "spanner_client_integration_tests"
         "integration-test",
     ],
     deps = [
+        "//:common",
         "//:spanner",
         "//:spanner_mocks",
-        "//google/cloud:google_cloud_cpp_common",
-        "//google/cloud/spanner:spanner_client_testing",
-        "//google/cloud/testing_util:google_cloud_cpp_testing",
-        "//google/cloud/testing_util:google_cloud_cpp_testing_grpc",
+        "//google/cloud/spanner:spanner_client_testing_private",
+        "//google/cloud/testing_util:google_cloud_cpp_testing_grpc_private",
+        "//google/cloud/testing_util:google_cloud_cpp_testing_private",
+        "//protos:system_includes",
+        "//protos/google/cloud/spanner/testing:singer_cc_proto",
         "@com_google_googletest//:gtest_main",
     ],
 ) for test in spanner_client_integration_tests]

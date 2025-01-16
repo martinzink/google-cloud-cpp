@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/asset/asset_client.h"
+//! [all]
+#include "google/cloud/asset/v1/asset_client.h"
 #include "google/cloud/project.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace asset = ::google::cloud::asset;
+  namespace asset = ::google::cloud::asset_v1;
   auto client = asset::AssetServiceClient(asset::MakeAssetServiceConnection());
 
   auto const project = google::cloud::Project(argv[1]);
@@ -31,12 +31,13 @@ int main(int argc, char* argv[]) try {
   request.set_parent(project.FullName());
   request.add_asset_types("storage.googleapis.com/Bucket");
   for (auto a : client.ListAssets(request)) {
-    if (!a) throw std::runtime_error(a.status().message());
+    if (!a) throw std::move(a).status();
     std::cout << a->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

@@ -19,67 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_AUTOML_PREDICTION_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_AUTOML_PREDICTION_CONNECTION_H
 
-#include "google/cloud/automl/internal/prediction_retry_traits.h"
-#include "google/cloud/automl/internal/prediction_stub.h"
 #include "google/cloud/automl/prediction_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/automl/v1/prediction_connection.h"
 
 namespace google {
 namespace cloud {
 namespace automl {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using PredictionServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        automl_internal::PredictionServiceRetryTraits>;
+/// @deprecated Use automl_v1::MakePredictionServiceConnection directly.
+using ::google::cloud::automl_v1::MakePredictionServiceConnection;
 
-using PredictionServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        automl_internal::PredictionServiceRetryTraits>;
+/// @deprecated Use automl_v1::PredictionServiceConnection directly.
+using ::google::cloud::automl_v1::PredictionServiceConnection;
 
-using PredictionServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        automl_internal::PredictionServiceRetryTraits>;
+/// @deprecated Use automl_v1::PredictionServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::automl_v1::PredictionServiceLimitedErrorCountRetryPolicy;
 
-class PredictionServiceConnection {
- public:
-  virtual ~PredictionServiceConnection() = 0;
+/// @deprecated Use automl_v1::PredictionServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::automl_v1::PredictionServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::automl::v1::PredictResponse> Predict(
-      google::cloud::automl::v1::PredictRequest const& request);
-
-  virtual future<StatusOr<google::cloud::automl::v1::BatchPredictResult>>
-  BatchPredict(google::cloud::automl::v1::BatchPredictRequest const& request);
-};
-
-std::shared_ptr<PredictionServiceConnection> MakePredictionServiceConnection(
-    Options options = {});
+/// @deprecated Use automl_v1::PredictionServiceRetryPolicy directly.
+using ::google::cloud::automl_v1::PredictionServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace automl
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace automl_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<automl::PredictionServiceConnection>
-MakePredictionServiceConnection(std::shared_ptr<PredictionServiceStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace automl_internal
 }  // namespace cloud
 }  // namespace google
 

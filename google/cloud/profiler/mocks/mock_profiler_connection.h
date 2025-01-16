@@ -20,37 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PROFILER_MOCKS_MOCK_PROFILER_CONNECTION_H
 
 #include "google/cloud/profiler/profiler_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/profiler/v2/mocks/mock_profiler_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in profiler_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace profiler_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockProfilerServiceConnection
-    : public profiler::ProfilerServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::devtools::cloudprofiler::v2::Profile>,
-              CreateProfile,
-              (google::devtools::cloudprofiler::v2::CreateProfileRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(
-      StatusOr<google::devtools::cloudprofiler::v2::Profile>,
-      CreateOfflineProfile,
-      (google::devtools::cloudprofiler::v2::CreateOfflineProfileRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::devtools::cloudprofiler::v2::Profile>,
-              UpdateProfile,
-              (google::devtools::cloudprofiler::v2::UpdateProfileRequest const&
-                   request),
-              (override));
-};
+/// @deprecated Use profiler_v2_mocks::MockProfilerServiceConnection directly.
+using ::google::cloud::profiler_v2_mocks::MockProfilerServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace profiler_mocks

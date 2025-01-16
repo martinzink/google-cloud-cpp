@@ -20,75 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_FIREWALL_CONNECTION_H
 
 #include "google/cloud/appengine/firewall_connection_idempotency_policy.h"
-#include "google/cloud/appengine/internal/firewall_retry_traits.h"
-#include "google/cloud/appengine/internal/firewall_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/appengine/v1/firewall_connection.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using FirewallRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    appengine_internal::FirewallRetryTraits>;
+/// @deprecated Use appengine_v1::MakeFirewallConnection directly.
+using ::google::cloud::appengine_v1::MakeFirewallConnection;
 
-using FirewallLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::FirewallRetryTraits>;
+/// @deprecated Use appengine_v1::FirewallConnection directly.
+using ::google::cloud::appengine_v1::FirewallConnection;
 
-using FirewallLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::FirewallRetryTraits>;
+/// @deprecated Use appengine_v1::FirewallLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::appengine_v1::FirewallLimitedErrorCountRetryPolicy;
 
-class FirewallConnection {
- public:
-  virtual ~FirewallConnection() = 0;
+/// @deprecated Use appengine_v1::FirewallLimitedTimeRetryPolicy directly.
+using ::google::cloud::appengine_v1::FirewallLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::appengine::v1::FirewallRule> ListIngressRules(
-      google::appengine::v1::ListIngressRulesRequest request);
-
-  virtual StatusOr<google::appengine::v1::BatchUpdateIngressRulesResponse>
-  BatchUpdateIngressRules(
-      google::appengine::v1::BatchUpdateIngressRulesRequest const& request);
-
-  virtual StatusOr<google::appengine::v1::FirewallRule> CreateIngressRule(
-      google::appengine::v1::CreateIngressRuleRequest const& request);
-
-  virtual StatusOr<google::appengine::v1::FirewallRule> GetIngressRule(
-      google::appengine::v1::GetIngressRuleRequest const& request);
-
-  virtual StatusOr<google::appengine::v1::FirewallRule> UpdateIngressRule(
-      google::appengine::v1::UpdateIngressRuleRequest const& request);
-
-  virtual Status DeleteIngressRule(
-      google::appengine::v1::DeleteIngressRuleRequest const& request);
-};
-
-std::shared_ptr<FirewallConnection> MakeFirewallConnection(
-    Options options = {});
+/// @deprecated Use appengine_v1::FirewallRetryPolicy directly.
+using ::google::cloud::appengine_v1::FirewallRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::FirewallConnection> MakeFirewallConnection(
-    std::shared_ptr<FirewallStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

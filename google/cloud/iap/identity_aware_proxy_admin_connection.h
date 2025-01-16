@@ -20,72 +20,35 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_IAP_IDENTITY_AWARE_PROXY_ADMIN_CONNECTION_H
 
 #include "google/cloud/iap/identity_aware_proxy_admin_connection_idempotency_policy.h"
-#include "google/cloud/iap/internal/identity_aware_proxy_admin_retry_traits.h"
-#include "google/cloud/iap/internal/identity_aware_proxy_admin_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/iap/v1/identity_aware_proxy_admin_connection.h"
 
 namespace google {
 namespace cloud {
 namespace iap {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using IdentityAwareProxyAdminServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        iap_internal::IdentityAwareProxyAdminServiceRetryTraits>;
+/// @deprecated Use iap_v1::MakeIdentityAwareProxyAdminServiceConnection
+/// directly.
+using ::google::cloud::iap_v1::MakeIdentityAwareProxyAdminServiceConnection;
 
-using IdentityAwareProxyAdminServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        iap_internal::IdentityAwareProxyAdminServiceRetryTraits>;
+/// @deprecated Use iap_v1::IdentityAwareProxyAdminServiceConnection directly.
+using ::google::cloud::iap_v1::IdentityAwareProxyAdminServiceConnection;
 
-using IdentityAwareProxyAdminServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        iap_internal::IdentityAwareProxyAdminServiceRetryTraits>;
+/// @deprecated Use
+/// iap_v1::IdentityAwareProxyAdminServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::iap_v1::
+    IdentityAwareProxyAdminServiceLimitedErrorCountRetryPolicy;
 
-class IdentityAwareProxyAdminServiceConnection {
- public:
-  virtual ~IdentityAwareProxyAdminServiceConnection() = 0;
+/// @deprecated Use iap_v1::IdentityAwareProxyAdminServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::iap_v1::
+    IdentityAwareProxyAdminServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::iam::v1::Policy> SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::TestIamPermissionsResponse>
-  TestIamPermissions(google::iam::v1::TestIamPermissionsRequest const& request);
-
-  virtual StatusOr<google::cloud::iap::v1::IapSettings> GetIapSettings(
-      google::cloud::iap::v1::GetIapSettingsRequest const& request);
-
-  virtual StatusOr<google::cloud::iap::v1::IapSettings> UpdateIapSettings(
-      google::cloud::iap::v1::UpdateIapSettingsRequest const& request);
-};
-
-std::shared_ptr<IdentityAwareProxyAdminServiceConnection>
-MakeIdentityAwareProxyAdminServiceConnection(Options options = {});
+/// @deprecated Use iap_v1::IdentityAwareProxyAdminServiceRetryPolicy directly.
+using ::google::cloud::iap_v1::IdentityAwareProxyAdminServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace iap
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace iap_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<iap::IdentityAwareProxyAdminServiceConnection>
-MakeIdentityAwareProxyAdminServiceConnection(
-    std::shared_ptr<IdentityAwareProxyAdminServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace iap_internal
 }  // namespace cloud
 }  // namespace google
 

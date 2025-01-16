@@ -21,36 +21,33 @@
 
 #include "google/cloud/monitoring/notification_channel_connection.h"
 #include "google/cloud/monitoring/notification_channel_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/notification_channel_options.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct NotificationChannelServiceRetryPolicyOption {
-  using Type = std::shared_ptr<NotificationChannelServiceRetryPolicy>;
-};
+/// @deprecated Use monitoring_v3::NotificationChannelServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::monitoring_v3::
+    NotificationChannelServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct NotificationChannelServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// monitoring_v3::NotificationChannelServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::monitoring_v3::
+    NotificationChannelServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct NotificationChannelServiceConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<NotificationChannelServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use monitoring_v3::NotificationChannelServicePolicyOptionList
+/// directly.
+using ::google::cloud::monitoring_v3::
+    NotificationChannelServicePolicyOptionList;
 
-using NotificationChannelServicePolicyOptionList =
-    OptionList<NotificationChannelServiceRetryPolicyOption,
-               NotificationChannelServiceBackoffPolicyOption,
-               NotificationChannelServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use monitoring_v3::NotificationChannelServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::monitoring_v3::
+    NotificationChannelServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring

@@ -47,7 +47,9 @@ TEST(CurlHandleTest, AsStatus) {
       {CURLE_FTP_PORT_FAILED, StatusCode::kUnknown},
       {CURLE_GOT_NOTHING, StatusCode::kUnavailable},
       {CURLE_AGAIN, StatusCode::kUnknown},
+#if CURL_AT_LEAST_VERSION(7, 43, 0)
       {CURLE_HTTP2, StatusCode::kUnavailable},
+#endif  // CURL_AT_LEAST_VERSION
   };
 
   for (auto const& codes : expected_codes) {
@@ -59,37 +61,6 @@ TEST(CurlHandleTest, AsStatus) {
       EXPECT_THAT(actual.message(), HasSubstr(curl_easy_strerror(codes.curl)));
     }
   }
-}
-
-TEST(AssertOptionSuccess, StringWithError) {
-  EXPECT_DEATH_IF_SUPPORTED(
-      AssertOptionSuccess(CURLE_NOT_BUILT_IN, CURLOPT_CAINFO, "test-function",
-                          "some-path"),
-      "test-function");
-}
-
-TEST(AssertOptionSuccess, IntWithError) {
-  EXPECT_DEATH_IF_SUPPORTED(
-      AssertOptionSuccess(CURLE_NOT_BUILT_IN, CURLOPT_CAINFO, "test-function",
-                          1234),
-      "test-function");
-}
-
-TEST(AssertOptionSuccess, NullptrWithError) {
-  EXPECT_DEATH_IF_SUPPORTED(
-      AssertOptionSuccess(CURLE_NOT_BUILT_IN, CURLOPT_CAINFO, "test-function",
-                          nullptr),
-      "test-function");
-}
-
-int TestFunction() { return 42; }
-
-TEST(AssertOptionSuccess, FunctionPtrWithError) {
-  EXPECT_EQ(42, TestFunction());
-  EXPECT_DEATH_IF_SUPPORTED(
-      AssertOptionSuccess(CURLE_NOT_BUILT_IN, CURLOPT_CAINFO, "test-function",
-                          &TestFunction),
-      "test-function");
 }
 
 }  // namespace

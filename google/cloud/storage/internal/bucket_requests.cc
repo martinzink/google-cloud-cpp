@@ -15,10 +15,16 @@
 #include "google/cloud/storage/internal/bucket_requests.h"
 #include "google/cloud/storage/internal/bucket_acl_requests.h"
 #include "google/cloud/storage/internal/bucket_metadata_parser.h"
+#include "google/cloud/storage/internal/metadata_parser.h"
 #include "google/cloud/internal/absl_str_join_quiet.h"
 #include "google/cloud/internal/format_time_point.h"
 #include <nlohmann/json.hpp>
+#include <map>
+#include <set>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -224,9 +230,7 @@ std::ostream& operator<<(std::ostream& os, ListBucketsRequest const& r) {
 StatusOr<ListBucketsResponse> ListBucketsResponse::FromHttpResponse(
     std::string const& payload) {
   auto json = nlohmann::json::parse(payload, nullptr, false);
-  if (!json.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
+  if (!json.is_object()) return ExpectedJsonObject(payload, GCP_ERROR_INFO());
 
   ListBucketsResponse result;
   result.next_page_token = json.value("nextPageToken", "");
@@ -240,6 +244,11 @@ StatusOr<ListBucketsResponse> ListBucketsResponse::FromHttpResponse(
   }
 
   return result;
+}
+
+StatusOr<ListBucketsResponse> ListBucketsResponse::FromHttpResponse(
+    HttpResponse const& response) {
+  return FromHttpResponse(response.payload);
 }
 
 std::ostream& operator<<(std::ostream& os, ListBucketsResponse const& r) {
@@ -297,104 +306,9 @@ std::ostream& operator<<(std::ostream& os, GetBucketIamPolicyRequest const& r) {
   return os << "}";
 }
 
-namespace {
-Status ValidateIamBinding(nlohmann::json const& binding,
-                          std::string const& name, std::string const& payload) {
-  if (!binding.is_object()) {
-    std::ostringstream os;
-    os << "Invalid IamPolicy payload, expected objects for 'bindings' "
-          "entries. Consider using the *NativeIamPolicy() member functions."
-       << "  payload=" << payload;
-    return Status(StatusCode::kInvalidArgument, os.str());
-  }
-  for (auto const& binding_kv : binding.items()) {
-    auto const& key = binding_kv.key();
-    if (key != "members" && key != "role") {
-      std::ostringstream os;
-      os << "Invalid IamPolicy payload, unexpected member '" << key
-         << "' in element #" << name << ". payload=" << payload;
-      return Status(StatusCode::kInvalidArgument, os.str());
-    }
-  }
-  if (binding.count("role") == 0 or binding.count("members") == 0) {
-    std::ostringstream os;
-    os << "Invalid IamPolicy payload, expected 'role' and 'members'"
-       << " fields for element #" << name << ". payload=" << payload;
-    return Status(StatusCode::kInvalidArgument, os.str());
-  }
-  if (!binding["members"].is_array()) {
-    std::ostringstream os;
-    os << "Invalid IamPolicy payload, expected array for 'members'"
-       << " fields for element #" << name << ". payload=" << payload;
-    return Status(StatusCode::kInvalidArgument, os.str());
-  }
-  return Status{};
-}
-}  // namespace
-
-// TODO(#5929) - remove after decommission is completed
-#include "google/cloud/internal/disable_deprecation_warnings.inc"
-
-StatusOr<IamPolicy> ParseIamPolicyFromString(std::string const& payload) {
-  auto json = nlohmann::json::parse(payload, nullptr, false);
-  if (!json.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
-  IamPolicy policy;
-  policy.version = 0;
-  policy.etag = json.value("etag", "");
-  if (json.count("bindings") != 0) {
-    if (!json["bindings"].is_array()) {
-      std::ostringstream os;
-      os << "Invalid IamPolicy payload, expected array for 'bindings' "
-            "field."
-         << "  payload=" << payload;
-      return Status(StatusCode::kInvalidArgument, os.str());
-    }
-    for (auto const& kv : json["bindings"].items()) {
-      auto const& binding = kv.value();
-      auto valid = ValidateIamBinding(binding, kv.key(), payload);
-      if (!valid.ok()) return valid;
-
-      std::string role = binding.value("role", "");
-      for (auto const& member : binding["members"].items()) {
-        policy.bindings.AddMember(role, member.value());
-      }
-    }
-  }
-  return policy;
-}
-
-SetBucketIamPolicyRequest::SetBucketIamPolicyRequest(
-    std::string bucket_name, google::cloud::IamPolicy const& policy)
-    : bucket_name_(std::move(bucket_name)), policy_(policy) {
-  nlohmann::json iam{{"kind", "storage#policy"},
-                     {"etag", policy.etag},
-                     {"version", policy.version}};
-  nlohmann::json bindings;
-  for (auto const& binding : policy.bindings) {
-    nlohmann::json b{
-        {"role", binding.first},
-    };
-    nlohmann::json m;
-    for (auto const& member : binding.second) {
-      m.emplace_back(member);
-    }
-    b["members"] = std::move(m);
-    bindings.emplace_back(std::move(b));
-  }
-  iam["bindings"] = std::move(bindings);
-  json_payload_ = iam.dump();
-}
-
-// TODO(#5929) - remove after decommission is completed
-#include "google/cloud/internal/diagnostics_pop.inc"
-
-std::ostream& operator<<(std::ostream& os, SetBucketIamPolicyRequest const& r) {
-  os << "GetBucketIamPolicyRequest={bucket_name=" << r.bucket_name();
-  r.DumpOptions(os, ", ");
-  return os << ", json_payload=" << r.json_payload() << "}";
-}
+SetNativeBucketIamPolicyRequest::SetNativeBucketIamPolicyRequest()
+    : SetNativeBucketIamPolicyRequest(
+          std::string{}, NativeIamPolicy(std::vector<NativeIamBinding>{})) {}
 
 SetNativeBucketIamPolicyRequest::SetNativeBucketIamPolicyRequest(
     std::string bucket_name, NativeIamPolicy const& policy)
@@ -427,13 +341,17 @@ StatusOr<TestBucketIamPermissionsResponse>
 TestBucketIamPermissionsResponse::FromHttpResponse(std::string const& payload) {
   TestBucketIamPermissionsResponse result;
   auto json = nlohmann::json::parse(payload, nullptr, false);
-  if (!json.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
+  if (!json.is_object()) return ExpectedJsonObject(payload, GCP_ERROR_INFO());
   for (auto const& kv : json["permissions"].items()) {
     result.permissions.emplace_back(kv.value().get<std::string>());
   }
   return result;
+}
+
+StatusOr<TestBucketIamPermissionsResponse>
+TestBucketIamPermissionsResponse::FromHttpResponse(
+    HttpResponse const& response) {
+  return FromHttpResponse(response.payload);
 }
 
 std::ostream& operator<<(std::ostream& os,

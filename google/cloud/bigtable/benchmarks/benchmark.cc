@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "google/cloud/bigtable/resource_names.h"
 #include "google/cloud/internal/background_threads_impl.h"
 #include "google/cloud/internal/getenv.h"
+#include "google/cloud/internal/make_status.h"
 #include <future>
 #include <iomanip>
 #include <sstream>
@@ -44,8 +45,8 @@ google::cloud::StatusOr<BenchmarkOptions> ParseArgs(
       if (!value.empty()) continue;
       std::ostringstream os;
       os << "The environment variable " << var << " is not set or empty";
-      return google::cloud::Status(google::cloud::StatusCode::kUnknown,
-                                   std::move(os).str());
+      return google::cloud::internal::UnknownError(std::move(os).str(),
+                                                   GCP_ERROR_INFO());
     }
     auto const project_id = GetEnv("GOOGLE_CLOUD_PROJECT").value();
     auto const instance_id =
@@ -79,9 +80,7 @@ Benchmark::Benchmark(BenchmarkOptions options)
     server_thread_ = std::thread([this]() { server_->Wait(); });
 
     opts_.set<GrpcCredentialOption>(grpc::InsecureChannelCredentials())
-        .set<DataEndpointOption>(address)
-        .set<AdminEndpointOption>(address)
-        .set<InstanceAdminEndpointOption>(address);
+        .set<EndpointOption>(address);
   }
 }
 
@@ -98,13 +97,8 @@ Benchmark::~Benchmark() {
 
 std::string Benchmark::CreateTable() {
   // Create the table, with an initial split.
-  auto admin_opts = opts_;
-  admin_opts.set<EndpointOption>(opts_.get<AdminEndpointOption>());
   auto admin = bigtable_admin::BigtableTableAdminClient(
-      bigtable_admin::MakeBigtableTableAdminConnection(admin_opts));
-
-  google::bigtable::admin::v2::GcRule gc;
-  gc.set_max_num_versions(1);
+      bigtable_admin::MakeBigtableTableAdminConnection(opts_));
 
   google::bigtable::admin::v2::CreateTableRequest r;
   r.set_parent(InstanceName(options_.project_id, options_.instance_id));
@@ -113,17 +107,15 @@ std::string Benchmark::CreateTable() {
     r.add_initial_splits()->set_key("user" + std::to_string(i));
   }
   auto& families = *r.mutable_table()->mutable_column_families();
-  *families[kColumnFamily].mutable_gc_rule() = std::move(gc);
+  families[kColumnFamily].mutable_gc_rule()->set_max_num_versions(1);
 
   (void)admin.CreateTable(std::move(r));
   return options_.table_id;
 }
 
 void Benchmark::DeleteTable() {
-  auto admin_opts = opts_;
-  admin_opts.set<EndpointOption>(opts_.get<AdminEndpointOption>());
   auto admin = bigtable_admin::BigtableTableAdminClient(
-      bigtable_admin::MakeBigtableTableAdminConnection(admin_opts));
+      bigtable_admin::MakeBigtableTableAdminConnection(opts_));
   auto status = admin.DeleteTable(
       TableName(options_.project_id, options_.instance_id, options_.table_id));
   if (!status.ok()) {
@@ -132,14 +124,16 @@ void Benchmark::DeleteTable() {
   }
 }
 
-std::shared_ptr<bigtable::DataClient> Benchmark::MakeDataClient() {
-  return bigtable::MakeDataClient(options_.project_id, options_.instance_id,
-                                  opts_);
+Table Benchmark::MakeTable() const {
+  auto table_opts = Options{}.set<AppProfileIdOption>(options_.app_profile_id);
+  return Table(MakeDataConnection(opts_),
+               TableResource(options_.project_id, options_.instance_id,
+                             options_.table_id),
+               std::move(table_opts));
 }
 
 google::cloud::StatusOr<BenchmarkResult> Benchmark::PopulateTable() {
-  bigtable::Table table(MakeDataClient(), options_.app_profile_id,
-                        options_.table_id);
+  auto table = MakeTable();
   std::cout << "# Populating table " << options_.table_id << " " << std::flush;
   std::vector<std::future<google::cloud::StatusOr<BenchmarkResult>>> tasks;
   auto upload_start = std::chrono::steady_clock::now();

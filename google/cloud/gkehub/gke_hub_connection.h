@@ -20,95 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_GKEHUB_GKE_HUB_CONNECTION_H
 
 #include "google/cloud/gkehub/gke_hub_connection_idempotency_policy.h"
-#include "google/cloud/gkehub/internal/gke_hub_retry_traits.h"
-#include "google/cloud/gkehub/internal/gke_hub_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/gkehub/v1/gke_hub_connection.h"
 
 namespace google {
 namespace cloud {
 namespace gkehub {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using GkeHubRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    gkehub_internal::GkeHubRetryTraits>;
+/// @deprecated Use gkehub_v1::MakeGkeHubConnection directly.
+using ::google::cloud::gkehub_v1::MakeGkeHubConnection;
 
-using GkeHubLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        gkehub_internal::GkeHubRetryTraits>;
+/// @deprecated Use gkehub_v1::GkeHubConnection directly.
+using ::google::cloud::gkehub_v1::GkeHubConnection;
 
-using GkeHubLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        gkehub_internal::GkeHubRetryTraits>;
+/// @deprecated Use gkehub_v1::GkeHubLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::gkehub_v1::GkeHubLimitedErrorCountRetryPolicy;
 
-class GkeHubConnection {
- public:
-  virtual ~GkeHubConnection() = 0;
+/// @deprecated Use gkehub_v1::GkeHubLimitedTimeRetryPolicy directly.
+using ::google::cloud::gkehub_v1::GkeHubLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::gkehub::v1::Membership> ListMemberships(
-      google::cloud::gkehub::v1::ListMembershipsRequest request);
-
-  virtual StreamRange<google::cloud::gkehub::v1::Feature> ListFeatures(
-      google::cloud::gkehub::v1::ListFeaturesRequest request);
-
-  virtual StatusOr<google::cloud::gkehub::v1::Membership> GetMembership(
-      google::cloud::gkehub::v1::GetMembershipRequest const& request);
-
-  virtual StatusOr<google::cloud::gkehub::v1::Feature> GetFeature(
-      google::cloud::gkehub::v1::GetFeatureRequest const& request);
-
-  virtual future<StatusOr<google::cloud::gkehub::v1::Membership>>
-  CreateMembership(
-      google::cloud::gkehub::v1::CreateMembershipRequest const& request);
-
-  virtual future<StatusOr<google::cloud::gkehub::v1::Feature>> CreateFeature(
-      google::cloud::gkehub::v1::CreateFeatureRequest const& request);
-
-  virtual future<StatusOr<google::cloud::gkehub::v1::OperationMetadata>>
-  DeleteMembership(
-      google::cloud::gkehub::v1::DeleteMembershipRequest const& request);
-
-  virtual future<StatusOr<google::cloud::gkehub::v1::OperationMetadata>>
-  DeleteFeature(google::cloud::gkehub::v1::DeleteFeatureRequest const& request);
-
-  virtual future<StatusOr<google::cloud::gkehub::v1::Membership>>
-  UpdateMembership(
-      google::cloud::gkehub::v1::UpdateMembershipRequest const& request);
-
-  virtual future<StatusOr<google::cloud::gkehub::v1::Feature>> UpdateFeature(
-      google::cloud::gkehub::v1::UpdateFeatureRequest const& request);
-
-  virtual StatusOr<google::cloud::gkehub::v1::GenerateConnectManifestResponse>
-  GenerateConnectManifest(
-      google::cloud::gkehub::v1::GenerateConnectManifestRequest const& request);
-};
-
-std::shared_ptr<GkeHubConnection> MakeGkeHubConnection(Options options = {});
+/// @deprecated Use gkehub_v1::GkeHubRetryPolicy directly.
+using ::google::cloud::gkehub_v1::GkeHubRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace gkehub
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace gkehub_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<gkehub::GkeHubConnection> MakeGkeHubConnection(
-    std::shared_ptr<GkeHubStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace gkehub_internal
 }  // namespace cloud
 }  // namespace google
 

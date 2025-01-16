@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,13 @@
 
 #include "google/cloud/bigtable/row_range.h"
 #include "google/cloud/bigtable/version.h"
+#include <google/protobuf/util/message_differencer.h>
 
 namespace google {
 namespace cloud {
 namespace bigtable {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
 /**
  * Represent a (possibly non-continuous) set of row keys.
  *
@@ -37,6 +39,14 @@ class RowSet {
   RowSet& operator=(RowSet&&) = default;
   RowSet(RowSet const&) = default;
   RowSet& operator=(RowSet const&) = default;
+
+  friend bool operator==(RowSet const& a, RowSet const& b) noexcept {
+    return google::protobuf::util::MessageDifferencer::Equivalent(a.row_set_,
+                                                                  b.row_set_);
+  }
+  friend bool operator!=(RowSet const& a, RowSet const& b) noexcept {
+    return !(a == b);
+  }
 
   template <typename... Arg>
   RowSet(Arg&&... a) {  // NOLINT(google-explicit-constructor)

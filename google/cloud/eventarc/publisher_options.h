@@ -21,34 +21,27 @@
 
 #include "google/cloud/eventarc/publisher_connection.h"
 #include "google/cloud/eventarc/publisher_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/eventarc/publishing/v1/publisher_options.h"
 
 namespace google {
 namespace cloud {
 namespace eventarc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct PublisherRetryPolicyOption {
-  using Type = std::shared_ptr<PublisherRetryPolicy>;
-};
+/// @deprecated Use eventarc_publishing_v1::PublisherBackoffPolicyOption
+/// directly.
+using ::google::cloud::eventarc_publishing_v1::PublisherBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct PublisherBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// eventarc_publishing_v1::PublisherConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::eventarc_publishing_v1::
+    PublisherConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct PublisherConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<PublisherConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use eventarc_publishing_v1::PublisherPolicyOptionList directly.
+using ::google::cloud::eventarc_publishing_v1::PublisherPolicyOptionList;
 
-using PublisherPolicyOptionList =
-    OptionList<PublisherRetryPolicyOption, PublisherBackoffPolicyOption,
-               PublisherConnectionIdempotencyPolicyOption>;
+/// @deprecated Use eventarc_publishing_v1::PublisherRetryPolicyOption directly.
+using ::google::cloud::eventarc_publishing_v1::PublisherRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace eventarc

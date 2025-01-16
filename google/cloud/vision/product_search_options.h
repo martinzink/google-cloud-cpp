@@ -21,40 +21,29 @@
 
 #include "google/cloud/vision/product_search_connection.h"
 #include "google/cloud/vision/product_search_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/vision/v1/product_search_options.h"
 
 namespace google {
 namespace cloud {
 namespace vision {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ProductSearchRetryPolicyOption {
-  using Type = std::shared_ptr<ProductSearchRetryPolicy>;
-};
+/// @deprecated Use vision_v1::ProductSearchPollingPolicyOption directly.
+using ::google::cloud::vision_v1::ProductSearchPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProductSearchBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use vision_v1::ProductSearchBackoffPolicyOption directly.
+using ::google::cloud::vision_v1::ProductSearchBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProductSearchPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use vision_v1::ProductSearchConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::vision_v1::
+    ProductSearchConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ProductSearchConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ProductSearchConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use vision_v1::ProductSearchPolicyOptionList directly.
+using ::google::cloud::vision_v1::ProductSearchPolicyOptionList;
 
-using ProductSearchPolicyOptionList =
-    OptionList<ProductSearchRetryPolicyOption, ProductSearchBackoffPolicyOption,
-               ProductSearchPollingPolicyOption,
-               ProductSearchConnectionIdempotencyPolicyOption>;
+/// @deprecated Use vision_v1::ProductSearchRetryPolicyOption directly.
+using ::google::cloud::vision_v1::ProductSearchRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace vision

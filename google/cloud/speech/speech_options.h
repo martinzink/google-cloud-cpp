@@ -21,40 +21,27 @@
 
 #include "google/cloud/speech/speech_connection.h"
 #include "google/cloud/speech/speech_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/speech/v1/speech_options.h"
 
 namespace google {
 namespace cloud {
 namespace speech {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct SpeechRetryPolicyOption {
-  using Type = std::shared_ptr<SpeechRetryPolicy>;
-};
+/// @deprecated Use speech_v1::SpeechPollingPolicyOption directly.
+using ::google::cloud::speech_v1::SpeechPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SpeechBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use speech_v1::SpeechBackoffPolicyOption directly.
+using ::google::cloud::speech_v1::SpeechBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SpeechPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use speech_v1::SpeechConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::speech_v1::SpeechConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct SpeechConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<SpeechConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use speech_v1::SpeechPolicyOptionList directly.
+using ::google::cloud::speech_v1::SpeechPolicyOptionList;
 
-using SpeechPolicyOptionList =
-    OptionList<SpeechRetryPolicyOption, SpeechBackoffPolicyOption,
-               SpeechPollingPolicyOption,
-               SpeechConnectionIdempotencyPolicyOption>;
+/// @deprecated Use speech_v1::SpeechRetryPolicyOption directly.
+using ::google::cloud::speech_v1::SpeechRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace speech

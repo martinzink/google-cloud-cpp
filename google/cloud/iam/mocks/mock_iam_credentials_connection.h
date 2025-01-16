@@ -19,39 +19,20 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_IAM_MOCKS_MOCK_IAM_CREDENTIALS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_IAM_MOCKS_MOCK_IAM_CREDENTIALS_CONNECTION_H
 
+#include "google/cloud/iam/credentials/v1/mocks/mock_iam_credentials_connection.h"
 #include "google/cloud/iam/iam_credentials_connection.h"
-#include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in iam_credentials_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace iam_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockIAMCredentialsConnection : public iam::IAMCredentialsConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::iam::credentials::v1::GenerateAccessTokenResponse>,
-      GenerateAccessToken,
-      (google::iam::credentials::v1::GenerateAccessTokenRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::iam::credentials::v1::GenerateIdTokenResponse>,
-      GenerateIdToken,
-      (google::iam::credentials::v1::GenerateIdTokenRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::iam::credentials::v1::SignBlobResponse>,
-              SignBlob,
-              (google::iam::credentials::v1::SignBlobRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::iam::credentials::v1::SignJwtResponse>, SignJwt,
-              (google::iam::credentials::v1::SignJwtRequest const& request),
-              (override));
-};
+/// @deprecated Use iam_credentials_v1_mocks::MockIAMCredentialsConnection
+/// directly.
+using ::google::cloud::iam_credentials_v1_mocks::MockIAMCredentialsConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace iam_mocks

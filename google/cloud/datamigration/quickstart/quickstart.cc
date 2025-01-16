@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/datamigration/data_migration_client.h"
+//! [all]
+#include "google/cloud/datamigration/v1/data_migration_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -22,19 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace datamigration = ::google::cloud::datamigration;
+  auto const location = google::cloud::Location(argv[1], argv[2]);
+
+  namespace datamigration = ::google::cloud::datamigration_v1;
   auto client = datamigration::DataMigrationServiceClient(
       datamigration::MakeDataMigrationServiceConnection());
 
-  auto const parent =
-      std::string{"projects/"} + argv[1] + "/locations/" + argv[2];
-  for (auto r : client.ListMigrationJobs(parent)) {
-    if (!r) throw std::runtime_error(r.status().message());
-    std::cout << r->DebugString() << "\n";
+  for (auto mj : client.ListMigrationJobs(location.FullName())) {
+    if (!mj) throw std::move(mj).status();
+    std::cout << mj->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

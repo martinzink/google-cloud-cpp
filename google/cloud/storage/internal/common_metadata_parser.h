@@ -20,18 +20,21 @@
 #include "google/cloud/status.h"
 #include <nlohmann/json.hpp>
 #include <string>
+#include <utility>
+
 namespace google {
 namespace cloud {
 namespace storage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
+// TODO(#9897) - remove this class and any references to it
 template <typename Derived>
-struct CommonMetadataParser {
+struct GOOGLE_CLOUD_CPP_DEPRECATED(
+    "This class will be removed shortly after 2023-06-01")
+    CommonMetadataParser {
   static Status FromJson(CommonMetadata<Derived>& result,
                          nlohmann::json const& json) {
-    if (!json.is_object()) {
-      return Status(StatusCode::kInvalidArgument, __func__);
-    }
+    if (!json.is_object()) return NotJsonObject(json, GCP_ERROR_INFO());
     result.etag_ = json.value("etag", "");
     result.id_ = json.value("id", "");
     result.kind_ = json.value("kind", "");

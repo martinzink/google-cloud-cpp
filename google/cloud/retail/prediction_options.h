@@ -21,35 +21,26 @@
 
 #include "google/cloud/retail/prediction_connection.h"
 #include "google/cloud/retail/prediction_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/retail/v2/prediction_options.h"
 
 namespace google {
 namespace cloud {
 namespace retail {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct PredictionServiceRetryPolicyOption {
-  using Type = std::shared_ptr<PredictionServiceRetryPolicy>;
-};
+/// @deprecated Use retail_v2::PredictionServiceBackoffPolicyOption directly.
+using ::google::cloud::retail_v2::PredictionServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct PredictionServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// retail_v2::PredictionServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::retail_v2::
+    PredictionServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct PredictionServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<PredictionServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use retail_v2::PredictionServicePolicyOptionList directly.
+using ::google::cloud::retail_v2::PredictionServicePolicyOptionList;
 
-using PredictionServicePolicyOptionList =
-    OptionList<PredictionServiceRetryPolicyOption,
-               PredictionServiceBackoffPolicyOption,
-               PredictionServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use retail_v2::PredictionServiceRetryPolicyOption directly.
+using ::google::cloud::retail_v2::PredictionServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail

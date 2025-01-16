@@ -21,41 +21,29 @@
 
 #include "google/cloud/vision/image_annotator_connection.h"
 #include "google/cloud/vision/image_annotator_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/vision/v1/image_annotator_options.h"
 
 namespace google {
 namespace cloud {
 namespace vision {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ImageAnnotatorRetryPolicyOption {
-  using Type = std::shared_ptr<ImageAnnotatorRetryPolicy>;
-};
+/// @deprecated Use vision_v1::ImageAnnotatorPollingPolicyOption directly.
+using ::google::cloud::vision_v1::ImageAnnotatorPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ImageAnnotatorBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use vision_v1::ImageAnnotatorBackoffPolicyOption directly.
+using ::google::cloud::vision_v1::ImageAnnotatorBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ImageAnnotatorPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use vision_v1::ImageAnnotatorConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::vision_v1::
+    ImageAnnotatorConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ImageAnnotatorConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ImageAnnotatorConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use vision_v1::ImageAnnotatorPolicyOptionList directly.
+using ::google::cloud::vision_v1::ImageAnnotatorPolicyOptionList;
 
-using ImageAnnotatorPolicyOptionList =
-    OptionList<ImageAnnotatorRetryPolicyOption,
-               ImageAnnotatorBackoffPolicyOption,
-               ImageAnnotatorPollingPolicyOption,
-               ImageAnnotatorConnectionIdempotencyPolicyOption>;
+/// @deprecated Use vision_v1::ImageAnnotatorRetryPolicyOption directly.
+using ::google::cloud::vision_v1::ImageAnnotatorRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace vision

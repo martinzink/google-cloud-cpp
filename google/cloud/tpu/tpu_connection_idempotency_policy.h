@@ -19,60 +19,18 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TPU_TPU_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TPU_TPU_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/tpu/v1/cloud_tpu.grpc.pb.h>
-#include <memory>
+#include "google/cloud/tpu/v1/tpu_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace tpu {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class TpuConnectionIdempotencyPolicy {
- public:
-  virtual ~TpuConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use tpu_v1::MakeDefaultTpuConnectionIdempotencyPolicy directly.
+using ::google::cloud::tpu_v1::MakeDefaultTpuConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<TpuConnectionIdempotencyPolicy> clone() const = 0;
-
-  virtual google::cloud::Idempotency ListNodes(
-      google::cloud::tpu::v1::ListNodesRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetNode(
-      google::cloud::tpu::v1::GetNodeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency CreateNode(
-      google::cloud::tpu::v1::CreateNodeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteNode(
-      google::cloud::tpu::v1::DeleteNodeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ReimageNode(
-      google::cloud::tpu::v1::ReimageNodeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency StopNode(
-      google::cloud::tpu::v1::StopNodeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency StartNode(
-      google::cloud::tpu::v1::StartNodeRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ListTensorFlowVersions(
-      google::cloud::tpu::v1::ListTensorFlowVersionsRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetTensorFlowVersion(
-      google::cloud::tpu::v1::GetTensorFlowVersionRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency ListAcceleratorTypes(
-      google::cloud::tpu::v1::ListAcceleratorTypesRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetAcceleratorType(
-      google::cloud::tpu::v1::GetAcceleratorTypeRequest const& request) = 0;
-};
-
-std::unique_ptr<TpuConnectionIdempotencyPolicy>
-MakeDefaultTpuConnectionIdempotencyPolicy();
+/// @deprecated Use tpu_v1::TpuConnectionIdempotencyPolicy directly.
+using ::google::cloud::tpu_v1::TpuConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace tpu

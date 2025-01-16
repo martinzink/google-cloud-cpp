@@ -15,6 +15,8 @@
 #include "google/cloud/storage/idempotency_policy.h"
 #include "google/cloud/storage/iam_policy.h"
 #include <gmock/gmock.h>
+#include <string>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -110,21 +112,6 @@ TEST(StrictIdempotencyPolicyTest, PatchBucketIfMetagenerationMatch) {
 TEST(StrictIdempotencyPolicyTest, GetIamPolicy) {
   StrictIdempotencyPolicy policy;
   internal::GetBucketIamPolicyRequest request("test-bucket-name");
-  EXPECT_TRUE(policy.IsIdempotent(request));
-}
-
-TEST(StrictIdempotencyPolicyTest, SetBucketIamPolicy) {
-  StrictIdempotencyPolicy policy;
-  internal::SetBucketIamPolicyRequest request("test-bucket-name",
-                                              google::cloud::IamPolicy{});
-  EXPECT_FALSE(policy.IsIdempotent(request));
-}
-
-TEST(StrictIdempotencyPolicyTest, SetBucketIamPolicyIfEtag) {
-  StrictIdempotencyPolicy policy;
-  internal::SetBucketIamPolicyRequest request("test-bucket-name",
-                                              google::cloud::IamPolicy{});
-  request.set_option(IfMatchEtag("ABC123="));
   EXPECT_TRUE(policy.IsIdempotent(request));
 }
 
@@ -244,6 +231,21 @@ TEST(StrictIdempotencyPolicyTest, UpdateObjectIfMetagenerationMatch) {
   EXPECT_TRUE(policy.IsIdempotent(request));
 }
 
+TEST(StrictIdempotencyPolicyTest, MoveObject) {
+  StrictIdempotencyPolicy policy;
+  internal::MoveObjectRequest request(
+      "test-bucket-name", "test-src-object-name", "test-dst-object-name");
+  EXPECT_FALSE(policy.IsIdempotent(request));
+}
+
+TEST(StrictIdempotencyPolicyTest, MoveObjectIfGenerationMatch) {
+  StrictIdempotencyPolicy policy;
+  internal::MoveObjectRequest request(
+      "test-bucket-name", "test-src-object-name", "test-dst-object-name");
+  request.set_option(IfGenerationMatch(7));
+  EXPECT_TRUE(policy.IsIdempotent(request));
+}
+
 TEST(StrictIdempotencyPolicyTest, PatchObject) {
   StrictIdempotencyPolicy policy;
   internal::PatchObjectRequest request("test-bucket-name", "test-object-name",
@@ -297,6 +299,19 @@ TEST(StrictIdempotencyPolicyTest, RewriteObjectIfGenerationMatch) {
   internal::RewriteObjectRequest request(
       "test-source-bucket", "test-source-object", "test-bucket-name",
       "test-object-name", std::string{});
+  request.set_option(IfGenerationMatch(0));
+  EXPECT_TRUE(policy.IsIdempotent(request));
+}
+
+TEST(StrictIdempotencyPolicyTest, RestoreObject) {
+  StrictIdempotencyPolicy policy;
+  internal::RestoreObjectRequest request("test-bucket", "test-object", 1234);
+  EXPECT_FALSE(policy.IsIdempotent(request));
+}
+
+TEST(StrictIdempotencyPolicyTest, RestoreObjectIfGenerationMatch) {
+  StrictIdempotencyPolicy policy;
+  internal::RestoreObjectRequest request("test-bucket", "test-object", 1234);
   request.set_option(IfGenerationMatch(0));
   EXPECT_TRUE(policy.IsIdempotent(request));
 }
@@ -634,7 +649,7 @@ TEST(StrictIdempotencyPolicyTest, UploadChunk) {
   StrictIdempotencyPolicy policy;
   internal::UploadChunkRequest request("https://test-url.example.com", 0,
                                        {internal::ConstBuffer{"test-payload"}},
-                                       0);
+                                       internal::CreateNullHashFunction());
   EXPECT_TRUE(policy.IsIdempotent(request));
 }
 

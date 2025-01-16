@@ -21,35 +21,29 @@
 
 #include "google/cloud/servicecontrol/quota_controller_connection.h"
 #include "google/cloud/servicecontrol/quota_controller_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/servicecontrol/v1/quota_controller_options.h"
 
 namespace google {
 namespace cloud {
 namespace servicecontrol {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct QuotaControllerRetryPolicyOption {
-  using Type = std::shared_ptr<QuotaControllerRetryPolicy>;
-};
+/// @deprecated Use servicecontrol_v1::QuotaControllerBackoffPolicyOption
+/// directly.
+using ::google::cloud::servicecontrol_v1::QuotaControllerBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct QuotaControllerBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// servicecontrol_v1::QuotaControllerConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::servicecontrol_v1::
+    QuotaControllerConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct QuotaControllerConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<QuotaControllerConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use servicecontrol_v1::QuotaControllerPolicyOptionList directly.
+using ::google::cloud::servicecontrol_v1::QuotaControllerPolicyOptionList;
 
-using QuotaControllerPolicyOptionList =
-    OptionList<QuotaControllerRetryPolicyOption,
-               QuotaControllerBackoffPolicyOption,
-               QuotaControllerConnectionIdempotencyPolicyOption>;
+/// @deprecated Use servicecontrol_v1::QuotaControllerRetryPolicyOption
+/// directly.
+using ::google::cloud::servicecontrol_v1::QuotaControllerRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicecontrol

@@ -18,7 +18,7 @@
 #include "google/cloud/internal/oauth2_credentials.h"
 #include "google/cloud/internal/oauth2_minimal_iam_credentials_rest.h"
 #include "google/cloud/version.h"
-#include <mutex>
+#include <memory>
 #include <string>
 
 namespace google {
@@ -26,15 +26,25 @@ namespace cloud {
 namespace oauth2_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+struct ImpersonatedServiceAccountCredentialsInfo {
+  std::string service_account;
+  std::vector<std::string> delegates;
+  absl::optional<std::string> quota_project_id;
+  std::string source_credentials;
+};
+
+/// Parses the contents of a JSON keyfile into an
+/// ImpersonatedServiceAccountCredentialsInfo.
+StatusOr<ImpersonatedServiceAccountCredentialsInfo>
+ParseImpersonatedServiceAccountCredentials(std::string const& content,
+                                           std::string const& source);
+
 /**
  * Provides Credentials when impersonating an existing service account.
  */
 class ImpersonateServiceAccountCredentials
     : public oauth2_internal::Credentials {
  public:
-  using CurrentTimeFn =
-      std::function<std::chrono::time_point<std::chrono::system_clock>()>;
-
   /**
    * Creates an instance of ImpersonateServiceAccountCredentials.
    *
@@ -43,23 +53,21 @@ class ImpersonateServiceAccountCredentials
    */
   explicit ImpersonateServiceAccountCredentials(
       google::cloud::internal::ImpersonateServiceAccountConfig const& config,
-      CurrentTimeFn current_time_fn = std::chrono::system_clock::now);
+      HttpClientFactory client_factory);
   ImpersonateServiceAccountCredentials(
       google::cloud::internal::ImpersonateServiceAccountConfig const& config,
-      std::shared_ptr<MinimalIamCredentialsRest> stub,
-      CurrentTimeFn current_time_fn = std::chrono::system_clock::now);
+      std::shared_ptr<MinimalIamCredentialsRest> stub);
 
-  StatusOr<std::pair<std::string, std::string>> AuthorizationHeader() override;
-  StatusOr<std::pair<std::string, std::string>> AuthorizationHeader(
-      std::chrono::system_clock::time_point now);
+  StatusOr<AccessToken> GetToken(
+      std::chrono::system_clock::time_point tp) override;
+
+  StatusOr<std::string> universe_domain(Options const& options) const override {
+    return stub_->universe_domain(options);
+  }
 
  private:
   std::shared_ptr<MinimalIamCredentialsRest> stub_;
   GenerateAccessTokenRequest request_;
-  CurrentTimeFn current_time_fn_;
-  std::mutex mu_;
-  std::pair<std::string, std::string> header_;
-  std::chrono::system_clock::time_point expiration_;
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

@@ -13,13 +13,18 @@
 // limitations under the License.
 
 #include "google/cloud/spanner/mutations.h"
+#include "google/cloud/spanner/bytes.h"
+#include "google/cloud/spanner/date.h"
+#include "google/cloud/spanner/json.h"
 #include "google/cloud/spanner/keys.h"
+#include "google/cloud/spanner/numeric.h"
+#include "google/cloud/spanner/timestamp.h"
 #include "google/cloud/testing_util/is_proto_equal.h"
 #include "absl/types/optional.h"
 #include <google/protobuf/text_format.h>
-#include <google/protobuf/util/message_differencer.h>
 #include <gmock/gmock.h>
 #include <cstdint>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -33,8 +38,7 @@ namespace spanner {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
-namespace spanner_proto = ::google::spanner::v1;
-
+using ::google::cloud::testing_util::IsProtoApproximatelyEqual;
 using ::google::cloud::testing_util::IsProtoEqual;
 using ::google::protobuf::TextFormat;
 using ::testing::HasSubstr;
@@ -76,13 +80,40 @@ TEST(MutationsTest, InsertSimple) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
 
+TEST(MutationsTest, InsertFloat32) {
+  auto builder = InsertMutationBuilder("table-name", {"col1", "col2"})
+                     .EmplaceRow(1, 3.14F);
+  Mutation insert = builder.Build();
+  Mutation moved = std::move(builder).Build();
+  EXPECT_EQ(insert, moved);
+
+  auto actual = std::move(insert).as_proto();
+  auto constexpr kText = R"pb(
+    insert: {
+      table: "table-name"
+      columns: "col1"
+      columns: "col2"
+      values {
+        values { string_value: "1" }
+        values { number_value: 3.14 }
+      }
+    }
+  )pb";
+  google::spanner::v1::Mutation expected;
+  ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
+
+  // Compare number_value using the (larger) float epsilon.
+  EXPECT_THAT(actual, IsProtoApproximatelyEqual(
+                          expected, std::numeric_limits<float>::epsilon(),
+                          std::numeric_limits<float>::epsilon()));
+}
+
 TEST(MutationsTest, InsertComplex) {
-  Mutation empty;
   auto builder = InsertMutationBuilder("table-name", {"col1", "col2", "col3"})
                      .AddRow({Value(42), Value("foo"), Value(false)})
                      .EmplaceRow(absl::optional<std::int64_t>(), "bar",
@@ -110,7 +141,7 @@ TEST(MutationsTest, InsertComplex) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
@@ -137,13 +168,12 @@ TEST(MutationsTest, UpdateSimple) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
 
 TEST(MutationsTest, UpdateComplex) {
-  Mutation empty;
   auto builder = UpdateMutationBuilder("table-name", {"col_a", "col_b"})
                      .AddRow({Value(std::vector<std::string>{}), Value(7.0)})
                      .EmplaceRow(std::vector<std::string>{"a", "b"},
@@ -173,7 +203,7 @@ TEST(MutationsTest, UpdateComplex) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
@@ -200,13 +230,12 @@ TEST(MutationsTest, InsertOrUpdateSimple) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
 
 TEST(MutationsTest, InsertOrUpdateComplex) {
-  Mutation empty;
   auto builder = InsertOrUpdateMutationBuilder("table-name", {"col_a", "col_b"})
                      .AddRow({Value(std::make_tuple("a", 7.0))})
                      .EmplaceRow(std::make_tuple("b", 8.0));
@@ -238,7 +267,7 @@ TEST(MutationsTest, InsertOrUpdateComplex) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
@@ -265,13 +294,12 @@ TEST(MutationsTest, ReplaceSimple) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
 
 TEST(MutationsTest, ReplaceComplex) {
-  Mutation empty;
   auto builder = ReplaceMutationBuilder("table-name", {"col_a", "col_b"})
                      .EmplaceRow("a", 7.0)
                      .AddRow({Value("b"), Value(8.0)});
@@ -295,7 +323,7 @@ TEST(MutationsTest, ReplaceComplex) {
       }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
@@ -315,7 +343,47 @@ TEST(MutationsTest, DeleteSimple) {
       key_set: { keys: { values { string_value: "key-to-delete" } } }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
+  ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
+  EXPECT_THAT(actual, IsProtoEqual(expected));
+}
+
+TEST(MutationsTest, SpannerTypes) {
+  Mutation empty;
+  auto bytes = Bytes("bytes");
+  auto date = Date(2022, 3, 30);
+  auto json = Json("{true}");
+  auto numeric = MakeNumeric(42).value();
+  auto pg_numeric = MakePgNumeric(131072).value();
+  auto timestamp = Timestamp();
+  Mutation insert = MakeInsertMutation(
+      "table-name",
+      {"bytes", "date", "json", "numeric", "pg_numeric", "timestamp"},  //
+      bytes, date, json, numeric, pg_numeric, timestamp);
+  EXPECT_EQ(insert, insert);
+  EXPECT_NE(insert, empty);
+
+  auto actual = std::move(insert).as_proto();
+  auto constexpr kText = R"pb(
+    insert {
+      table: "table-name"
+      columns: "bytes"
+      columns: "date"
+      columns: "json"
+      columns: "numeric"
+      columns: "pg_numeric"
+      columns: "timestamp"
+      values {
+        values { string_value: "Ynl0ZXMA" }
+        values { string_value: "2022-03-30" }
+        values { string_value: "{true}" }
+        values { string_value: "42" }
+        values { string_value: "131072" }
+        values { string_value: "1970-01-01T00:00:00Z" }
+      }
+    }
+  )pb";
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }
@@ -416,7 +484,7 @@ TEST(MutationsTest, FluentDeleteBuilder) {
       key_set: { keys: { values { string_value: "key-to-delete" } } }
     }
   )pb";
-  spanner_proto::Mutation expected;
+  google::spanner::v1::Mutation expected;
   ASSERT_TRUE(TextFormat::ParseFromString(kText, &expected));
   EXPECT_THAT(actual, IsProtoEqual(expected));
 }

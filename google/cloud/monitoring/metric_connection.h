@@ -19,89 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_METRIC_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_METRIC_CONNECTION_H
 
-#include "google/cloud/monitoring/internal/metric_retry_traits.h"
-#include "google/cloud/monitoring/internal/metric_stub.h"
 #include "google/cloud/monitoring/metric_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/metric_connection.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using MetricServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        monitoring_internal::MetricServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MakeMetricServiceConnection directly.
+using ::google::cloud::monitoring_v3::MakeMetricServiceConnection;
 
-using MetricServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        monitoring_internal::MetricServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MetricServiceConnection directly.
+using ::google::cloud::monitoring_v3::MetricServiceConnection;
 
-using MetricServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        monitoring_internal::MetricServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MetricServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_v3::MetricServiceLimitedErrorCountRetryPolicy;
 
-class MetricServiceConnection {
- public:
-  virtual ~MetricServiceConnection() = 0;
+/// @deprecated Use monitoring_v3::MetricServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::monitoring_v3::MetricServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::api::MonitoredResourceDescriptor>
-  ListMonitoredResourceDescriptors(
-      google::monitoring::v3::ListMonitoredResourceDescriptorsRequest request);
-
-  virtual StatusOr<google::api::MonitoredResourceDescriptor>
-  GetMonitoredResourceDescriptor(
-      google::monitoring::v3::GetMonitoredResourceDescriptorRequest const&
-          request);
-
-  virtual StreamRange<google::api::MetricDescriptor> ListMetricDescriptors(
-      google::monitoring::v3::ListMetricDescriptorsRequest request);
-
-  virtual StatusOr<google::api::MetricDescriptor> GetMetricDescriptor(
-      google::monitoring::v3::GetMetricDescriptorRequest const& request);
-
-  virtual StatusOr<google::api::MetricDescriptor> CreateMetricDescriptor(
-      google::monitoring::v3::CreateMetricDescriptorRequest const& request);
-
-  virtual Status DeleteMetricDescriptor(
-      google::monitoring::v3::DeleteMetricDescriptorRequest const& request);
-
-  virtual StreamRange<google::monitoring::v3::TimeSeries> ListTimeSeries(
-      google::monitoring::v3::ListTimeSeriesRequest request);
-
-  virtual Status CreateTimeSeries(
-      google::monitoring::v3::CreateTimeSeriesRequest const& request);
-
-  virtual Status CreateServiceTimeSeries(
-      google::monitoring::v3::CreateTimeSeriesRequest const& request);
-};
-
-std::shared_ptr<MetricServiceConnection> MakeMetricServiceConnection(
-    Options options = {});
+/// @deprecated Use monitoring_v3::MetricServiceRetryPolicy directly.
+using ::google::cloud::monitoring_v3::MetricServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace monitoring_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<monitoring::MetricServiceConnection>
-MakeMetricServiceConnection(std::shared_ptr<MetricServiceStub> stub,
-                            Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace monitoring_internal
 }  // namespace cloud
 }  // namespace google
 

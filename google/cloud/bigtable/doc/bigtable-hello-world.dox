@@ -1,5 +1,5 @@
 /*!
-@page bigtable-hello-world Example: C++ Hello World Application
+@page bigtable-hello-world Getting Started with Bigtable
 
 This example is a very simple "hello world" application, written in C++, that
 illustrates how to:
@@ -59,7 +59,7 @@ Create a table with [BigtableTableAdminClient::CreateTable()][TableAdmin-CreateT
 ## Connecting to Cloud Bigtable to read and write data
 
 To read and write data, connect to Cloud Bigtable using
-`bigtable::MakeDataClient()`:
+`bigtable::MakeDataConnection()`:
 
 @snippet bigtable_hello_world.cc connect data
 

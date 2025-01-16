@@ -19,81 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_LANGUAGE_LANGUAGE_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_LANGUAGE_LANGUAGE_CONNECTION_H
 
-#include "google/cloud/language/internal/language_retry_traits.h"
-#include "google/cloud/language/internal/language_stub.h"
 #include "google/cloud/language/language_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/language/v1/language_connection.h"
 
 namespace google {
 namespace cloud {
 namespace language {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using LanguageServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        language_internal::LanguageServiceRetryTraits>;
+/// @deprecated Use language_v1::MakeLanguageServiceConnection directly.
+using ::google::cloud::language_v1::MakeLanguageServiceConnection;
 
-using LanguageServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        language_internal::LanguageServiceRetryTraits>;
+/// @deprecated Use language_v1::LanguageServiceConnection directly.
+using ::google::cloud::language_v1::LanguageServiceConnection;
 
-using LanguageServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        language_internal::LanguageServiceRetryTraits>;
+/// @deprecated Use language_v1::LanguageServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::language_v1::LanguageServiceLimitedErrorCountRetryPolicy;
 
-class LanguageServiceConnection {
- public:
-  virtual ~LanguageServiceConnection() = 0;
+/// @deprecated Use language_v1::LanguageServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::language_v1::LanguageServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::language::v1::AnalyzeSentimentResponse>
-  AnalyzeSentiment(
-      google::cloud::language::v1::AnalyzeSentimentRequest const& request);
-
-  virtual StatusOr<google::cloud::language::v1::AnalyzeEntitiesResponse>
-  AnalyzeEntities(
-      google::cloud::language::v1::AnalyzeEntitiesRequest const& request);
-
-  virtual StatusOr<google::cloud::language::v1::AnalyzeEntitySentimentResponse>
-  AnalyzeEntitySentiment(
-      google::cloud::language::v1::AnalyzeEntitySentimentRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::language::v1::AnalyzeSyntaxResponse>
-  AnalyzeSyntax(
-      google::cloud::language::v1::AnalyzeSyntaxRequest const& request);
-
-  virtual StatusOr<google::cloud::language::v1::ClassifyTextResponse>
-  ClassifyText(google::cloud::language::v1::ClassifyTextRequest const& request);
-
-  virtual StatusOr<google::cloud::language::v1::AnnotateTextResponse>
-  AnnotateText(google::cloud::language::v1::AnnotateTextRequest const& request);
-};
-
-std::shared_ptr<LanguageServiceConnection> MakeLanguageServiceConnection(
-    Options options = {});
+/// @deprecated Use language_v1::LanguageServiceRetryPolicy directly.
+using ::google::cloud::language_v1::LanguageServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace language
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace language_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<language::LanguageServiceConnection>
-MakeLanguageServiceConnection(std::shared_ptr<LanguageServiceStub> stub,
-                              Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace language_internal
 }  // namespace cloud
 }  // namespace google
 

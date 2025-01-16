@@ -20,63 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BILLING_CLOUD_CATALOG_CONNECTION_H
 
 #include "google/cloud/billing/cloud_catalog_connection_idempotency_policy.h"
-#include "google/cloud/billing/internal/cloud_catalog_retry_traits.h"
-#include "google/cloud/billing/internal/cloud_catalog_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/billing/v1/cloud_catalog_connection.h"
 
 namespace google {
 namespace cloud {
 namespace billing {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CloudCatalogRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        billing_internal::CloudCatalogRetryTraits>;
+/// @deprecated Use billing_v1::MakeCloudCatalogConnection directly.
+using ::google::cloud::billing_v1::MakeCloudCatalogConnection;
 
-using CloudCatalogLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        billing_internal::CloudCatalogRetryTraits>;
+/// @deprecated Use billing_v1::CloudCatalogConnection directly.
+using ::google::cloud::billing_v1::CloudCatalogConnection;
 
-using CloudCatalogLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        billing_internal::CloudCatalogRetryTraits>;
+/// @deprecated Use billing_v1::CloudCatalogLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::billing_v1::CloudCatalogLimitedErrorCountRetryPolicy;
 
-class CloudCatalogConnection {
- public:
-  virtual ~CloudCatalogConnection() = 0;
+/// @deprecated Use billing_v1::CloudCatalogLimitedTimeRetryPolicy directly.
+using ::google::cloud::billing_v1::CloudCatalogLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::billing::v1::Service> ListServices(
-      google::cloud::billing::v1::ListServicesRequest request);
-
-  virtual StreamRange<google::cloud::billing::v1::Sku> ListSkus(
-      google::cloud::billing::v1::ListSkusRequest request);
-};
-
-std::shared_ptr<CloudCatalogConnection> MakeCloudCatalogConnection(
-    Options options = {});
+/// @deprecated Use billing_v1::CloudCatalogRetryPolicy directly.
+using ::google::cloud::billing_v1::CloudCatalogRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace billing
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace billing_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<billing::CloudCatalogConnection> MakeCloudCatalogConnection(
-    std::shared_ptr<CloudCatalogStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace billing_internal
 }  // namespace cloud
 }  // namespace google
 

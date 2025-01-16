@@ -19,37 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_IAM_IAM_CREDENTIALS_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_IAM_IAM_CREDENTIALS_OPTIONS_H
 
+#include "google/cloud/iam/credentials/v1/iam_credentials_options.h"
 #include "google/cloud/iam/iam_credentials_connection.h"
 #include "google/cloud/iam/iam_credentials_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace iam {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct IAMCredentialsRetryPolicyOption {
-  using Type = std::shared_ptr<IAMCredentialsRetryPolicy>;
-};
+/// @deprecated Use iam_credentials_v1::IAMCredentialsBackoffPolicyOption
+/// directly.
+using ::google::cloud::iam_credentials_v1::IAMCredentialsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct IAMCredentialsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// iam_credentials_v1::IAMCredentialsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::iam_credentials_v1::
+    IAMCredentialsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct IAMCredentialsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<IAMCredentialsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use iam_credentials_v1::IAMCredentialsPolicyOptionList directly.
+using ::google::cloud::iam_credentials_v1::IAMCredentialsPolicyOptionList;
 
-using IAMCredentialsPolicyOptionList =
-    OptionList<IAMCredentialsRetryPolicyOption,
-               IAMCredentialsBackoffPolicyOption,
-               IAMCredentialsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use iam_credentials_v1::IAMCredentialsRetryPolicyOption
+/// directly.
+using ::google::cloud::iam_credentials_v1::IAMCredentialsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace iam

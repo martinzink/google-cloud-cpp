@@ -18,7 +18,6 @@
 #include "google/cloud/log.h"
 #include "google/cloud/testing_util/scoped_log.h"
 #include "google/cloud/testing_util/status_matchers.h"
-#include "absl/memory/memory.h"
 #include <gmock/gmock.h>
 #include <grpcpp/grpcpp.h>
 
@@ -28,10 +27,11 @@ namespace spanner_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
+namespace gsai = ::google::spanner::admin::instance;
+
 using ::testing::Contains;
 using ::testing::HasSubstr;
 using ::testing::Return;
-namespace gcsa = ::google::spanner::admin::instance::v1;
 
 class InstanceAdminLoggingTest : public ::testing::Test {
  protected:
@@ -53,7 +53,7 @@ TEST_F(InstanceAdminLoggingTest, GetInstance) {
   InstanceAdminLogging stub(mock_, TracingOptions{});
 
   grpc::ClientContext context;
-  auto response = stub.GetInstance(context, gcsa::GetInstanceRequest{});
+  auto response = stub.GetInstance(context, gsai::v1::GetInstanceRequest{});
   EXPECT_EQ(TransientError(), response.status());
 
   auto const log_lines = log_.ExtractLines();
@@ -63,18 +63,18 @@ TEST_F(InstanceAdminLoggingTest, GetInstance) {
 
 TEST_F(InstanceAdminLoggingTest, CreateInstance) {
   EXPECT_CALL(*mock_, AsyncCreateInstance)
-      .WillOnce([](CompletionQueue&, std::unique_ptr<grpc::ClientContext>,
-                   gcsa::CreateInstanceRequest const&) {
-        return make_ready_future(
-            StatusOr<google::longrunning::Operation>(TransientError()));
-      });
+      .WillOnce(
+          [](CompletionQueue&, auto, gsai::v1::CreateInstanceRequest const&) {
+            return make_ready_future(
+                StatusOr<google::longrunning::Operation>(TransientError()));
+          });
 
   InstanceAdminLogging stub(mock_, TracingOptions{});
 
   CompletionQueue cq;
   auto response =
-      stub.AsyncCreateInstance(cq, absl::make_unique<grpc::ClientContext>(),
-                               gcsa::CreateInstanceRequest{});
+      stub.AsyncCreateInstance(cq, std::make_shared<grpc::ClientContext>(),
+                               gsai::v1::CreateInstanceRequest{});
   EXPECT_EQ(TransientError(), response.get().status());
 
   auto const log_lines = log_.ExtractLines();
@@ -84,18 +84,18 @@ TEST_F(InstanceAdminLoggingTest, CreateInstance) {
 
 TEST_F(InstanceAdminLoggingTest, UpdateInstance) {
   EXPECT_CALL(*mock_, AsyncUpdateInstance)
-      .WillOnce([](CompletionQueue&, std::unique_ptr<grpc::ClientContext>,
-                   gcsa::UpdateInstanceRequest const&) {
-        return make_ready_future(
-            StatusOr<google::longrunning::Operation>(TransientError()));
-      });
+      .WillOnce(
+          [](CompletionQueue&, auto, gsai::v1::UpdateInstanceRequest const&) {
+            return make_ready_future(
+                StatusOr<google::longrunning::Operation>(TransientError()));
+          });
 
   InstanceAdminLogging stub(mock_, TracingOptions{});
 
   CompletionQueue cq;
   auto response =
-      stub.AsyncUpdateInstance(cq, absl::make_unique<grpc::ClientContext>(),
-                               gcsa::UpdateInstanceRequest{});
+      stub.AsyncUpdateInstance(cq, std::make_shared<grpc::ClientContext>(),
+                               gsai::v1::UpdateInstanceRequest{});
   EXPECT_EQ(TransientError(), response.get().status());
 
   auto const log_lines = log_.ExtractLines();
@@ -109,7 +109,7 @@ TEST_F(InstanceAdminLoggingTest, DeleteInstance) {
   InstanceAdminLogging stub(mock_, TracingOptions{});
 
   grpc::ClientContext context;
-  auto status = stub.DeleteInstance(context, gcsa::DeleteInstanceRequest{});
+  auto status = stub.DeleteInstance(context, gsai::v1::DeleteInstanceRequest{});
   EXPECT_EQ(TransientError(), status);
 
   auto const log_lines = log_.ExtractLines();
@@ -124,7 +124,7 @@ TEST_F(InstanceAdminLoggingTest, GetInstanceConfig) {
 
   grpc::ClientContext context;
   auto response =
-      stub.GetInstanceConfig(context, gcsa::GetInstanceConfigRequest{});
+      stub.GetInstanceConfig(context, gsai::v1::GetInstanceConfigRequest{});
   EXPECT_EQ(TransientError(), response.status());
 
   auto const log_lines = log_.ExtractLines();
@@ -139,7 +139,7 @@ TEST_F(InstanceAdminLoggingTest, ListInstanceConfigs) {
 
   grpc::ClientContext context;
   auto response =
-      stub.ListInstanceConfigs(context, gcsa::ListInstanceConfigsRequest{});
+      stub.ListInstanceConfigs(context, gsai::v1::ListInstanceConfigsRequest{});
   EXPECT_EQ(TransientError(), response.status());
 
   auto const log_lines = log_.ExtractLines();
@@ -153,7 +153,7 @@ TEST_F(InstanceAdminLoggingTest, ListInstances) {
   InstanceAdminLogging stub(mock_, TracingOptions{});
 
   grpc::ClientContext context;
-  auto response = stub.ListInstances(context, gcsa::ListInstancesRequest{});
+  auto response = stub.ListInstances(context, gsai::v1::ListInstancesRequest{});
   EXPECT_EQ(TransientError(), response.status());
 
   auto const log_lines = log_.ExtractLines();

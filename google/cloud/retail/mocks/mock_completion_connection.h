@@ -20,29 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_MOCKS_MOCK_COMPLETION_CONNECTION_H
 
 #include "google/cloud/retail/completion_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/retail/v2/mocks/mock_completion_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in retail_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace retail_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockCompletionServiceConnection
-    : public retail::CompletionServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::retail::v2::CompleteQueryResponse>,
-              CompleteQuery,
-              (google::cloud::retail::v2::CompleteQueryRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::retail::v2::ImportCompletionDataResponse>>,
-      ImportCompletionData,
-      (google::cloud::retail::v2::ImportCompletionDataRequest const& request),
-      (override));
-};
+/// @deprecated Use retail_v2_mocks::MockCompletionServiceConnection directly.
+using ::google::cloud::retail_v2_mocks::MockCompletionServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail_mocks

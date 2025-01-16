@@ -30,7 +30,6 @@ function (spanner_client_define_integration_tests)
         data_types_integration_test.cc
         database_admin_integration_test.cc
         instance_admin_integration_test.cc
-        rpc_failure_threshold_integration_test.cc
         session_pool_integration_test.cc)
 
     # Export the list of unit tests to a .bzl file so we do not need to maintain
@@ -54,13 +53,6 @@ function (spanner_client_define_integration_tests)
                     GTest::gmock
                     GTest::gtest)
         google_cloud_cpp_add_common_options(${target})
-
-        # With googletest it is relatively easy to exceed the default number of
-        # sections (~65,000) in a single .obj file. Add the /bigobj option to
-        # all the tests, even if it is not needed.
-        if (MSVC)
-            target_compile_options(${target} PRIVATE "/bigobj")
-        endif ()
         add_test(NAME ${target} COMMAND ${target})
         set_tests_properties(
             ${target} PROPERTIES LABELS

@@ -20,62 +20,34 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APIGEECONNECT_CONNECTION_CONNECTION_H
 
 #include "google/cloud/apigeeconnect/connection_connection_idempotency_policy.h"
-#include "google/cloud/apigeeconnect/internal/connection_retry_traits.h"
-#include "google/cloud/apigeeconnect/internal/connection_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/apigeeconnect/v1/connection_connection.h"
 
 namespace google {
 namespace cloud {
 namespace apigeeconnect {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ConnectionServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        apigeeconnect_internal::ConnectionServiceRetryTraits>;
+/// @deprecated Use apigeeconnect_v1::MakeConnectionServiceConnection directly.
+using ::google::cloud::apigeeconnect_v1::MakeConnectionServiceConnection;
 
-using ConnectionServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        apigeeconnect_internal::ConnectionServiceRetryTraits>;
+/// @deprecated Use apigeeconnect_v1::ConnectionServiceConnection directly.
+using ::google::cloud::apigeeconnect_v1::ConnectionServiceConnection;
 
-using ConnectionServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        apigeeconnect_internal::ConnectionServiceRetryTraits>;
+/// @deprecated Use
+/// apigeeconnect_v1::ConnectionServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::apigeeconnect_v1::
+    ConnectionServiceLimitedErrorCountRetryPolicy;
 
-class ConnectionServiceConnection {
- public:
-  virtual ~ConnectionServiceConnection() = 0;
+/// @deprecated Use apigeeconnect_v1::ConnectionServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::apigeeconnect_v1::
+    ConnectionServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::apigeeconnect::v1::Connection>
-  ListConnections(
-      google::cloud::apigeeconnect::v1::ListConnectionsRequest request);
-};
-
-std::shared_ptr<ConnectionServiceConnection> MakeConnectionServiceConnection(
-    Options options = {});
+/// @deprecated Use apigeeconnect_v1::ConnectionServiceRetryPolicy directly.
+using ::google::cloud::apigeeconnect_v1::ConnectionServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace apigeeconnect
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace apigeeconnect_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<apigeeconnect::ConnectionServiceConnection>
-MakeConnectionServiceConnection(std::shared_ptr<ConnectionServiceStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace apigeeconnect_internal
 }  // namespace cloud
 }  // namespace google
 

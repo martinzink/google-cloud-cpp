@@ -17,5 +17,8 @@
 """Automatically generated unit tests list - DO NOT EDIT."""
 
 spanner_client_integration_samples = [
+    "client_samples.cc",
+    "graph_samples.cc",
+    "postgresql_samples.cc",
     "samples.cc",
 ]

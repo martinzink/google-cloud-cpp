@@ -20,88 +20,33 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_CLUSTER_CONTROLLER_CONNECTION_H
 
 #include "google/cloud/dataproc/cluster_controller_connection_idempotency_policy.h"
-#include "google/cloud/dataproc/internal/cluster_controller_retry_traits.h"
-#include "google/cloud/dataproc/internal/cluster_controller_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/dataproc/v1/cluster_controller_connection.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ClusterControllerRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        dataproc_internal::ClusterControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::MakeClusterControllerConnection directly.
+using ::google::cloud::dataproc_v1::MakeClusterControllerConnection;
 
-using ClusterControllerLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        dataproc_internal::ClusterControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::ClusterControllerConnection directly.
+using ::google::cloud::dataproc_v1::ClusterControllerConnection;
 
-using ClusterControllerLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        dataproc_internal::ClusterControllerRetryTraits>;
+/// @deprecated Use dataproc_v1::ClusterControllerLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::
+    ClusterControllerLimitedErrorCountRetryPolicy;
 
-class ClusterControllerConnection {
- public:
-  virtual ~ClusterControllerConnection() = 0;
+/// @deprecated Use dataproc_v1::ClusterControllerLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::ClusterControllerLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::Cluster>> CreateCluster(
-      google::cloud::dataproc::v1::CreateClusterRequest const& request);
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::Cluster>> UpdateCluster(
-      google::cloud::dataproc::v1::UpdateClusterRequest const& request);
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::Cluster>> StopCluster(
-      google::cloud::dataproc::v1::StopClusterRequest const& request);
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::Cluster>> StartCluster(
-      google::cloud::dataproc::v1::StartClusterRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::dataproc::v1::ClusterOperationMetadata>>
-  DeleteCluster(
-      google::cloud::dataproc::v1::DeleteClusterRequest const& request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::Cluster> GetCluster(
-      google::cloud::dataproc::v1::GetClusterRequest const& request);
-
-  virtual StreamRange<google::cloud::dataproc::v1::Cluster> ListClusters(
-      google::cloud::dataproc::v1::ListClustersRequest request);
-
-  virtual future<StatusOr<google::cloud::dataproc::v1::DiagnoseClusterResults>>
-  DiagnoseCluster(
-      google::cloud::dataproc::v1::DiagnoseClusterRequest const& request);
-};
-
-std::shared_ptr<ClusterControllerConnection> MakeClusterControllerConnection(
-    Options options = {});
+/// @deprecated Use dataproc_v1::ClusterControllerRetryPolicy directly.
+using ::google::cloud::dataproc_v1::ClusterControllerRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace dataproc_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<dataproc::ClusterControllerConnection>
-MakeClusterControllerConnection(std::shared_ptr<ClusterControllerStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace dataproc_internal
 }  // namespace cloud
 }  // namespace google
 

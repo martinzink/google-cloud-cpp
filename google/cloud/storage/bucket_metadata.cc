@@ -13,86 +13,111 @@
 // limitations under the License.
 
 #include "google/cloud/storage/bucket_metadata.h"
-#include "google/cloud/storage/internal/bucket_acl_requests.h"
-#include "google/cloud/storage/internal/bucket_requests.h"
-#include "google/cloud/storage/internal/metadata_parser.h"
-#include "google/cloud/storage/internal/object_acl_requests.h"
+#include "google/cloud/storage/internal/bucket_metadata_parser.h"
 #include "google/cloud/internal/absl_str_join_quiet.h"
 #include "google/cloud/internal/format_time_point.h"
 #include "google/cloud/internal/ios_flags_saver.h"
 #include "google/cloud/status.h"
 #include "absl/strings/str_format.h"
 #include <nlohmann/json.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace google {
 namespace cloud {
 namespace storage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::ostream& operator<<(std::ostream& os, CorsEntry const& rhs) {
-  os << "CorsEntry={";
-  char const* sep = "";
-  if (rhs.max_age_seconds.has_value()) {
-    os << sep << "max_age_seconds=" << *rhs.max_age_seconds;
-    sep = ", ";
+namespace {
+nlohmann::json ConditionAsPatch(LifecycleRuleCondition const& c) {
+  nlohmann::json condition;
+  if (c.age.has_value()) {
+    condition["age"] = *c.age;
   }
-  return os << sep << "method=[" << absl::StrJoin(rhs.method, ", ")
-            << "], origin=[" << absl::StrJoin(rhs.origin, ", ")
-            << "], response_header=["
-            << absl::StrJoin(rhs.response_header, ", ") << "]}";
-}
-
-std::ostream& operator<<(std::ostream& os,
-                         UniformBucketLevelAccess const& rhs) {
-  google::cloud::internal::IosFlagsSaver save_format(os);
-  return os << "UniformBucketLevelAccess={enabled=" << std::boolalpha
-            << rhs.enabled << ", locked_time="
-            << google::cloud::internal::FormatRfc3339(rhs.locked_time) << "}";
-}
-
-std::ostream& operator<<(std::ostream& os, BucketIamConfiguration const& rhs) {
-  os << "BucketIamConfiguration={";
-  char const* sep = "";
-  if (rhs.public_access_prevention.has_value()) {
-    os << sep << "public_access_prevention=" << *rhs.public_access_prevention;
-    sep = ", ";
+  if (c.created_before.has_value()) {
+    condition["createdBefore"] =
+        absl::StrFormat("%04d-%02d-%02d", c.created_before->year(),
+                        c.created_before->month(), c.created_before->day());
   }
-  if (rhs.uniform_bucket_level_access.has_value()) {
-    os << sep
-       << "uniform_bucket_level_access=" << *rhs.uniform_bucket_level_access;
-    return os << "}";
+  if (c.is_live.has_value()) {
+    condition["isLive"] = *c.is_live;
   }
-  return os << "}";
+  if (c.matches_storage_class.has_value()) {
+    condition["matchesStorageClass"] = *c.matches_storage_class;
+  }
+  if (c.num_newer_versions.has_value()) {
+    condition["numNewerVersions"] = *c.num_newer_versions;
+  }
+  if (c.days_since_noncurrent_time.has_value()) {
+    condition["daysSinceNoncurrentTime"] = *c.days_since_noncurrent_time;
+  }
+  if (c.noncurrent_time_before.has_value()) {
+    condition["noncurrentTimeBefore"] =
+        internal::ToJsonString(*c.noncurrent_time_before);
+  }
+  if (c.days_since_custom_time.has_value()) {
+    condition["daysSinceCustomTime"] = *c.days_since_custom_time;
+  }
+  if (c.custom_time_before.has_value()) {
+    condition["customTimeBefore"] =
+        internal::ToJsonString(*c.custom_time_before);
+  }
+  if (c.matches_prefix.has_value()) {
+    condition["matchesPrefix"] = *c.matches_prefix;
+  }
+  if (c.matches_suffix.has_value()) {
+    condition["matchesSuffix"] = *c.matches_suffix;
+  }
+  return condition;
 }
 
-std::ostream& operator<<(std::ostream& os, BucketLogging const& rhs) {
-  return os << "BucketLogging={log_bucket=" << rhs.log_bucket
-            << ", log_object_prefix=" << rhs.log_object_prefix << "}";
+nlohmann::json ActionAsPatch(LifecycleRuleAction const& a) {
+  nlohmann::json action;
+  if (!a.type.empty()) {
+    action["type"] = a.type;
+  }
+  if (!a.storage_class.empty()) {
+    action["storageClass"] = a.storage_class;
+  }
+  return action;
 }
 
-std::ostream& operator<<(std::ostream& os, BucketRetentionPolicy const& rhs) {
-  return os << "BucketRetentionPolicy={retention_period="
-            << rhs.retention_period.count() << "s, effective_time="
-            << google::cloud::internal::FormatRfc3339(rhs.effective_time)
-            << ", locked=" << rhs.is_locked << "}";
-}
+}  // namespace
 
 bool operator==(BucketMetadata const& lhs, BucketMetadata const& rhs) {
-  return static_cast<internal::CommonMetadata<BucketMetadata> const&>(lhs) ==
-             rhs &&
-         lhs.acl_ == rhs.acl_ && lhs.billing_ == rhs.billing_ &&
-         lhs.cors_ == rhs.cors_ &&
-         lhs.default_event_based_hold_ == rhs.default_event_based_hold_ &&
-         lhs.default_acl_ == rhs.default_acl_ &&
-         lhs.encryption_ == rhs.encryption_ &&
-         lhs.iam_configuration_ == rhs.iam_configuration_ &&
-         lhs.project_number_ == rhs.project_number_ &&
-         lhs.lifecycle_ == rhs.lifecycle_ && lhs.location_ == rhs.location_ &&
-         lhs.location_type_ == rhs.location_type_ &&
-         lhs.logging_ == rhs.logging_ && lhs.labels_ == rhs.labels_ &&
-         lhs.retention_policy_ == rhs.retention_policy_ &&
-         lhs.rpo_ == rhs.rpo_ && lhs.versioning_ == rhs.versioning_ &&
-         lhs.website_ == rhs.website_;
+  return lhs.acl_ == rhs.acl_                                               //
+         && lhs.autoclass_ == rhs.autoclass_                                //
+         && lhs.billing_ == rhs.billing_                                    //
+         && lhs.cors_ == rhs.cors_                                          //
+         && lhs.custom_placement_config_ == rhs.custom_placement_config_    //
+         && lhs.default_acl_ == rhs.default_acl_                            //
+         && lhs.default_event_based_hold_ == rhs.default_event_based_hold_  //
+         && lhs.encryption_ == rhs.encryption_                              //
+         && lhs.etag_ == rhs.etag_                                          //
+         && lhs.hierarchical_namespace_ == rhs.hierarchical_namespace_      //
+         && lhs.iam_configuration_ == rhs.iam_configuration_                //
+         && lhs.id_ == rhs.id_                                              //
+         && lhs.kind_ == rhs.kind_                                          //
+         && lhs.labels_ == rhs.labels_                                      //
+         && lhs.lifecycle_ == rhs.lifecycle_                                //
+         && lhs.location_ == rhs.location_                                  //
+         && lhs.location_type_ == rhs.location_type_                        //
+         && lhs.logging_ == rhs.logging_                                    //
+         && lhs.metageneration_ == rhs.metageneration_                      //
+         && lhs.name_ == rhs.name_                                          //
+         && lhs.object_retention_ == rhs.object_retention_                  //
+         && lhs.owner_ == rhs.owner_                                        //
+         && lhs.project_number_ == rhs.project_number_                      //
+         && lhs.retention_policy_ == rhs.retention_policy_                  //
+         && lhs.rpo_ == rhs.rpo_                                            //
+         && lhs.self_link_ == rhs.self_link_                                //
+         && lhs.soft_delete_policy_ == rhs.soft_delete_policy_              //
+         && lhs.storage_class_ == rhs.storage_class_                        //
+         && lhs.time_created_ == rhs.time_created_                          //
+         && lhs.updated_ == rhs.updated_                                    //
+         && lhs.versioning_ == rhs.versioning_                              //
+         && lhs.website_ == rhs.website_                                    //
+      ;
 }
 
 std::ostream& operator<<(std::ostream& os, BucketMetadata const& rhs) {
@@ -103,6 +128,9 @@ std::ostream& operator<<(std::ostream& os, BucketMetadata const& rhs) {
   os << absl::StrJoin(rhs.acl(), ", ", absl::StreamFormatter());
   os << "]";
 
+  if (rhs.has_autoclass()) {
+    os << ", autoclass=" << rhs.autoclass();
+  }
   if (rhs.has_billing()) {
     auto previous_flags = os.flags();
     os << ", billing.requesterPays=" << std::boolalpha
@@ -127,6 +155,10 @@ std::ostream& operator<<(std::ostream& os, BucketMetadata const& rhs) {
   }
 
   os << ", etag=" << rhs.etag();
+
+  if (rhs.has_hierarchical_namespace()) {
+    os << ", hierarchical_namespace=" << rhs.hierarchical_namespace();
+  }
 
   if (rhs.has_iam_configuration()) {
     os << ", iam_configuration=" << rhs.iam_configuration();
@@ -154,14 +186,20 @@ std::ostream& operator<<(std::ostream& os, BucketMetadata const& rhs) {
 
   os << ", metageneration=" << rhs.metageneration() << ", name=" << rhs.name();
 
+  if (rhs.has_object_retention()) {
+    os << ", object_retention=" << rhs.object_retention();
+  }
   if (rhs.has_owner()) {
     os << ", owner.entity=" << rhs.owner().entity
        << ", owner.entity_id=" << rhs.owner().entity_id;
   }
 
   os << ", project_number=" << rhs.project_number()
-     << ", self_link=" << rhs.self_link()
-     << ", storage_class=" << rhs.storage_class() << ", time_created="
+     << ", self_link=" << rhs.self_link();
+  if (rhs.has_soft_delete_policy()) {
+    os << ", soft_delete_policy=" << rhs.soft_delete_policy();
+  }
+  os << ", storage_class=" << rhs.storage_class() << ", time_created="
      << google::cloud::internal::FormatRfc3339(rhs.time_created())
      << ", updated=" << google::cloud::internal::FormatRfc3339(rhs.updated());
 
@@ -187,6 +225,12 @@ std::ostream& operator<<(std::ostream& os, BucketMetadata const& rhs) {
   if (rhs.has_website()) {
     os << ", website.main_page_suffix=" << rhs.website().main_page_suffix
        << ", website.not_found_page=" << rhs.website().not_found_page;
+  }
+
+  if (rhs.has_custom_placement_config()) {
+    os << ", custom_placement_config.data_locations=["
+       << absl::StrJoin(rhs.custom_placement_config().data_locations, ", ")
+       << "]";
   }
 
   return os << "}";
@@ -222,6 +266,21 @@ BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::SetAcl(
 
 BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::ResetAcl() {
   impl_.RemoveField("acl");
+  return *this;
+}
+
+BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::SetAutoclass(
+    BucketAutoclass const& v) {
+  auto builder = internal::PatchBuilder().SetBoolField("enabled", v.enabled);
+  if (!v.terminal_storage_class.empty()) {
+    builder.SetStringField("terminalStorageClass", v.terminal_storage_class);
+  }
+  impl_.AddSubPatch("autoclass", std::move(builder));
+  return *this;
+}
+
+BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::ResetAutoclass() {
+  impl_.RemoveField("autoclass");
   return *this;
 }
 
@@ -343,6 +402,21 @@ BucketMetadataPatchBuilder::ResetIamConfiguration() {
   return *this;
 }
 
+BucketMetadataPatchBuilder&
+BucketMetadataPatchBuilder::SetHierarchicalNamespace(
+    BucketHierarchicalNamespace const& v) {
+  internal::PatchBuilder subpatch;
+  subpatch.SetBoolField("enabled", v.enabled);
+  impl_.AddSubPatch("hierarchicalNamespace", subpatch);
+  return *this;
+}
+
+BucketMetadataPatchBuilder&
+BucketMetadataPatchBuilder::ResetHierarchicalNamespace() {
+  impl_.RemoveField("hierarchicalNamespace");
+  return *this;
+}
+
 BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::SetLabel(
     std::string const& label, std::string const& value) {
   labels_subpatch_.SetStringField(label.c_str(), value);
@@ -371,48 +445,8 @@ BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::SetLifecycle(
   internal::PatchBuilder subpatch;
   auto array = nlohmann::json::array();
   for (auto const& a : v.rule) {
-    nlohmann::json condition;
-    auto const& c = a.condition();
-    if (c.age.has_value()) {
-      condition["age"] = *c.age;
-    }
-    if (c.created_before.has_value()) {
-      condition["createdBefore"] =
-          absl::StrFormat("%04d-%02d-%02d", c.created_before->year(),
-                          c.created_before->month(), c.created_before->day());
-    }
-    if (c.is_live.has_value()) {
-      condition["isLive"] = *c.is_live;
-    }
-    if (c.matches_storage_class.has_value()) {
-      condition["matchesStorageClass"] = *c.matches_storage_class;
-    }
-    if (c.num_newer_versions.has_value()) {
-      condition["numNewerVersions"] = *c.num_newer_versions;
-    }
-    if (c.days_since_noncurrent_time.has_value()) {
-      condition["daysSinceNoncurrentTime"] = *c.days_since_noncurrent_time;
-    }
-    if (c.noncurrent_time_before.has_value()) {
-      condition["noncurrentTimeBefore"] = absl::StrFormat(
-          "%04d-%02d-%02d", c.noncurrent_time_before->year(),
-          c.noncurrent_time_before->month(), c.noncurrent_time_before->day());
-    }
-    if (c.days_since_custom_time.has_value()) {
-      condition["daysSinceCustomTime"] = *c.days_since_custom_time;
-    }
-    if (c.custom_time_before.has_value()) {
-      condition["customTimeBefore"] = absl::StrFormat(
-          "%04d-%02d-%02d", c.custom_time_before->year(),
-          c.custom_time_before->month(), c.custom_time_before->day());
-    }
-    nlohmann::json action;
-    if (!a.action().type.empty()) {
-      action["type"] = a.action().type;
-    }
-    if (!a.action().storage_class.empty()) {
-      action["storageClass"] = a.action().storage_class;
-    }
+    auto condition = ConditionAsPatch(a.condition());
+    auto action = ActionAsPatch(a.action());
     array.emplace_back(nlohmann::json{
         {"action", action},
         {"condition", condition},
@@ -481,6 +515,24 @@ BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::SetRpo(
 
 BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::ResetRpo() {
   impl_.RemoveField("rpo");
+  return *this;
+}
+
+BucketMetadataPatchBuilder& BucketMetadataPatchBuilder::SetSoftDeletePolicy(
+    BucketSoftDeletePolicy const& v) {
+  // Only the retentionDurationSeconds field is writeable, so do not modify the
+  // other fields.
+  impl_.AddSubPatch(
+      "softDeletePolicy",
+      internal::PatchBuilder().SetIntField(
+          "retentionDurationSeconds",
+          static_cast<std::uint64_t>(v.retention_duration.count())));
+  return *this;
+}
+
+BucketMetadataPatchBuilder&
+BucketMetadataPatchBuilder::ResetSoftDeletePolicy() {
+  impl_.RemoveField("softDeletePolicy");
   return *this;
 }
 

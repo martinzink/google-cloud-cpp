@@ -20,95 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BILLING_CLOUD_BILLING_CONNECTION_H
 
 #include "google/cloud/billing/cloud_billing_connection_idempotency_policy.h"
-#include "google/cloud/billing/internal/cloud_billing_retry_traits.h"
-#include "google/cloud/billing/internal/cloud_billing_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/billing/v1/cloud_billing_connection.h"
 
 namespace google {
 namespace cloud {
 namespace billing {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CloudBillingRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        billing_internal::CloudBillingRetryTraits>;
+/// @deprecated Use billing_v1::MakeCloudBillingConnection directly.
+using ::google::cloud::billing_v1::MakeCloudBillingConnection;
 
-using CloudBillingLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        billing_internal::CloudBillingRetryTraits>;
+/// @deprecated Use billing_v1::CloudBillingConnection directly.
+using ::google::cloud::billing_v1::CloudBillingConnection;
 
-using CloudBillingLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        billing_internal::CloudBillingRetryTraits>;
+/// @deprecated Use billing_v1::CloudBillingLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::billing_v1::CloudBillingLimitedErrorCountRetryPolicy;
 
-class CloudBillingConnection {
- public:
-  virtual ~CloudBillingConnection() = 0;
+/// @deprecated Use billing_v1::CloudBillingLimitedTimeRetryPolicy directly.
+using ::google::cloud::billing_v1::CloudBillingLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::billing::v1::BillingAccount>
-  GetBillingAccount(
-      google::cloud::billing::v1::GetBillingAccountRequest const& request);
-
-  virtual StreamRange<google::cloud::billing::v1::BillingAccount>
-  ListBillingAccounts(
-      google::cloud::billing::v1::ListBillingAccountsRequest request);
-
-  virtual StatusOr<google::cloud::billing::v1::BillingAccount>
-  UpdateBillingAccount(
-      google::cloud::billing::v1::UpdateBillingAccountRequest const& request);
-
-  virtual StatusOr<google::cloud::billing::v1::BillingAccount>
-  CreateBillingAccount(
-      google::cloud::billing::v1::CreateBillingAccountRequest const& request);
-
-  virtual StreamRange<google::cloud::billing::v1::ProjectBillingInfo>
-  ListProjectBillingInfo(
-      google::cloud::billing::v1::ListProjectBillingInfoRequest request);
-
-  virtual StatusOr<google::cloud::billing::v1::ProjectBillingInfo>
-  GetProjectBillingInfo(
-      google::cloud::billing::v1::GetProjectBillingInfoRequest const& request);
-
-  virtual StatusOr<google::cloud::billing::v1::ProjectBillingInfo>
-  UpdateProjectBillingInfo(
-      google::cloud::billing::v1::UpdateProjectBillingInfoRequest const&
-          request);
-
-  virtual StatusOr<google::iam::v1::Policy> GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::TestIamPermissionsResponse>
-  TestIamPermissions(google::iam::v1::TestIamPermissionsRequest const& request);
-};
-
-std::shared_ptr<CloudBillingConnection> MakeCloudBillingConnection(
-    Options options = {});
+/// @deprecated Use billing_v1::CloudBillingRetryPolicy directly.
+using ::google::cloud::billing_v1::CloudBillingRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace billing
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace billing_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<billing::CloudBillingConnection> MakeCloudBillingConnection(
-    std::shared_ptr<CloudBillingStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace billing_internal
 }  // namespace cloud
 }  // namespace google
 

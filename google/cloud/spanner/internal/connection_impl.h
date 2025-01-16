@@ -15,17 +15,13 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SPANNER_INTERNAL_CONNECTION_IMPL_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SPANNER_INTERNAL_CONNECTION_IMPL_H
 
-#include "google/cloud/spanner/backoff_policy.h"
 #include "google/cloud/spanner/connection.h"
 #include "google/cloud/spanner/database.h"
 #include "google/cloud/spanner/internal/session.h"
 #include "google/cloud/spanner/internal/session_pool.h"
 #include "google/cloud/spanner/internal/spanner_stub.h"
-#include "google/cloud/spanner/retry_policy.h"
-#include "google/cloud/spanner/tracing_options.h"
 #include "google/cloud/spanner/version.h"
 #include "google/cloud/background_threads.h"
-#include "google/cloud/backoff_policy.h"
 #include "google/cloud/status.h"
 #include "google/cloud/status_or.h"
 #include <google/spanner/v1/spanner.pb.h>
@@ -68,90 +64,85 @@ class ConnectionImpl : public spanner::Connection {
       ExecuteBatchDmlParams) override;
   StatusOr<spanner::CommitResult> Commit(CommitParams) override;
   Status Rollback(RollbackParams) override;
+  spanner::BatchedCommitResultStream BatchWrite(BatchWriteParams) override;
 
  private:
-  std::shared_ptr<spanner::RetryPolicy> const& RetryPolicyPrototype() const;
-  std::shared_ptr<spanner::BackoffPolicy> const& BackoffPolicyPrototype() const;
-  bool RpcStreamTracingEnabled() const;
-  TracingOptions const& RpcTracingOptions() const;
-
   Status PrepareSession(SessionHolder& session,
                         bool dissociate_from_pool = false);
 
   StatusOr<google::spanner::v1::Transaction> BeginTransaction(
       SessionHolder& session, google::spanner::v1::TransactionOptions options,
-      std::string request_tag, std::string const& transaction_tag,
-      char const* func);
+      std::string request_tag, TransactionContext const& ctx, char const* func);
 
   spanner::RowStream ReadImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, ReadParams params);
+      TransactionContext const& ctx, ReadParams params);
 
   StatusOr<std::vector<spanner::ReadPartition>> PartitionReadImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, ReadParams const& params,
+      TransactionContext const& ctx, ReadParams const& params,
       spanner::PartitionOptions const& partition_options);
 
   spanner::RowStream ExecuteQueryImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params);
+      TransactionContext const& ctx, SqlParams params);
 
   StatusOr<spanner::DmlResult> ExecuteDmlImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params);
+      TransactionContext const& ctx, SqlParams params);
 
   spanner::ProfileQueryResult ProfileQueryImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params);
+      TransactionContext const& ctx, SqlParams params);
 
   StatusOr<spanner::ProfileDmlResult> ProfileDmlImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params);
+      TransactionContext const& ctx, SqlParams params);
 
   StatusOr<spanner::ExecutionPlan> AnalyzeSqlImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params);
+      TransactionContext const& ctx, SqlParams params);
 
   StatusOr<spanner::PartitionedDmlResult> ExecutePartitionedDmlImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno,
-      ExecutePartitionedDmlParams params);
+      TransactionContext const& ctx, ExecutePartitionedDmlParams params);
 
   StatusOr<std::vector<spanner::QueryPartition>> PartitionQueryImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, PartitionQueryParams const& params);
+      TransactionContext const& ctx, PartitionQueryParams const& params);
 
   StatusOr<spanner::BatchDmlResult> ExecuteBatchDmlImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno,
-      ExecuteBatchDmlParams params);
+      TransactionContext const& ctx, ExecuteBatchDmlParams params);
 
   StatusOr<spanner::CommitResult> CommitImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, CommitParams params);
+      TransactionContext const& ctx, CommitParams params);
 
   Status RollbackImpl(SessionHolder& session,
                       StatusOr<google::spanner::v1::TransactionSelector>& s,
-                      std::string const& transaction_tag);
+                      TransactionContext const& ctx);
+
+  spanner::BatchedCommitResultStream BatchWriteImpl(BatchWriteParams);
 
   template <typename ResultType>
   StatusOr<ResultType> ExecuteSqlImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params,
+      TransactionContext const& ctx, SqlParams params,
       google::spanner::v1::ExecuteSqlRequest::QueryMode query_mode,
-      std::function<StatusOr<std::unique_ptr<ResultSourceInterface>>(
+      std::function<StatusOr<std::unique_ptr<spanner::ResultSourceInterface>>(
           google::spanner::v1::ExecuteSqlRequest& request)> const&
           retry_resume_fn);
 
@@ -159,13 +150,13 @@ class ConnectionImpl : public spanner::Connection {
   ResultType CommonQueryImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params,
+      TransactionContext const& ctx, SqlParams params,
       google::spanner::v1::ExecuteSqlRequest::QueryMode query_mode);
   template <typename ResultType>
   StatusOr<ResultType> CommonDmlImpl(
       SessionHolder& session,
       StatusOr<google::spanner::v1::TransactionSelector>& s,
-      std::string const& transaction_tag, std::int64_t seqno, SqlParams params,
+      TransactionContext const& ctx, SqlParams params,
       google::spanner::v1::ExecuteSqlRequest::QueryMode query_mode);
 
   spanner::Database db_;

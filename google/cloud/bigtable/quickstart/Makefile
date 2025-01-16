@@ -1,4 +1,4 @@
-# Copyright 2018 Google Inc.
+# Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 # The CXX, CXXFLAGS and CXXLD variables are hard-coded. These values work for
 # our tests, but applications would typically make them configurable parameters.
 CXX=g++
-CXXFLAGS=-std=c++11
+CXXFLAGS=
 CXXLD=$(CXX)
 BIN=.
 

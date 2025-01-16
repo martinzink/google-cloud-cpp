@@ -21,40 +21,28 @@
 
 #include "google/cloud/asset/asset_connection.h"
 #include "google/cloud/asset/asset_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/asset/v1/asset_options.h"
 
 namespace google {
 namespace cloud {
 namespace asset {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct AssetServiceRetryPolicyOption {
-  using Type = std::shared_ptr<AssetServiceRetryPolicy>;
-};
+/// @deprecated Use asset_v1::AssetServicePollingPolicyOption directly.
+using ::google::cloud::asset_v1::AssetServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct AssetServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use asset_v1::AssetServiceBackoffPolicyOption directly.
+using ::google::cloud::asset_v1::AssetServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct AssetServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use asset_v1::AssetServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::asset_v1::AssetServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct AssetServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<AssetServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use asset_v1::AssetServicePolicyOptionList directly.
+using ::google::cloud::asset_v1::AssetServicePolicyOptionList;
 
-using AssetServicePolicyOptionList =
-    OptionList<AssetServiceRetryPolicyOption, AssetServiceBackoffPolicyOption,
-               AssetServicePollingPolicyOption,
-               AssetServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use asset_v1::AssetServiceRetryPolicyOption directly.
+using ::google::cloud::asset_v1::AssetServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace asset

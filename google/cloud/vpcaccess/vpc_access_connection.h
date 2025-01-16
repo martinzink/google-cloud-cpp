@@ -19,76 +19,34 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VPCACCESS_VPC_ACCESS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VPCACCESS_VPC_ACCESS_CONNECTION_H
 
-#include "google/cloud/vpcaccess/internal/vpc_access_retry_traits.h"
-#include "google/cloud/vpcaccess/internal/vpc_access_stub.h"
+#include "google/cloud/vpcaccess/v1/vpc_access_connection.h"
 #include "google/cloud/vpcaccess/vpc_access_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace vpcaccess {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using VpcAccessServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        vpcaccess_internal::VpcAccessServiceRetryTraits>;
+/// @deprecated Use vpcaccess_v1::MakeVpcAccessServiceConnection directly.
+using ::google::cloud::vpcaccess_v1::MakeVpcAccessServiceConnection;
 
-using VpcAccessServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        vpcaccess_internal::VpcAccessServiceRetryTraits>;
+/// @deprecated Use vpcaccess_v1::VpcAccessServiceConnection directly.
+using ::google::cloud::vpcaccess_v1::VpcAccessServiceConnection;
 
-using VpcAccessServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        vpcaccess_internal::VpcAccessServiceRetryTraits>;
+/// @deprecated Use vpcaccess_v1::VpcAccessServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::vpcaccess_v1::
+    VpcAccessServiceLimitedErrorCountRetryPolicy;
 
-class VpcAccessServiceConnection {
- public:
-  virtual ~VpcAccessServiceConnection() = 0;
+/// @deprecated Use vpcaccess_v1::VpcAccessServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::vpcaccess_v1::VpcAccessServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual future<StatusOr<google::cloud::vpcaccess::v1::Connector>>
-  CreateConnector(
-      google::cloud::vpcaccess::v1::CreateConnectorRequest const& request);
-
-  virtual StatusOr<google::cloud::vpcaccess::v1::Connector> GetConnector(
-      google::cloud::vpcaccess::v1::GetConnectorRequest const& request);
-
-  virtual StreamRange<google::cloud::vpcaccess::v1::Connector> ListConnectors(
-      google::cloud::vpcaccess::v1::ListConnectorsRequest request);
-
-  virtual future<StatusOr<google::cloud::vpcaccess::v1::OperationMetadata>>
-  DeleteConnector(
-      google::cloud::vpcaccess::v1::DeleteConnectorRequest const& request);
-};
-
-std::shared_ptr<VpcAccessServiceConnection> MakeVpcAccessServiceConnection(
-    Options options = {});
+/// @deprecated Use vpcaccess_v1::VpcAccessServiceRetryPolicy directly.
+using ::google::cloud::vpcaccess_v1::VpcAccessServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace vpcaccess
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace vpcaccess_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<vpcaccess::VpcAccessServiceConnection>
-MakeVpcAccessServiceConnection(std::shared_ptr<VpcAccessServiceStub> stub,
-                               Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace vpcaccess_internal
 }  // namespace cloud
 }  // namespace google
 

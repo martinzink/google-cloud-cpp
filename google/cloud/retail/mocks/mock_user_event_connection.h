@@ -20,45 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_MOCKS_MOCK_USER_EVENT_CONNECTION_H
 
 #include "google/cloud/retail/user_event_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/retail/v2/mocks/mock_user_event_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in retail_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace retail_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockUserEventServiceConnection
-    : public retail::UserEventServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::retail::v2::UserEvent>, WriteUserEvent,
-              (google::cloud::retail::v2::WriteUserEventRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      StatusOr<google::api::HttpBody>, CollectUserEvent,
-      (google::cloud::retail::v2::CollectUserEventRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::retail::v2::PurgeUserEventsResponse>>,
-      PurgeUserEvents,
-      (google::cloud::retail::v2::PurgeUserEventsRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::retail::v2::ImportUserEventsResponse>>,
-      ImportUserEvents,
-      (google::cloud::retail::v2::ImportUserEventsRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::retail::v2::RejoinUserEventsResponse>>,
-      RejoinUserEvents,
-      (google::cloud::retail::v2::RejoinUserEventsRequest const& request),
-      (override));
-};
+/// @deprecated Use retail_v2_mocks::MockUserEventServiceConnection directly.
+using ::google::cloud::retail_v2_mocks::MockUserEventServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail_mocks

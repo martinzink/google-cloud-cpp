@@ -13,12 +13,9 @@
 // limitations under the License.
 
 #include "google/cloud/internal/streaming_read_rpc_logging.h"
-#include "google/cloud/log.h"
 #include "google/cloud/status.h"
 #include "google/cloud/testing_util/scoped_log.h"
-#include "google/cloud/testing_util/status_matchers.h"
 #include "google/cloud/tracing_options.h"
-#include "absl/memory/memory.h"
 #include "absl/types/variant.h"
 #include <google/protobuf/duration.pb.h>
 #include <gmock/gmock.h>
@@ -38,7 +35,7 @@ class MockStreamingReadRpc : public StreamingReadRpc<ResponseType> {
   ~MockStreamingReadRpc() override = default;
   MOCK_METHOD(void, Cancel, (), (override));
   MOCK_METHOD((absl::variant<Status, ResponseType>), Read, (), (override));
-  MOCK_METHOD(StreamingRpcMetadata, GetRequestMetadata, (), (const, override));
+  MOCK_METHOD(RpcMetadata, GetRequestMetadata, (), (const, override));
 };
 
 class StreamingReadRpcLoggingTest : public ::testing::Test {
@@ -48,7 +45,7 @@ class StreamingReadRpcLoggingTest : public ::testing::Test {
 
 TEST_F(StreamingReadRpcLoggingTest, Cancel) {
   auto mock =
-      absl::make_unique<MockStreamingReadRpc<google::protobuf::Duration>>();
+      std::make_unique<MockStreamingReadRpc<google::protobuf::Duration>>();
   EXPECT_CALL(*mock, Cancel()).Times(1);
   StreamingReadRpcLogging<google::protobuf::Duration> reader(
       std::move(mock), TracingOptions{},
@@ -69,7 +66,7 @@ TEST_F(StreamingReadRpcLoggingTest, Read) {
   };
 
   auto mock =
-      absl::make_unique<MockStreamingReadRpc<google::protobuf::Duration>>();
+      std::make_unique<MockStreamingReadRpc<google::protobuf::Duration>>();
   EXPECT_CALL(*mock, Read())
       .WillOnce([] {
         google::protobuf::Duration result;
@@ -87,8 +84,7 @@ TEST_F(StreamingReadRpcLoggingTest, Read) {
   absl::visit(ResultVisitor(), result);
   auto log_lines = log_.ExtractLines();
   EXPECT_THAT(log_lines, Contains(HasSubstr("Read")));
-  EXPECT_THAT(log_lines, Contains(HasSubstr("seconds")));
-  EXPECT_THAT(log_lines, Contains(HasSubstr("42")));
+  EXPECT_THAT(log_lines, Contains(HasSubstr("42s")));
 
   result = reader.Read();
   absl::visit(ResultVisitor(), result);
@@ -98,21 +94,6 @@ TEST_F(StreamingReadRpcLoggingTest, Read) {
       log_lines,
       Contains(HasSubstr(StatusCodeToString(StatusCode::kInvalidArgument))));
   EXPECT_THAT(log_lines, Contains(HasSubstr("Invalid argument.")));
-}
-
-TEST_F(StreamingReadRpcLoggingTest, FormatMetadata) {
-  struct Test {
-    StreamingRpcMetadata metadata;
-    std::string expected;
-  } cases[] = {
-      {{}, ""},
-      {{{"a", "b"}}, "{a: b}"},
-      {{{"a", "b"}, {"k", "v"}}, "{a: b}, {k: v}"},
-  };
-  for (auto const& test : cases) {
-    auto const actual = FormatMetadata(test.metadata);
-    EXPECT_EQ(test.expected, actual);
-  }
 }
 
 }  // namespace

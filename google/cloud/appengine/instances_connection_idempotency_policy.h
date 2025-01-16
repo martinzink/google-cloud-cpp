@@ -19,40 +19,20 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_INSTANCES_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_INSTANCES_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/appengine/v1/appengine.grpc.pb.h>
-#include <memory>
+#include "google/cloud/appengine/v1/instances_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class InstancesConnectionIdempotencyPolicy {
- public:
-  virtual ~InstancesConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// appengine_v1::MakeDefaultInstancesConnectionIdempotencyPolicy directly.
+using ::google::cloud::appengine_v1::
+    MakeDefaultInstancesConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<InstancesConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency ListInstances(
-      google::appengine::v1::ListInstancesRequest request) = 0;
-
-  virtual google::cloud::Idempotency GetInstance(
-      google::appengine::v1::GetInstanceRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DeleteInstance(
-      google::appengine::v1::DeleteInstanceRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency DebugInstance(
-      google::appengine::v1::DebugInstanceRequest const& request) = 0;
-};
-
-std::unique_ptr<InstancesConnectionIdempotencyPolicy>
-MakeDefaultInstancesConnectionIdempotencyPolicy();
+/// @deprecated Use appengine_v1::InstancesConnectionIdempotencyPolicy directly.
+using ::google::cloud::appengine_v1::InstancesConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine

@@ -1,4 +1,4 @@
-// Copyright 2018 Google Inc.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,6 +104,18 @@ class MetadataUpdatePolicy {
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigtable
+namespace bigtable_internal {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+/**
+ * Returns a `MetadataUpdatePolicy` that implements the explicit routing
+ * specification in `bigtable.proto`.
+ */
+bigtable::MetadataUpdatePolicy MakeMetadataUpdatePolicy(
+    std::string const& table_name, std::string const& app_profile_id);
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace bigtable_internal
 }  // namespace cloud
 }  // namespace google
 

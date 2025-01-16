@@ -16,6 +16,7 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_GRPC_OPTIONS_H
 
 #include "google/cloud/background_threads.h"
+#include "google/cloud/common_options.h"
 #include "google/cloud/completion_queue.h"
 #include "google/cloud/options.h"
 #include "google/cloud/tracing_options.h"
@@ -30,9 +31,21 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
 /**
  * The gRPC credentials used by clients configured with this object.
+ *
+ * @ingroup options
  */
 struct GrpcCredentialOption {
   using Type = std::shared_ptr<grpc::ChannelCredentials>;
+};
+
+/**
+ * The gRPC compression algorithm used by clients/operations configured
+ * with this object.
+ *
+ * @ingroup options
+ */
+struct GrpcCompressionAlgorithmOption {
+  using Type = grpc_compression_algorithm;
 };
 
 /**
@@ -41,6 +54,15 @@ struct GrpcCredentialOption {
  * gRPC limits the number of simultaneous calls in progress on a channel to
  * 100. Increasing the number of channels thus increases the number of
  * operations that can be in progress in parallel.
+ *
+ * @note This option only applies when passed to the following functions:
+ * - `bigtable::MakeDataConnection()`
+ * - `pubsub::MakePublisherConnection()`
+ * - `pubsub::MakeSubscriberConnection()`
+ * - `spanner::MakeConnection()`
+ * - `storage::MakeGrpcClient()`
+ *
+ * @ingroup options
  */
 struct GrpcNumChannelsOption {
   using Type = int;
@@ -61,6 +83,8 @@ struct GrpcNumChannelsOption {
  *
  * @see https://grpc.github.io/grpc/cpp/classgrpc_1_1_channel_arguments.html
  * @see https://grpc.github.io/grpc/core/group__grpc__arg__keys.html
+ *
+ * @ingroup options
  */
 struct GrpcChannelArgumentsOption {
   using Type = std::map<std::string, std::string>;
@@ -82,6 +106,8 @@ struct GrpcChannelArgumentsOption {
  *
  * @see https://grpc.github.io/grpc/cpp/classgrpc_1_1_channel_arguments.html
  * @see https://grpc.github.io/grpc/core/group__grpc__arg__keys.html
+ *
+ * @ingroup options
  */
 struct GrpcChannelArgumentsNativeOption {
   using Type = grpc::ChannelArguments;
@@ -89,6 +115,8 @@ struct GrpcChannelArgumentsNativeOption {
 
 /**
  * The `TracingOptions` to use when printing grpc protocol buffer messages.
+ *
+ * @ingroup options
  */
 struct GrpcTracingOptionsOption {
   using Type = TracingOptions;
@@ -104,6 +132,8 @@ struct GrpcTracingOptionsOption {
  *     `GrpcBackgroundThreadsFactoryOption` are mutually exclusive. This option
  *     will be ignored if either `GrpcCompletionQueueOption` or
  *     `GrpcBackgroundThreadsFactoryOption` are set.
+ *
+ * @ingroup options
  */
 struct GrpcBackgroundThreadPoolSizeOption {
   using Type = std::size_t;
@@ -119,6 +149,8 @@ struct GrpcBackgroundThreadPoolSizeOption {
  *
  * @note `GrpcBackgroundThreadPoolSizeOption`, `GrpcCompletionQueueOption`, and
  *     `GrpcBackgroundThreadsFactoryOption` are mutually exclusive.
+ *
+ * @ingroup options
  */
 struct GrpcCompletionQueueOption {
   using Type = CompletionQueue;
@@ -142,6 +174,8 @@ using BackgroundThreadsFactory =
  * @note `GrpcBackgroundThreadPoolSizeOption`, `GrpcCompletionQueueOption`, and
  *     `GrpcBackgroundThreadsFactoryOption` are mutually exclusive. This option
  *     will be ignored if `GrpcCompletionQueueOption` is set.
+ *
+ * @ingroup options
  */
 struct GrpcBackgroundThreadsFactoryOption {
   using Type = BackgroundThreadsFactory;
@@ -151,10 +185,11 @@ struct GrpcBackgroundThreadsFactoryOption {
  * A list of all the gRPC options.
  */
 using GrpcOptionList =
-    OptionList<GrpcCredentialOption, GrpcNumChannelsOption,
-               GrpcChannelArgumentsOption, GrpcChannelArgumentsNativeOption,
-               GrpcTracingOptionsOption, GrpcBackgroundThreadPoolSizeOption,
-               GrpcCompletionQueueOption, GrpcBackgroundThreadsFactoryOption>;
+    OptionList<GrpcCredentialOption, GrpcCompressionAlgorithmOption,
+               GrpcNumChannelsOption, GrpcChannelArgumentsOption,
+               GrpcChannelArgumentsNativeOption, GrpcTracingOptionsOption,
+               GrpcBackgroundThreadPoolSizeOption, GrpcCompletionQueueOption,
+               GrpcBackgroundThreadsFactoryOption>;
 
 namespace internal {
 
@@ -167,6 +202,9 @@ namespace internal {
  *     `set_credentials()` directly on the context. Instead, use the Google
  *     Unified Auth Credentials library, via
  *     #google::cloud::UnifiedCredentialsOption.
+ *
+ * @warning `MergeOptions()` will simply select the preferred function, rather
+ *     than merging the behavior of the preferred and alternate functions.
  */
 struct GrpcSetupOption {
   using Type = std::function<void(grpc::ClientContext&)>;
@@ -183,16 +221,27 @@ struct GrpcSetupOption {
  *     `set_credentials()` directly on the context. Instead, use the Google
  *     Unified Auth Credentials library, via
  *     #google::cloud::UnifiedCredentialsOption.
+ *
+ * @warning `MergeOptions()` will simply select the preferred function, rather
+ *     than merging the behavior of the preferred and alternate functions.
  */
 struct GrpcSetupPollOption {
   using Type = std::function<void(grpc::ClientContext&)>;
 };
+
+/// Configure the metadata in @p context.
+void SetMetadata(grpc::ClientContext& context, Options const& options,
+                 std::multimap<std::string, std::string> const& fixed_metadata,
+                 std::string const& api_client_header);
 
 /// Configure the ClientContext using options.
 void ConfigureContext(grpc::ClientContext& context, Options const& opts);
 
 /// Configure the ClientContext for polling operations using options.
 void ConfigurePollContext(grpc::ClientContext& context, Options const& opts);
+
+/// Creates the value for GRPC_ARG_HTTP_PROXY based on @p config.
+std::string MakeGrpcHttpProxy(ProxyConfig const& config);
 
 /// Creates a new `grpc::ChannelArguments` configured with @p opts.
 grpc::ChannelArguments MakeChannelArguments(Options const& opts);

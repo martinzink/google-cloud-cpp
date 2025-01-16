@@ -15,11 +15,13 @@
 #ifndef GOOGLE_CLOUD_CPP_GENERATOR_INTERNAL_SERVICE_CODE_GENERATOR_H
 #define GOOGLE_CLOUD_CPP_GENERATOR_INTERNAL_SERVICE_CODE_GENERATOR_H
 
-#include "google/cloud/status.h"
+#include "generator/generator_config.pb.h"
 #include "generator/internal/codegen_utils.h"
 #include "generator/internal/descriptor_utils.h"
 #include "generator/internal/generator_interface.h"
+#include "generator/internal/mixin_utils.h"
 #include "generator/internal/printer.h"
+#include "google/cloud/status.h"
 #include <google/protobuf/descriptor.h>
 
 namespace google {
@@ -33,14 +35,16 @@ class ServiceCodeGenerator : public GeneratorInterface {
       google::protobuf::ServiceDescriptor const* service_descriptor,
       VarsDictionary service_vars,
       std::map<std::string, VarsDictionary> service_method_vars,
-      google::protobuf::compiler::GeneratorContext* context);
+      google::protobuf::compiler::GeneratorContext* context,
+      std::vector<MixinMethod> const& mixin_methods);
 
   ServiceCodeGenerator(
       std::string const& header_path_key,
       google::protobuf::ServiceDescriptor const* service_descriptor,
       VarsDictionary service_vars,
       std::map<std::string, VarsDictionary> service_method_vars,
-      google::protobuf::compiler::GeneratorContext* context);
+      google::protobuf::compiler::GeneratorContext* context,
+      std::vector<MixinMethod> const& mixin_methods);
 
   ~ServiceCodeGenerator() override = default;
 
@@ -54,6 +58,8 @@ class ServiceCodeGenerator : public GeneratorInterface {
  protected:
   using MethodDescriptorList = std::vector<
       std::reference_wrapper<google::protobuf::MethodDescriptor const>>;
+  using ServiceConfiguration =
+      google::cloud::cpp::generator::ServiceConfiguration;
 
   virtual Status GenerateHeader() = 0;
   virtual Status GenerateCc() = 0;
@@ -72,8 +78,13 @@ class ServiceCodeGenerator : public GeneratorInterface {
   void CcSystemIncludes(std::vector<std::string> const& system_includes);
 
   Status HeaderOpenNamespaces(NamespaceType ns_type = NamespaceType::kNormal);
+  Status HeaderOpenForwardingNamespaces(
+      NamespaceType ns_type = NamespaceType::kNormal,
+      std::string const& ns_documentation = "");
   void HeaderCloseNamespaces();
   Status CcOpenNamespaces(NamespaceType ns_type = NamespaceType::kNormal);
+  Status CcOpenForwardingNamespaces(
+      NamespaceType ns_type = NamespaceType::kNormal);
   void CcCloseNamespaces();
 
   void HeaderPrint(std::string const& text);
@@ -93,10 +104,27 @@ class ServiceCodeGenerator : public GeneratorInterface {
                      char const* file, int line, std::string const& text);
 
   /**
+   * How the endpoint for the service might depend upon its location.
+   */
+  ServiceConfiguration::EndpointLocationStyle EndpointLocationStyle() const;
+
+  /**
+   * Whether a service is experimental. If true, we add the `ExperimentalTag` to
+   * certain APIs.
+   */
+  bool IsExperimental() const;
+
+  /**
+   * Determines if the service contains at least one method that requires
+   * LRO handling. This could be AIP-151 compatible or something custom.
+   */
+  bool HasLongrunningMethod() const;
+
+  /**
    * Determines if the service contains at least one method that returns a
    * google::longrunning::Operation.
    */
-  bool HasLongrunningMethod() const;
+  bool HasGRPCLongrunningOperation() const;
 
   /**
    * Determines if any async methods are generated for the service.
@@ -122,6 +150,18 @@ class ServiceCodeGenerator : public GeneratorInterface {
   bool HasStreamingReadMethod() const;
 
   /**
+   * Determines if we need to generate at least one asynchronous streaming read
+   * RPC.
+   */
+  bool HasAsynchronousStreamingReadMethod() const;
+
+  /**
+   * Determines if we need to generate at least one asynchronous streaming write
+   * RPC.
+   */
+  bool HasAsynchronousStreamingWriteMethod() const;
+
+  /**
    * Determines if the service contains at least once rpc with a stream
    * request.
    */
@@ -133,6 +173,32 @@ class ServiceCodeGenerator : public GeneratorInterface {
   bool HasBidirStreamingMethod() const;
 
   /**
+   * Determines if the service contains at least one RPC with a
+   * google.api.routing annotation.
+   */
+  bool HasExplicitRoutingMethod() const;
+
+  /**
+   * Determines if REST transport is enabled for the service.
+   */
+  bool HasGenerateRestTransport() const;
+
+  /**
+   * Determines if gRPC transport is enabled for the service.
+   */
+  bool HasGenerateGrpcTransport() const;
+
+  /// Determine if any of the methods has an autopopulated `request_id`-like
+  /// field.
+  bool HasRequestId() const;
+
+  /// Determine if @p method has an auto-populated `request_id`-like field.
+  bool HasRequestId(google::protobuf::MethodDescriptor const& method) const;
+
+  /// Determine if the `google.api.api_version` option is specified.
+  bool HasApiVersion() const;
+
+  /**
    * Determines if any of the method signatures has any Protocol Buffer
    * Well-Known Types per
    * https://developers.google.com/protocol-buffers/docs/reference/google.protobuf
@@ -141,13 +207,40 @@ class ServiceCodeGenerator : public GeneratorInterface {
   std::vector<std::string> MethodSignatureWellKnownProtobufTypeIncludes() const;
 
   /**
-   * Because method signatures are removed if they contain deprecated fields,
-   * the number of method signatures to emit may be fewer than the number in
-   * the proto file.
+   * Determines if any emitted method signature uses a deprecated field.
    */
-  bool IsDeprecatedMethodSignature(
-      google::protobuf::MethodDescriptor const& method,
-      int method_signature_number) const;
+  bool MethodSignatureUsesDeprecatedField() const;
+
+  /**
+   * Method signatures are omitted if they contain deprecated fields, or if the
+   * overload set conflicts with a previous method signature.
+   */
+  bool OmitMethodSignature(google::protobuf::MethodDescriptor const& method,
+                           int method_signature_number) const;
+
+  /**
+   * If gRPC transport is enabled return the appropriate grpc.pb.h file.
+   * Otherwise, return the appropriate pb.h file.
+   */
+  std::string GetPbIncludeByTransport() const;
+
+  /**
+   * If gRPC transport is enabled return the appropriate mixin grpc.pb.h files.
+   * Otherwise, return the appropriate mixin pb.h files.
+   */
+  std::vector<std::string> GetMixinPbIncludeByTransport() const;
+
+  /**
+   * If the service defining protos are produced from a REST Discovery Document.
+   */
+  bool IsDiscoveryDocumentProto() const;
+
+  std::vector<MixinMethod> const& MixinMethods() const;
+
+  /**
+   * If the service is defined with `option deprecated = true;`.
+   */
+  bool IsDeprecated() const;
 
  private:
   void SetMethods();
@@ -155,23 +248,26 @@ class ServiceCodeGenerator : public GeneratorInterface {
   enum class FileType { kHeaderFile, kCcFile };
   static void GenerateLocalIncludes(Printer& p,
                                     std::vector<std::string> local_includes,
-                                    FileType file_type = FileType::kHeaderFile);
+                                    FileType file_type);
   static void GenerateSystemIncludes(Printer& p,
                                      std::vector<std::string> system_includes);
 
-  Status OpenNamespaces(Printer& p,
-                        NamespaceType ns_type = NamespaceType::kNormal);
-  void CloseNamespaces(Printer& p);
+  Status OpenNamespaces(Printer& p, NamespaceType ns_type,
+                        std::string const& product_path_var,
+                        std::string const& ns_documentation = "");
+  void CloseNamespaces(Printer& p,
+                       bool define_backwards_compatibility_namespace_alias);
 
   google::protobuf::ServiceDescriptor const* service_descriptor_;
   VarsDictionary service_vars_;
   std::map<std::string, VarsDictionary> service_method_vars_;
-  std::vector<std::string> namespaces_;
+  std::string namespace_;
   bool define_backwards_compatibility_namespace_alias_ = false;
   MethodDescriptorList methods_;
   MethodDescriptorList async_methods_;
   Printer header_;
   Printer cc_;
+  std::vector<MixinMethod> mixin_methods_;
 };
 
 }  // namespace generator_internal

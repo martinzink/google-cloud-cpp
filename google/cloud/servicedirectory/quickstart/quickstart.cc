@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/servicedirectory/registration_client.h"
-#include "google/cloud/project.h"
+//! [all]
+#include "google/cloud/servicedirectory/v1/registration_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -23,19 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace servicedirectory = ::google::cloud::servicedirectory;
+  auto const location = google::cloud::Location(argv[1], argv[2]);
+
+  namespace servicedirectory = ::google::cloud::servicedirectory_v1;
   auto client = servicedirectory::RegistrationServiceClient(
       servicedirectory::MakeRegistrationServiceConnection());
 
-  auto const project = google::cloud::Project(argv[1]);
-  auto const parent = project.FullName() + "/locations/" + argv[2];
-  for (auto ns : client.ListNamespaces(parent)) {
-    if (!ns) throw std::runtime_error(ns.status().message());
+  for (auto ns : client.ListNamespaces(location.FullName())) {
+    if (!ns) throw std::move(ns).status();
     std::cout << ns->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

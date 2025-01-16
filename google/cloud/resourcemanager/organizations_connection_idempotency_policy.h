@@ -19,45 +19,23 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RESOURCEMANAGER_ORGANIZATIONS_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RESOURCEMANAGER_ORGANIZATIONS_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/resourcemanager/v3/organizations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/resourcemanager/v3/organizations_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace resourcemanager {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class OrganizationsConnectionIdempotencyPolicy {
- public:
-  virtual ~OrganizationsConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// resourcemanager_v3::MakeDefaultOrganizationsConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::resourcemanager_v3::
+    MakeDefaultOrganizationsConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<OrganizationsConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency GetOrganization(
-      google::cloud::resourcemanager::v3::GetOrganizationRequest const&
-          request) = 0;
-
-  virtual google::cloud::Idempotency SearchOrganizations(
-      google::cloud::resourcemanager::v3::SearchOrganizationsRequest
-          request) = 0;
-
-  virtual google::cloud::Idempotency GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency TestIamPermissions(
-      google::iam::v1::TestIamPermissionsRequest const& request) = 0;
-};
-
-std::unique_ptr<OrganizationsConnectionIdempotencyPolicy>
-MakeDefaultOrganizationsConnectionIdempotencyPolicy();
+/// @deprecated Use resourcemanager_v3::OrganizationsConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::resourcemanager_v3::
+    OrganizationsConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace resourcemanager

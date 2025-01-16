@@ -20,42 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BILLING_MOCKS_MOCK_BUDGET_CONNECTION_H
 
 #include "google/cloud/billing/budget_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/billing/budgets/v1/mocks/mock_budget_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in billing_budgets_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace billing_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockBudgetServiceConnection : public billing::BudgetServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::billing::budgets::v1::Budget>, CreateBudget,
-      (google::cloud::billing::budgets::v1::CreateBudgetRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::billing::budgets::v1::Budget>, UpdateBudget,
-      (google::cloud::billing::budgets::v1::UpdateBudgetRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::billing::budgets::v1::Budget>, GetBudget,
-      (google::cloud::billing::budgets::v1::GetBudgetRequest const& request),
-      (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::billing::budgets::v1::Budget>,
-              ListBudgets,
-              (google::cloud::billing::budgets::v1::ListBudgetsRequest request),
-              (override));
-
-  MOCK_METHOD(
-      Status, DeleteBudget,
-      (google::cloud::billing::budgets::v1::DeleteBudgetRequest const& request),
-      (override));
-};
+/// @deprecated Use billing_budgets_v1_mocks::MockBudgetServiceConnection
+/// directly.
+using ::google::cloud::billing_budgets_v1_mocks::MockBudgetServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace billing_mocks

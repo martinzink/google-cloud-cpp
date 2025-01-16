@@ -15,6 +15,7 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_STREAMING_WRITE_RPC_LOGGING_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_STREAMING_WRITE_RPC_LOGGING_H
 
+#include "google/cloud/internal/grpc_request_metadata.h"
 #include "google/cloud/internal/log_wrapper.h"
 #include "google/cloud/internal/streaming_write_rpc.h"
 #include "google/cloud/log.h"
@@ -64,12 +65,22 @@ class StreamingWriteRpcLogging
     GCP_LOG(DEBUG) << prefix << "() << (void)";
     auto result = stream_->Close();
     if (result) {
-      GCP_LOG(DEBUG) << prefix << "() << "
+      GCP_LOG(DEBUG) << prefix << "() >> "
                      << DebugString(*result, tracing_options_);
     } else {
-      GCP_LOG(DEBUG) << prefix << "() << " << result.status();
+      GCP_LOG(DEBUG) << prefix << "() >> "
+                     << DebugString(result.status(), tracing_options_);
     }
     return result;
+  }
+
+  RpcMetadata GetRequestMetadata() const override {
+    auto prefix = std::string(__func__) + "(" + request_id_ + ")";
+    GCP_LOG(DEBUG) << prefix << " <<";
+    auto metadata = stream_->GetRequestMetadata();
+    GCP_LOG(DEBUG) << prefix << " >> metadata={"
+                   << FormatForLoggingDecorator(metadata) << "}";
+    return metadata;
   }
 
  private:

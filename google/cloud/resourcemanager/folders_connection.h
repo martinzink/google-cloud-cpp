@@ -20,96 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RESOURCEMANAGER_FOLDERS_CONNECTION_H
 
 #include "google/cloud/resourcemanager/folders_connection_idempotency_policy.h"
-#include "google/cloud/resourcemanager/internal/folders_retry_traits.h"
-#include "google/cloud/resourcemanager/internal/folders_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/resourcemanager/v3/folders_connection.h"
 
 namespace google {
 namespace cloud {
 namespace resourcemanager {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using FoldersRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    resourcemanager_internal::FoldersRetryTraits>;
+/// @deprecated Use resourcemanager_v3::MakeFoldersConnection directly.
+using ::google::cloud::resourcemanager_v3::MakeFoldersConnection;
 
-using FoldersLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        resourcemanager_internal::FoldersRetryTraits>;
+/// @deprecated Use resourcemanager_v3::FoldersConnection directly.
+using ::google::cloud::resourcemanager_v3::FoldersConnection;
 
-using FoldersLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        resourcemanager_internal::FoldersRetryTraits>;
+/// @deprecated Use resourcemanager_v3::FoldersLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::resourcemanager_v3::FoldersLimitedErrorCountRetryPolicy;
 
-class FoldersConnection {
- public:
-  virtual ~FoldersConnection() = 0;
+/// @deprecated Use resourcemanager_v3::FoldersLimitedTimeRetryPolicy directly.
+using ::google::cloud::resourcemanager_v3::FoldersLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::resourcemanager::v3::Folder> GetFolder(
-      google::cloud::resourcemanager::v3::GetFolderRequest const& request);
-
-  virtual StreamRange<google::cloud::resourcemanager::v3::Folder> ListFolders(
-      google::cloud::resourcemanager::v3::ListFoldersRequest request);
-
-  virtual StreamRange<google::cloud::resourcemanager::v3::Folder> SearchFolders(
-      google::cloud::resourcemanager::v3::SearchFoldersRequest request);
-
-  virtual future<StatusOr<google::cloud::resourcemanager::v3::Folder>>
-  CreateFolder(
-      google::cloud::resourcemanager::v3::CreateFolderRequest const& request);
-
-  virtual future<StatusOr<google::cloud::resourcemanager::v3::Folder>>
-  UpdateFolder(
-      google::cloud::resourcemanager::v3::UpdateFolderRequest const& request);
-
-  virtual future<StatusOr<google::cloud::resourcemanager::v3::Folder>>
-  MoveFolder(
-      google::cloud::resourcemanager::v3::MoveFolderRequest const& request);
-
-  virtual future<StatusOr<google::cloud::resourcemanager::v3::Folder>>
-  DeleteFolder(
-      google::cloud::resourcemanager::v3::DeleteFolderRequest const& request);
-
-  virtual future<StatusOr<google::cloud::resourcemanager::v3::Folder>>
-  UndeleteFolder(
-      google::cloud::resourcemanager::v3::UndeleteFolderRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::TestIamPermissionsResponse>
-  TestIamPermissions(google::iam::v1::TestIamPermissionsRequest const& request);
-};
-
-std::shared_ptr<FoldersConnection> MakeFoldersConnection(Options options = {});
+/// @deprecated Use resourcemanager_v3::FoldersRetryPolicy directly.
+using ::google::cloud::resourcemanager_v3::FoldersRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace resourcemanager
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace resourcemanager_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<resourcemanager::FoldersConnection> MakeFoldersConnection(
-    std::shared_ptr<FoldersStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace resourcemanager_internal
 }  // namespace cloud
 }  // namespace google
 

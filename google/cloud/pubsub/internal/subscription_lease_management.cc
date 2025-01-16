@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "google/cloud/pubsub/internal/subscription_lease_management.h"
+#include "google/cloud/pubsub/internal/batch_callback_wrapper.h"
 #include <chrono>
 
 namespace google {
@@ -23,13 +24,13 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 std::chrono::seconds constexpr SubscriptionLeaseManagement::kMinimumAckDeadline;
 std::chrono::seconds constexpr SubscriptionLeaseManagement::kAckDeadlineSlack;
 
-void SubscriptionLeaseManagement::Start(BatchCallback cb) {
+void SubscriptionLeaseManagement::Start(std::shared_ptr<BatchCallback> cb) {
   auto weak = std::weak_ptr<SubscriptionLeaseManagement>(shared_from_this());
-  child_->Start(
-      [weak, cb](StatusOr<google::pubsub::v1::StreamingPullResponse> r) {
-        if (auto self = weak.lock()) self->OnRead(r);
-        cb(std::move(r));
+  callback_ = std::make_shared<BatchCallbackWrapper>(
+      std::move(cb), [weak](BatchCallback::StreamingPullResponse const& r) {
+        if (auto self = weak.lock()) self->OnRead(r.response);
       });
+  child_->Start(callback_);
 }
 
 void SubscriptionLeaseManagement::Shutdown() {
@@ -41,25 +42,28 @@ void SubscriptionLeaseManagement::Shutdown() {
   child_->Shutdown();
 }
 
-void SubscriptionLeaseManagement::AckMessage(std::string const& ack_id) {
+future<Status> SubscriptionLeaseManagement::AckMessage(
+    std::string const& ack_id) {
   std::unique_lock<std::mutex> lk(mu_);
   leases_.erase(ack_id);
   lk.unlock();
-  child_->AckMessage(ack_id);
+  return child_->AckMessage(ack_id);
 }
 
-void SubscriptionLeaseManagement::NackMessage(std::string const& ack_id) {
+future<Status> SubscriptionLeaseManagement::NackMessage(
+    std::string const& ack_id) {
   std::unique_lock<std::mutex> lk(mu_);
   leases_.erase(ack_id);
   lk.unlock();
-  child_->NackMessage(ack_id);
+  return child_->NackMessage(ack_id);
 }
 
-void SubscriptionLeaseManagement::BulkNack(std::vector<std::string> ack_ids) {
+future<Status> SubscriptionLeaseManagement::BulkNack(
+    std::vector<std::string> ack_ids) {
   std::unique_lock<std::mutex> lk(mu_);
   for (auto const& id : ack_ids) leases_.erase(id);
   lk.unlock();
-  child_->BulkNack(std::move(ack_ids));
+  return child_->BulkNack(std::move(ack_ids));
 }
 
 // Users of this class should have no need to call ExtendLeases(); they create
@@ -106,7 +110,10 @@ void SubscriptionLeaseManagement::RefreshMessageLeases(
   for (auto const& kv : leases_) {
     // This message lease cannot be extended any further, and we do not want to
     // send an extension of 0 seconds because that is a nack.
-    if (kv.second.handling_deadline < now + seconds(1)) continue;
+    if (kv.second.handling_deadline < now + seconds(1)) {
+      callback_->ExpireMessage(kv.first);
+      continue;
+    }
     auto const message_extension =
         std::chrono::duration_cast<seconds>(kv.second.handling_deadline - now);
     extension = (std::min)(extension, message_extension);

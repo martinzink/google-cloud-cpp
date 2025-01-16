@@ -21,36 +21,31 @@
 
 #include "google/cloud/iap/identity_aware_proxy_admin_connection.h"
 #include "google/cloud/iap/identity_aware_proxy_admin_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/iap/v1/identity_aware_proxy_admin_options.h"
 
 namespace google {
 namespace cloud {
 namespace iap {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct IdentityAwareProxyAdminServiceRetryPolicyOption {
-  using Type = std::shared_ptr<IdentityAwareProxyAdminServiceRetryPolicy>;
-};
+/// @deprecated Use iap_v1::IdentityAwareProxyAdminServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::iap_v1::
+    IdentityAwareProxyAdminServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct IdentityAwareProxyAdminServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// iap_v1::IdentityAwareProxyAdminServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::iap_v1::
+    IdentityAwareProxyAdminServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct IdentityAwareProxyAdminServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<
-      IdentityAwareProxyAdminServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use iap_v1::IdentityAwareProxyAdminServicePolicyOptionList
+/// directly.
+using ::google::cloud::iap_v1::IdentityAwareProxyAdminServicePolicyOptionList;
 
-using IdentityAwareProxyAdminServicePolicyOptionList =
-    OptionList<IdentityAwareProxyAdminServiceRetryPolicyOption,
-               IdentityAwareProxyAdminServiceBackoffPolicyOption,
-               IdentityAwareProxyAdminServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use iap_v1::IdentityAwareProxyAdminServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::iap_v1::IdentityAwareProxyAdminServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace iap

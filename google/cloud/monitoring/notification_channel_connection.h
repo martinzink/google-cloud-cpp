@@ -19,102 +19,39 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_NOTIFICATION_CHANNEL_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_NOTIFICATION_CHANNEL_CONNECTION_H
 
-#include "google/cloud/monitoring/internal/notification_channel_retry_traits.h"
-#include "google/cloud/monitoring/internal/notification_channel_stub.h"
 #include "google/cloud/monitoring/notification_channel_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/notification_channel_connection.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using NotificationChannelServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        monitoring_internal::NotificationChannelServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::MakeNotificationChannelServiceConnection
+/// directly.
+using ::google::cloud::monitoring_v3::MakeNotificationChannelServiceConnection;
 
-using NotificationChannelServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        monitoring_internal::NotificationChannelServiceRetryTraits>;
+/// @deprecated Use monitoring_v3::NotificationChannelServiceConnection
+/// directly.
+using ::google::cloud::monitoring_v3::NotificationChannelServiceConnection;
 
-using NotificationChannelServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        monitoring_internal::NotificationChannelServiceRetryTraits>;
+/// @deprecated Use
+/// monitoring_v3::NotificationChannelServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_v3::
+    NotificationChannelServiceLimitedErrorCountRetryPolicy;
 
-class NotificationChannelServiceConnection {
- public:
-  virtual ~NotificationChannelServiceConnection() = 0;
+/// @deprecated Use
+/// monitoring_v3::NotificationChannelServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::monitoring_v3::
+    NotificationChannelServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::monitoring::v3::NotificationChannelDescriptor>
-  ListNotificationChannelDescriptors(
-      google::monitoring::v3::ListNotificationChannelDescriptorsRequest
-          request);
-
-  virtual StatusOr<google::monitoring::v3::NotificationChannelDescriptor>
-  GetNotificationChannelDescriptor(
-      google::monitoring::v3::GetNotificationChannelDescriptorRequest const&
-          request);
-
-  virtual StreamRange<google::monitoring::v3::NotificationChannel>
-  ListNotificationChannels(
-      google::monitoring::v3::ListNotificationChannelsRequest request);
-
-  virtual StatusOr<google::monitoring::v3::NotificationChannel>
-  GetNotificationChannel(
-      google::monitoring::v3::GetNotificationChannelRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::NotificationChannel>
-  CreateNotificationChannel(
-      google::monitoring::v3::CreateNotificationChannelRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::NotificationChannel>
-  UpdateNotificationChannel(
-      google::monitoring::v3::UpdateNotificationChannelRequest const& request);
-
-  virtual Status DeleteNotificationChannel(
-      google::monitoring::v3::DeleteNotificationChannelRequest const& request);
-
-  virtual Status SendNotificationChannelVerificationCode(
-      google::monitoring::v3::
-          SendNotificationChannelVerificationCodeRequest const& request);
-
-  virtual StatusOr<
-      google::monitoring::v3::GetNotificationChannelVerificationCodeResponse>
-  GetNotificationChannelVerificationCode(
-      google::monitoring::v3::
-          GetNotificationChannelVerificationCodeRequest const& request);
-
-  virtual StatusOr<google::monitoring::v3::NotificationChannel>
-  VerifyNotificationChannel(
-      google::monitoring::v3::VerifyNotificationChannelRequest const& request);
-};
-
-std::shared_ptr<NotificationChannelServiceConnection>
-MakeNotificationChannelServiceConnection(Options options = {});
+/// @deprecated Use monitoring_v3::NotificationChannelServiceRetryPolicy
+/// directly.
+using ::google::cloud::monitoring_v3::NotificationChannelServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace monitoring_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<monitoring::NotificationChannelServiceConnection>
-MakeNotificationChannelServiceConnection(
-    std::shared_ptr<NotificationChannelServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace monitoring_internal
 }  // namespace cloud
 }  // namespace google
 

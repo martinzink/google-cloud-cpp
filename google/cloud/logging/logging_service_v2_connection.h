@@ -19,82 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_LOGGING_LOGGING_SERVICE_V2_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_LOGGING_LOGGING_SERVICE_V2_CONNECTION_H
 
-#include "google/cloud/logging/internal/logging_service_v2_retry_traits.h"
-#include "google/cloud/logging/internal/logging_service_v2_stub.h"
 #include "google/cloud/logging/logging_service_v2_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/experimental_tag.h"
-#include "google/cloud/internal/async_read_write_stream_impl.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/logging/v2/logging_service_v2_connection.h"
 
 namespace google {
 namespace cloud {
 namespace logging {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using LoggingServiceV2RetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        logging_internal::LoggingServiceV2RetryTraits>;
+/// @deprecated Use logging_v2::MakeLoggingServiceV2Connection directly.
+using ::google::cloud::logging_v2::MakeLoggingServiceV2Connection;
 
-using LoggingServiceV2LimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        logging_internal::LoggingServiceV2RetryTraits>;
+/// @deprecated Use logging_v2::LoggingServiceV2Connection directly.
+using ::google::cloud::logging_v2::LoggingServiceV2Connection;
 
-using LoggingServiceV2LimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        logging_internal::LoggingServiceV2RetryTraits>;
+/// @deprecated Use logging_v2::LoggingServiceV2LimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::logging_v2::LoggingServiceV2LimitedErrorCountRetryPolicy;
 
-class LoggingServiceV2Connection {
- public:
-  virtual ~LoggingServiceV2Connection() = 0;
+/// @deprecated Use logging_v2::LoggingServiceV2LimitedTimeRetryPolicy directly.
+using ::google::cloud::logging_v2::LoggingServiceV2LimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual Status DeleteLog(
-      google::logging::v2::DeleteLogRequest const& request);
-
-  virtual StatusOr<google::logging::v2::WriteLogEntriesResponse>
-  WriteLogEntries(google::logging::v2::WriteLogEntriesRequest const& request);
-
-  virtual StreamRange<google::logging::v2::LogEntry> ListLogEntries(
-      google::logging::v2::ListLogEntriesRequest request);
-
-  virtual StreamRange<google::api::MonitoredResourceDescriptor>
-  ListMonitoredResourceDescriptors(
-      google::logging::v2::ListMonitoredResourceDescriptorsRequest request);
-
-  virtual StreamRange<std::string> ListLogs(
-      google::logging::v2::ListLogsRequest request);
-
-  virtual std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
-      google::logging::v2::TailLogEntriesRequest,
-      google::logging::v2::TailLogEntriesResponse>>
-      AsyncTailLogEntries(ExperimentalTag);
-};
-
-std::shared_ptr<LoggingServiceV2Connection> MakeLoggingServiceV2Connection(
-    Options options = {});
+/// @deprecated Use logging_v2::LoggingServiceV2RetryPolicy directly.
+using ::google::cloud::logging_v2::LoggingServiceV2RetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace logging
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace logging_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<logging::LoggingServiceV2Connection>
-MakeLoggingServiceV2Connection(std::shared_ptr<LoggingServiceV2Stub> stub,
-                               Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace logging_internal
 }  // namespace cloud
 }  // namespace google
 

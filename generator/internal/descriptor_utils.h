@@ -16,10 +16,13 @@
 #define GOOGLE_CLOUD_CPP_GENERATOR_INTERNAL_DESCRIPTOR_UTILS_H
 
 #include "generator/internal/generator_interface.h"
+#include "generator/internal/mixin_utils.h"
 #include "generator/internal/predicate_utils.h"
 #include "generator/internal/printer.h"
+#include "absl/types/variant.h"
 #include <google/protobuf/compiler/code_generator.h>
 #include <google/protobuf/descriptor.h>
+#include <yaml-cpp/yaml.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -36,23 +39,16 @@ namespace generator_internal {
  */
 VarsDictionary CreateServiceVars(
     google::protobuf::ServiceDescriptor const& descriptor,
-    std::vector<std::pair<std::string, std::string>> const& initial_values);
+    std::vector<std::pair<std::string, std::string>> const& initial_values,
+    std::vector<MixinMethod> const& mixin_methods = {});
 
 /**
  * Extracts method specific substitution data for each method in the service.
  */
 std::map<std::string, VarsDictionary> CreateMethodVars(
     google::protobuf::ServiceDescriptor const& service,
-    VarsDictionary const& service_vars);
-
-/**
- * Creates and initializes the collection of ClassGenerators necessary to
- * generate all code for the given service.
- */
-std::vector<std::unique_ptr<GeneratorInterface>> MakeGenerators(
-    google::protobuf::ServiceDescriptor const* service,
-    google::protobuf::compiler::GeneratorContext* context,
-    std::vector<std::pair<std::string, std::string>> const& vars);
+    YAML::Node const& service_config, VarsDictionary const& service_vars,
+    std::vector<MixinMethod> const& mixin_methods = {});
 
 /**
  * Determines which `MethodPattern` to use from patterns for the given method
@@ -73,31 +69,32 @@ Status PrintMethod(google::protobuf::MethodDescriptor const& method,
 
 /**
  * Formats comments from the source .proto file into Doxygen compatible
- * function headers, including param and return lines as necessary.
+ * function headers, including param and return lines as necessary, for a client
+ * call with the given method signature overload.
  */
 std::string FormatMethodCommentsMethodSignature(
     google::protobuf::MethodDescriptor const& method,
-    std::string const& signature);
+    std::string const& signature, bool is_discovery_document_proto);
 
 /**
  * Formats comments from the source .proto file into Doxygen compatible
- * function headers, including param and return lines as necessary.
+ * function headers, including param and return lines as necessary, for a client
+ * call using the raw request proto type as input.
  */
 std::string FormatMethodCommentsProtobufRequest(
-    google::protobuf::MethodDescriptor const& method);
+    google::protobuf::MethodDescriptor const& method,
+    bool is_discovery_document_proto);
 
-struct ResourceRoutingInfo {
-  std::string url_path;
-  std::string param_key;
-  std::string url_substitution;
-  std::string body;
-};
 /**
- * Parses the resource routing info, if present, for the provided method
- * per AIP-4222.
+ * If there were any parameter comment substitutions that went unused, log
+ * errors about them and return false. Otherwise do nothing and return true.
  */
-absl::optional<ResourceRoutingInfo> ParseResourceRoutingHeader(
-    google::protobuf::MethodDescriptor const& method);
+bool CheckParameterCommentSubstitutions();
+
+/**
+ * Emit fully namespace qualified type name of field.
+ */
+std::string CppTypeToString(google::protobuf::FieldDescriptor const* field);
 
 }  // namespace generator_internal
 }  // namespace cloud

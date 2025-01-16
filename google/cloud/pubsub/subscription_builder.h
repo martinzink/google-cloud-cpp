@@ -34,6 +34,12 @@ class SubscriptionBuilder;
 
 /**
  * Helper class to create google::pubsub::v1::PushConfig protos.
+ *
+ * Makes it easier to create the protobuf messages consumed by
+ * `SubscriptionAdminClient`.  The main advantages are:
+ *
+ * - Use a fluent API to set multiple values when constructing complex objects.
+ * - Automatically compute the set of paths for update requests.
  */
 class PushConfigBuilder {
  public:
@@ -42,9 +48,12 @@ class PushConfigBuilder {
     set_push_endpoint(std::move(push_endpoint));
   }
 
+  /// Build a protocol buffer message to update an existing push config.
   google::pubsub::v1::ModifyPushConfigRequest BuildModifyPushConfig(
       Subscription const& subscription) &&;
 
+  /// @name Setters for each protocol buffer field.
+  ///@{
   PushConfigBuilder& set_push_endpoint(std::string v) & {
     proto_.set_push_endpoint(std::move(v));
     paths_.insert("push_endpoint");
@@ -117,6 +126,25 @@ class PushConfigBuilder {
     return std::move(set_authentication(std::move(token)));
   }
 
+  static google::pubsub::v1::PushConfig::NoWrapper MakeNoWrapper(
+      bool write_metadata) {
+    google::pubsub::v1::PushConfig::NoWrapper proto;
+    proto.set_write_metadata(std::move(write_metadata));
+    return proto;
+  }
+
+  PushConfigBuilder& set_wrapper(
+      google::pubsub::v1::PushConfig::NoWrapper wrapper) & {
+    *proto_.mutable_no_wrapper() = std::move(wrapper);
+    paths_.insert("no_wrapper");
+    return *this;
+  }
+  PushConfigBuilder&& set_wrapper(
+      google::pubsub::v1::PushConfig::NoWrapper wrapper) && {
+    return std::move(set_wrapper(std::move(wrapper)));
+  }
+  ///@}
+
  private:
   friend class SubscriptionBuilder;
   google::pubsub::v1::PushConfig proto_;
@@ -124,21 +152,214 @@ class PushConfigBuilder {
 };
 
 /**
+ * A helper class to build `google::pubsub::v1::BigQueryConfig` protos.
+ *
+ * Makes it easier to create the protobuf messages consumed by
+ * `SubscriptionAdminClient`.  The main advantages are:
+ *
+ * - Use a fluent API to set multiple values when constructing complex objects.
+ * - Automatically compute the set of paths for update requests.
+ */
+class BigQueryConfigBuilder {
+ public:
+  BigQueryConfigBuilder() = default;
+
+  /// @name Setters for each protocol buffer field.
+  ///@{
+  BigQueryConfigBuilder& set_table(std::string full_path) & {
+    *proto_.mutable_table() = std::move(full_path);
+    paths_.insert("table");
+    return *this;
+  }
+  BigQueryConfigBuilder&& set_table(std::string full_path) && {
+    return std::move(set_table(std::move(full_path)));
+  }
+  BigQueryConfigBuilder& set_table(std::string const& project_id,
+                                   std::string const& data_set_id,
+                                   std::string const& table_id) & {
+    return set_table(project_id + ':' + data_set_id + '.' + table_id);
+  }
+  BigQueryConfigBuilder&& set_table(std::string const& project_id,
+                                    std::string const& data_set_id,
+                                    std::string const& table_id) && {
+    return std::move(set_table(project_id, data_set_id, table_id));
+  }
+
+  BigQueryConfigBuilder& set_use_topic_schema(bool v) & {
+    proto_.set_use_topic_schema(v);
+    paths_.insert("use_topic_schema");
+    return *this;
+  }
+  BigQueryConfigBuilder&& set_use_topic_schema(bool v) && {
+    return std::move(set_use_topic_schema(v));
+  }
+
+  BigQueryConfigBuilder& set_write_metadata(bool v) & {
+    proto_.set_write_metadata(v);
+    paths_.insert("write_metadata");
+    return *this;
+  }
+  BigQueryConfigBuilder&& set_write_metadata(bool v) && {
+    return std::move(set_write_metadata(v));
+  }
+
+  BigQueryConfigBuilder& set_drop_unknown_fields(bool v) & {
+    proto_.set_drop_unknown_fields(v);
+    paths_.insert("drop_unknown_fields");
+    return *this;
+  }
+  BigQueryConfigBuilder&& set_drop_unknown_fields(bool v) && {
+    return std::move(set_drop_unknown_fields(v));
+  }
+  ///@}
+
+ private:
+  friend class SubscriptionBuilder;
+  google::pubsub::v1::BigQueryConfig proto_;
+  std::set<std::string> paths_;
+};
+
+/**
+ * A helper class to build `google::pubsub::v1::CloudStorageConfig` protos.
+ *
+ * Makes it easier to create the protobuf messages consumed by
+ * `SubscriptionAdminClient`.  The main advantages are:
+ *
+ * - Use a fluent API to set multiple values when constructing complex objects.
+ * - Automatically compute the set of paths for update requests.
+ */
+class CloudStorageConfigBuilder {
+ public:
+  CloudStorageConfigBuilder() = default;
+
+  /// @name Setters for each protocol buffer field.
+  ///@{
+  CloudStorageConfigBuilder& set_bucket(std::string bucket) & {
+    *proto_.mutable_bucket() = std::move(bucket);
+    paths_.insert("bucket");
+    return *this;
+  }
+  CloudStorageConfigBuilder&& set_bucket(std::string bucket) && {
+    return std::move(set_bucket(std::move(bucket)));
+  }
+
+  CloudStorageConfigBuilder& set_filename_prefix(
+      std::string filename_prefix) & {
+    *proto_.mutable_filename_prefix() = std::move(filename_prefix);
+    paths_.insert("filename_prefix");
+    return *this;
+  }
+  CloudStorageConfigBuilder&& set_filename_prefix(
+      std::string filename_prefix) && {
+    return std::move(set_filename_prefix(std::move(filename_prefix)));
+  }
+
+  CloudStorageConfigBuilder& set_filename_suffix(
+      std::string filename_suffix) & {
+    *proto_.mutable_filename_suffix() = std::move(filename_suffix);
+    paths_.insert("filename_suffix");
+    return *this;
+  }
+  CloudStorageConfigBuilder&& set_filename_suffix(
+      std::string filename_suffix) && {
+    return std::move(set_filename_suffix(std::move(filename_suffix)));
+  }
+
+  static google::pubsub::v1::CloudStorageConfig::AvroConfig MakeAvroConfig(
+      bool write_metadata) {
+    google::pubsub::v1::CloudStorageConfig::AvroConfig proto;
+    proto.set_write_metadata(write_metadata);
+    return proto;
+  }
+
+  CloudStorageConfigBuilder& set_avro_config(
+      google::pubsub::v1::CloudStorageConfig::AvroConfig avro_config) & {
+    *proto_.mutable_avro_config() = std::move(avro_config);
+    paths_.insert("avro_config");
+    return *this;
+  }
+  CloudStorageConfigBuilder&& set_avro_config(
+      google::pubsub::v1::CloudStorageConfig::AvroConfig avro_config) && {
+    return std::move(set_avro_config(std::move(avro_config)));
+  }
+
+  template <typename Rep, typename Period>
+  CloudStorageConfigBuilder& set_max_duration(
+      std::chrono::duration<Rep, Period> d) & {
+    *proto_.mutable_max_duration() =
+        google::cloud::internal::ToDurationProto(d);
+    paths_.insert("max_duration");
+    return *this;
+  }
+  template <typename Rep, typename Period>
+  CloudStorageConfigBuilder&& set_max_duration(
+      std::chrono::duration<Rep, Period> d) && {
+    return std::move(set_max_duration(d));
+  }
+  CloudStorageConfigBuilder& set_max_duration(
+      google::protobuf::Duration const& d) & {
+    *proto_.mutable_max_duration() = d;
+    paths_.insert("max_duration");
+    return *this;
+  }
+  CloudStorageConfigBuilder&& set_max_duration(
+      google::protobuf::Duration const& d) && {
+    return std::move(set_max_duration(d));
+  }
+
+  CloudStorageConfigBuilder& set_max_bytes(int v) & {
+    proto_.set_max_bytes(v);
+    paths_.insert("max_bytes");
+    return *this;
+  }
+  CloudStorageConfigBuilder&& set_max_bytes(int v) && {
+    return std::move(set_max_bytes(v));
+  }
+  ///@}
+
+ private:
+  friend class SubscriptionBuilder;
+  google::pubsub::v1::CloudStorageConfig proto_;
+  std::set<std::string> paths_;
+};
+
+/**
  * Create a Cloud Pub/Sub subscription configuration.
+ *
+ * Makes it easier to create the protobuf messages consumed by
+ * `SubscriptionAdminClient`.  The main advantages are:
+ *
+ * - Use a fluent API to set multiple values when constructing complex objects.
+ * - Automatically compute the set of paths for update requests.
  */
 class SubscriptionBuilder {
  public:
   SubscriptionBuilder() = default;
 
+  /// Build a protocol buffer message to update an existing subscription.
   google::pubsub::v1::UpdateSubscriptionRequest BuildUpdateRequest(
       Subscription const& subscription) &&;
 
+  /// Build a protocol buffer message to create a new subscription.
   google::pubsub::v1::Subscription BuildCreateRequest(
       Topic const& topic, Subscription const& subscription) &&;
 
+  /// @name Setters for each protocol buffer field.
+  ///@{
   SubscriptionBuilder& set_push_config(PushConfigBuilder v) &;
   SubscriptionBuilder&& set_push_config(PushConfigBuilder v) && {
     return std::move(set_push_config(std::move(v)));
+  }
+
+  SubscriptionBuilder& set_bigquery_config(BigQueryConfigBuilder v) &;
+  SubscriptionBuilder&& set_bigquery_config(BigQueryConfigBuilder v) && {
+    return std::move(set_bigquery_config(std::move(v)));
+  }
+
+  SubscriptionBuilder& set_cloud_storage_config(CloudStorageConfigBuilder v) &;
+  SubscriptionBuilder&& set_cloud_storage_config(
+      CloudStorageConfigBuilder v) && {
+    return std::move(set_cloud_storage_config(std::move(v)));
   }
 
   SubscriptionBuilder& set_ack_deadline(std::chrono::seconds v) & {
@@ -175,7 +396,8 @@ class SubscriptionBuilder {
 
   SubscriptionBuilder& add_label(std::string const& key,
                                  std::string const& value) & {
-    using value_type = protobuf::Map<std::string, std::string>::value_type;
+    using value_type =
+        google::protobuf::Map<std::string, std::string>::value_type;
     proto_.mutable_labels()->insert(value_type(key, value));
     paths_.insert("labels");
     return *this;
@@ -256,6 +478,40 @@ class SubscriptionBuilder {
     return std::move(clear_dead_letter_policy());
   }
 
+  SubscriptionBuilder& set_retry_policy(google::pubsub::v1::RetryPolicy v) & {
+    *proto_.mutable_retry_policy() = std::move(v);
+    paths_.insert("retry_policy");
+    return *this;
+  }
+  SubscriptionBuilder&& set_retry_policy(google::pubsub::v1::RetryPolicy v) && {
+    return std::move(set_retry_policy(std::move(v)));
+  }
+
+  SubscriptionBuilder& clear_retry_policy() & {
+    proto_.clear_retry_policy();
+    paths_.insert("retry_policy");
+    return *this;
+  }
+  SubscriptionBuilder&& clear_retry_policy() && {
+    return std::move(clear_retry_policy());
+  }
+
+  SubscriptionBuilder& enable_exactly_once_delivery(bool v) & {
+    proto_.set_enable_exactly_once_delivery(v);
+    paths_.insert("enable_exactly_once_delivery");
+    return *this;
+  }
+  SubscriptionBuilder&& enable_exactly_once_delivery(bool v) && {
+    return std::move(enable_exactly_once_delivery(v));
+  }
+  ///@}
+
+  /**
+   * Construct a `google::pubsub::v1::ExpirationPolicy` using a C++ duration.
+   *
+   * This is a convenience function to create the `set_expiration_policy()`
+   * argument.
+   */
   template <typename Rep, typename Period>
   static google::pubsub::v1::ExpirationPolicy MakeExpirationPolicy(
       std::chrono::duration<Rep, Period> d) {
@@ -265,11 +521,35 @@ class SubscriptionBuilder {
     return result;
   }
 
+  /**
+   * Construct a `google::pubsub::v1::DeadLetterPolicy`.
+   *
+   * This is a convenience function to create the `set_dead_letter_policy()`
+   * argument.
+   */
   static google::pubsub::v1::DeadLetterPolicy MakeDeadLetterPolicy(
       Topic const& dead_letter_topic, std::int32_t max_delivery_attempts = 0) {
     google::pubsub::v1::DeadLetterPolicy result;
     result.set_dead_letter_topic(dead_letter_topic.FullName());
     result.set_max_delivery_attempts(max_delivery_attempts);
+    return result;
+  }
+
+  /**
+   * Construct a `google::pubsub::v1::RetryPolicy` using C++ durations.
+   *
+   * This is a convenience function to create the `set_retry_policy()`
+   * argument.
+   */
+  template <typename Rep1, typename Period1, typename Rep2, typename Period2>
+  static google::pubsub::v1::RetryPolicy MakeRetryPolicy(
+      std::chrono::duration<Rep1, Period1> minimum_backoff,
+      std::chrono::duration<Rep2, Period2> maximum_backoff) {
+    google::pubsub::v1::RetryPolicy result;
+    *result.mutable_minimum_backoff() =
+        google::cloud::internal::ToDurationProto(minimum_backoff);
+    *result.mutable_maximum_backoff() =
+        google::cloud::internal::ToDurationProto(maximum_backoff);
     return result;
   }
 

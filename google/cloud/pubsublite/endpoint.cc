@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "google/cloud/pubsublite/endpoint.h"
+#include "google/cloud/internal/make_status.h"
 #include <cctype>
 
 namespace google {
@@ -21,25 +22,30 @@ namespace pubsublite {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
 StatusOr<std::string> EndpointFromZone(std::string const& zone_id) {
+  auto make_error = [] {
+    return internal::InvalidArgumentError(
+        "expected a zone id in <region>-[a-z] format", GCP_ERROR_INFO());
+  };
   auto const n = zone_id.size();
-  if (n < 3 || !std::isalpha(zone_id[n - 1]) || zone_id[n - 2] != '-') {
-    return Status(StatusCode::kInvalidArgument,
-                  "expected a zone id in <region>-[a-z] format");
-  }
+  if (n < 3) return make_error();
+  auto back = static_cast<unsigned char>(zone_id.back());
+  if (!std::isalpha(back) || zone_id[n - 2] != '-') return make_error();
   return EndpointFromRegion(zone_id.substr(0, n - 2));
 }
 
 StatusOr<std::string> EndpointFromRegion(std::string const& region_id) {
-  auto const n = region_id.size();
+  auto make_error = [] {
+    return internal::InvalidArgumentError(
+        "region ids start with a alphabetic character and end with a digit",
+        GCP_ERROR_INFO());
+  };
+  if (region_id.size() < 2) return make_error();
+  auto front = static_cast<unsigned char>(region_id.front());
+  auto back = static_cast<unsigned char>(region_id.back());
   // These are not all the constraints in a region id. Typically, they are in
   // the form <geo>-<direction><digit>. Full validation would require contacting
   // a source of truth, seems like overkill for this application.
-  if (n < 2 || !std::isalpha(region_id.front()) ||
-      !std::isdigit(region_id.back())) {
-    return Status(
-        StatusCode::kInvalidArgument,
-        "region ids start with a alphabetic character and end with a digit");
-  }
+  if (!std::isalpha(front) || !std::isdigit(back)) return make_error();
   return region_id + "-pubsublite.googleapis.com";
 }
 

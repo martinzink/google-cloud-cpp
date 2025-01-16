@@ -21,34 +21,27 @@
 
 #include "google/cloud/resourcemanager/organizations_connection.h"
 #include "google/cloud/resourcemanager/organizations_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/resourcemanager/v3/organizations_options.h"
 
 namespace google {
 namespace cloud {
 namespace resourcemanager {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct OrganizationsRetryPolicyOption {
-  using Type = std::shared_ptr<OrganizationsRetryPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::OrganizationsBackoffPolicyOption
+/// directly.
+using ::google::cloud::resourcemanager_v3::OrganizationsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct OrganizationsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// resourcemanager_v3::OrganizationsConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::
+    OrganizationsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct OrganizationsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<OrganizationsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use resourcemanager_v3::OrganizationsPolicyOptionList directly.
+using ::google::cloud::resourcemanager_v3::OrganizationsPolicyOptionList;
 
-using OrganizationsPolicyOptionList =
-    OptionList<OrganizationsRetryPolicyOption, OrganizationsBackoffPolicyOption,
-               OrganizationsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use resourcemanager_v3::OrganizationsRetryPolicyOption directly.
+using ::google::cloud::resourcemanager_v3::OrganizationsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace resourcemanager

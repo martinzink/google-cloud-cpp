@@ -21,35 +21,26 @@
 
 #include "google/cloud/talent/company_connection.h"
 #include "google/cloud/talent/company_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/talent/v4/company_options.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CompanyServiceRetryPolicyOption {
-  using Type = std::shared_ptr<CompanyServiceRetryPolicy>;
-};
+/// @deprecated Use talent_v4::CompanyServiceBackoffPolicyOption directly.
+using ::google::cloud::talent_v4::CompanyServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CompanyServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use talent_v4::CompanyServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::talent_v4::
+    CompanyServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CompanyServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CompanyServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use talent_v4::CompanyServicePolicyOptionList directly.
+using ::google::cloud::talent_v4::CompanyServicePolicyOptionList;
 
-using CompanyServicePolicyOptionList =
-    OptionList<CompanyServiceRetryPolicyOption,
-               CompanyServiceBackoffPolicyOption,
-               CompanyServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use talent_v4::CompanyServiceRetryPolicyOption directly.
+using ::google::cloud::talent_v4::CompanyServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent

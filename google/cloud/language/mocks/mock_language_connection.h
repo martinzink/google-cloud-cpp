@@ -20,53 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_LANGUAGE_MOCKS_MOCK_LANGUAGE_CONNECTION_H
 
 #include "google/cloud/language/language_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/language/v1/mocks/mock_language_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in language_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace language_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockLanguageServiceConnection
-    : public language::LanguageServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::language::v1::AnalyzeSentimentResponse>,
-      AnalyzeSentiment,
-      (google::cloud::language::v1::AnalyzeSentimentRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::language::v1::AnalyzeEntitiesResponse>,
-      AnalyzeEntities,
-      (google::cloud::language::v1::AnalyzeEntitiesRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::language::v1::AnalyzeEntitySentimentResponse>,
-      AnalyzeEntitySentiment,
-      (google::cloud::language::v1::AnalyzeEntitySentimentRequest const&
-           request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::language::v1::AnalyzeSyntaxResponse>,
-      AnalyzeSyntax,
-      (google::cloud::language::v1::AnalyzeSyntaxRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::language::v1::ClassifyTextResponse>,
-              ClassifyText,
-              (google::cloud::language::v1::ClassifyTextRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::language::v1::AnnotateTextResponse>,
-              AnnotateText,
-              (google::cloud::language::v1::AnnotateTextRequest const& request),
-              (override));
-};
+/// @deprecated Use language_v1_mocks::MockLanguageServiceConnection directly.
+using ::google::cloud::language_v1_mocks::MockLanguageServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace language_mocks

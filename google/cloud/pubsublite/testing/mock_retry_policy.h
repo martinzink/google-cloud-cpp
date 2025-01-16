@@ -15,24 +15,24 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUBLITE_TESTING_MOCK_RETRY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUBLITE_TESTING_MOCK_RETRY_POLICY_H
 
-#include "google/cloud/internal/retry_policy.h"
+#include "google/cloud/retry_policy.h"
 #include "google/cloud/version.h"
 #include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace pubsublite_testing {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockRetryPolicy : public google::cloud::internal::RetryPolicy {
+class MockRetryPolicy : public google::cloud::RetryPolicy {
  public:
   MOCK_METHOD(bool, OnFailure, (Status const&), (override));
   MOCK_METHOD(bool, IsExhausted, (), (const, override));
   MOCK_METHOD(bool, IsPermanentFailure, (Status const&), (const, override));
 };
 
-}  // namespace pubsublite_testing
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace pubsublite_testing
 }  // namespace cloud
 }  // namespace google
 

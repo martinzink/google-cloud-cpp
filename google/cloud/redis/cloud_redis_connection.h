@@ -20,87 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_REDIS_CLOUD_REDIS_CONNECTION_H
 
 #include "google/cloud/redis/cloud_redis_connection_idempotency_policy.h"
-#include "google/cloud/redis/internal/cloud_redis_retry_traits.h"
-#include "google/cloud/redis/internal/cloud_redis_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/redis/v1/cloud_redis_connection.h"
 
 namespace google {
 namespace cloud {
 namespace redis {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CloudRedisRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    redis_internal::CloudRedisRetryTraits>;
+/// @deprecated Use redis_v1::MakeCloudRedisConnection directly.
+using ::google::cloud::redis_v1::MakeCloudRedisConnection;
 
-using CloudRedisLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        redis_internal::CloudRedisRetryTraits>;
+/// @deprecated Use redis_v1::CloudRedisConnection directly.
+using ::google::cloud::redis_v1::CloudRedisConnection;
 
-using CloudRedisLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        redis_internal::CloudRedisRetryTraits>;
+/// @deprecated Use redis_v1::CloudRedisLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::redis_v1::CloudRedisLimitedErrorCountRetryPolicy;
 
-class CloudRedisConnection {
- public:
-  virtual ~CloudRedisConnection() = 0;
+/// @deprecated Use redis_v1::CloudRedisLimitedTimeRetryPolicy directly.
+using ::google::cloud::redis_v1::CloudRedisLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::redis::v1::Instance> ListInstances(
-      google::cloud::redis::v1::ListInstancesRequest request);
-
-  virtual StatusOr<google::cloud::redis::v1::Instance> GetInstance(
-      google::cloud::redis::v1::GetInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::redis::v1::Instance>> CreateInstance(
-      google::cloud::redis::v1::CreateInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::redis::v1::Instance>> UpdateInstance(
-      google::cloud::redis::v1::UpdateInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::redis::v1::Instance>> UpgradeInstance(
-      google::cloud::redis::v1::UpgradeInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::redis::v1::Instance>> ImportInstance(
-      google::cloud::redis::v1::ImportInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::redis::v1::Instance>> ExportInstance(
-      google::cloud::redis::v1::ExportInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::redis::v1::Instance>> FailoverInstance(
-      google::cloud::redis::v1::FailoverInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::redis::v1::OperationMetadata>>
-  DeleteInstance(
-      google::cloud::redis::v1::DeleteInstanceRequest const& request);
-};
-
-std::shared_ptr<CloudRedisConnection> MakeCloudRedisConnection(
-    Options options = {});
+/// @deprecated Use redis_v1::CloudRedisRetryPolicy directly.
+using ::google::cloud::redis_v1::CloudRedisRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace redis
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace redis_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<redis::CloudRedisConnection> MakeCloudRedisConnection(
-    std::shared_ptr<CloudRedisStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace redis_internal
 }  // namespace cloud
 }  // namespace google
 

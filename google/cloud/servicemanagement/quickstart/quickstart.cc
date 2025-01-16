@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/servicemanagement/service_manager_client.h"
+//! [all]
+#include "google/cloud/servicemanagement/v1/service_manager_client.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -22,19 +22,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace servicemanagement = ::google::cloud::servicemanagement;
+  namespace servicemanagement = ::google::cloud::servicemanagement_v1;
   auto client = servicemanagement::ServiceManagerClient(
       servicemanagement::MakeServiceManagerConnection());
 
   google::api::servicemanagement::v1::ListServicesRequest request;
   request.set_producer_project_id(argv[1]);
   for (auto s : client.ListServices(request)) {
-    if (!s) throw std::runtime_error(s.status().message());
+    if (!s) throw std::move(s).status();
     std::cout << s->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

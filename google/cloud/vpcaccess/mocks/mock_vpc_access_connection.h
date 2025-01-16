@@ -19,41 +19,19 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VPCACCESS_MOCKS_MOCK_VPC_ACCESS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_VPCACCESS_MOCKS_MOCK_VPC_ACCESS_CONNECTION_H
 
+#include "google/cloud/vpcaccess/v1/mocks/mock_vpc_access_connection.h"
 #include "google/cloud/vpcaccess/vpc_access_connection.h"
-#include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in vpcaccess_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace vpcaccess_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockVpcAccessServiceConnection
-    : public vpcaccess::VpcAccessServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::vpcaccess::v1::Connector>>,
-      CreateConnector,
-      (google::cloud::vpcaccess::v1::CreateConnectorRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::vpcaccess::v1::Connector>, GetConnector,
-      (google::cloud::vpcaccess::v1::GetConnectorRequest const& request),
-      (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::vpcaccess::v1::Connector>,
-              ListConnectors,
-              (google::cloud::vpcaccess::v1::ListConnectorsRequest request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::vpcaccess::v1::OperationMetadata>>,
-      DeleteConnector,
-      (google::cloud::vpcaccess::v1::DeleteConnectorRequest const& request),
-      (override));
-};
+/// @deprecated Use vpcaccess_v1_mocks::MockVpcAccessServiceConnection directly.
+using ::google::cloud::vpcaccess_v1_mocks::MockVpcAccessServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace vpcaccess_mocks

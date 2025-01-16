@@ -14,11 +14,6 @@
 
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_FUTURE_BASE_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_FUTURE_BASE_H
-/**
- * @file
- *
- * Define the implementation details for `google::cloud::future<T>`.
- */
 
 #include "google/cloud/internal/future_impl.h"
 #include "google/cloud/version.h"
@@ -165,8 +160,10 @@ class promise_base {  // NOLINT(readability-identifier-naming)
   explicit promise_base(std::function<void()> cancellation_callback)
       : shared_state_(
             std::make_shared<shared_state_type>(cancellation_callback)) {}
-  // NOLINTNEXTLINE(performance-noexcept-move-constructor)
-  promise_base(promise_base&&) = default;
+  promise_base(promise_base&& rhs) noexcept
+      : shared_state_(std::move(rhs.shared_state_)) {
+    rhs.shared_state_.reset();
+  }
 
   ~promise_base() {
     if (shared_state_) {
@@ -200,6 +197,13 @@ class promise_base {  // NOLINT(readability-identifier-naming)
   /// Shorthand to refer to the shared state type.
   using shared_state_type = internal::future_shared_state<T>;
   std::shared_ptr<shared_state_type> shared_state_;
+};
+
+struct CoroutineSupport {
+  template <typename T, typename C>
+  static void set_continuation(future<T>& f, std::unique_ptr<C> c) {
+    f.shared_state_->set_continuation(std::move(c));
+  }
 };
 
 }  // namespace internal

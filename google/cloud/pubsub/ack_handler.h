@@ -15,8 +15,10 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_ACK_HANDLER_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_ACK_HANDLER_H
 
+#include "google/cloud/pubsub/subscription.h"
 #include "google/cloud/pubsub/version.h"
 #include "google/cloud/status.h"
+#include <cstdint>
 #include <memory>
 
 namespace google {
@@ -33,11 +35,11 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
  * same message received in the callback. Applications cannot create standalone
  * handlers (except in unit tests via mocks).
  *
- * This interface allows applications to acknowledge and reject messages in a
- * provided to the Cloud Pub/Sub C++ client library. Note that this class is
- * move-able, to support applications that process messages asynchronously.
- * However, this class is *not* copy-able, because messages can only be
- * acknowledged or rejected exactly once.
+ * This interface allows applications to acknowledge and reject messages that
+ * are provided by the Cloud Pub/Sub C++ client library to the application. Note
+ * that this class is move-able, to support applications that process messages
+ * asynchronously. However, this class is *not* copy-able, because messages can
+ * only be acknowledged or rejected exactly once.
  *
  * @par Thread Safety
  * This class is *thread compatible*, only one thread should call non-const
@@ -96,6 +98,16 @@ class AckHandler {
     virtual void nack() {}
     /// The implementation for `AckHandler::delivery_attempt()`
     virtual std::int32_t delivery_attempt() const { return 0; }
+    /// Returns the ack id for the handler. There is no corresponding public
+    /// interface to access the ack id in `AckHandler`. This is for internal
+    /// use only.
+    virtual std::string ack_id() { return ""; }
+    /// Returns the subscription for the handler. There is no corresponding
+    /// public interface to access the subscription id in `AckHandler`. This
+    /// is for internal use only.
+    virtual pubsub::Subscription subscription() const {
+      return pubsub::Subscription{};
+    }
   };
 
   /**

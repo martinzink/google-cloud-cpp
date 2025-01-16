@@ -20,63 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_NOTEBOOKS_MOCKS_MOCK_MANAGED_NOTEBOOK_CONNECTION_H
 
 #include "google/cloud/notebooks/managed_notebook_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/notebooks/v1/mocks/mock_managed_notebook_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in notebooks_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace notebooks_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockManagedNotebookServiceConnection
-    : public notebooks::ManagedNotebookServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::notebooks::v1::Runtime>, ListRuntimes,
-              (google::cloud::notebooks::v1::ListRuntimesRequest request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::notebooks::v1::Runtime>, GetRuntime,
-              (google::cloud::notebooks::v1::GetRuntimeRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::notebooks::v1::Runtime>>, CreateRuntime,
-      (google::cloud::notebooks::v1::CreateRuntimeRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::notebooks::v1::OperationMetadata>>,
-      DeleteRuntime,
-      (google::cloud::notebooks::v1::DeleteRuntimeRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::notebooks::v1::Runtime>>, StartRuntime,
-      (google::cloud::notebooks::v1::StartRuntimeRequest const& request),
-      (override));
-
-  MOCK_METHOD(future<StatusOr<google::cloud::notebooks::v1::Runtime>>,
-              StopRuntime,
-              (google::cloud::notebooks::v1::StopRuntimeRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::notebooks::v1::Runtime>>, SwitchRuntime,
-      (google::cloud::notebooks::v1::SwitchRuntimeRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::notebooks::v1::Runtime>>, ResetRuntime,
-      (google::cloud::notebooks::v1::ResetRuntimeRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::notebooks::v1::Runtime>>,
-      ReportRuntimeEvent,
-      (google::cloud::notebooks::v1::ReportRuntimeEventRequest const& request),
-      (override));
-};
+/// @deprecated Use notebooks_v1_mocks::MockManagedNotebookServiceConnection
+/// directly.
+using ::google::cloud::notebooks_v1_mocks::MockManagedNotebookServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace notebooks_mocks

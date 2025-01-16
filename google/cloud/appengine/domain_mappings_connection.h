@@ -20,79 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_DOMAIN_MAPPINGS_CONNECTION_H
 
 #include "google/cloud/appengine/domain_mappings_connection_idempotency_policy.h"
-#include "google/cloud/appengine/internal/domain_mappings_retry_traits.h"
-#include "google/cloud/appengine/internal/domain_mappings_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/appengine/v1/domain_mappings_connection.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using DomainMappingsRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        appengine_internal::DomainMappingsRetryTraits>;
+/// @deprecated Use appengine_v1::MakeDomainMappingsConnection directly.
+using ::google::cloud::appengine_v1::MakeDomainMappingsConnection;
 
-using DomainMappingsLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::DomainMappingsRetryTraits>;
+/// @deprecated Use appengine_v1::DomainMappingsConnection directly.
+using ::google::cloud::appengine_v1::DomainMappingsConnection;
 
-using DomainMappingsLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::DomainMappingsRetryTraits>;
+/// @deprecated Use appengine_v1::DomainMappingsLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::appengine_v1::DomainMappingsLimitedErrorCountRetryPolicy;
 
-class DomainMappingsConnection {
- public:
-  virtual ~DomainMappingsConnection() = 0;
+/// @deprecated Use appengine_v1::DomainMappingsLimitedTimeRetryPolicy directly.
+using ::google::cloud::appengine_v1::DomainMappingsLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::appengine::v1::DomainMapping> ListDomainMappings(
-      google::appengine::v1::ListDomainMappingsRequest request);
-
-  virtual StatusOr<google::appengine::v1::DomainMapping> GetDomainMapping(
-      google::appengine::v1::GetDomainMappingRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::DomainMapping>>
-  CreateDomainMapping(
-      google::appengine::v1::CreateDomainMappingRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::DomainMapping>>
-  UpdateDomainMapping(
-      google::appengine::v1::UpdateDomainMappingRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::OperationMetadataV1>>
-  DeleteDomainMapping(
-      google::appengine::v1::DeleteDomainMappingRequest const& request);
-};
-
-std::shared_ptr<DomainMappingsConnection> MakeDomainMappingsConnection(
-    Options options = {});
+/// @deprecated Use appengine_v1::DomainMappingsRetryPolicy directly.
+using ::google::cloud::appengine_v1::DomainMappingsRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::DomainMappingsConnection>
-MakeDomainMappingsConnection(std::shared_ptr<DomainMappingsStub> stub,
-                             Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

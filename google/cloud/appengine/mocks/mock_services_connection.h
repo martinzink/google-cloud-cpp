@@ -20,33 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_MOCKS_MOCK_SERVICES_CONNECTION_H
 
 #include "google/cloud/appengine/services_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/appengine/v1/mocks/mock_services_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in appengine_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace appengine_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockServicesConnection : public appengine::ServicesConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::appengine::v1::Service>, ListServices,
-              (google::appengine::v1::ListServicesRequest request), (override));
-
-  MOCK_METHOD(StatusOr<google::appengine::v1::Service>, GetService,
-              (google::appengine::v1::GetServiceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::appengine::v1::Service>>, UpdateService,
-              (google::appengine::v1::UpdateServiceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::appengine::v1::OperationMetadataV1>>,
-              DeleteService,
-              (google::appengine::v1::DeleteServiceRequest const& request),
-              (override));
-};
+/// @deprecated Use appengine_v1_mocks::MockServicesConnection directly.
+using ::google::cloud::appengine_v1_mocks::MockServicesConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine_mocks

@@ -20,47 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_MOCKS_MOCK_AUTHORIZED_CERTIFICATES_CONNECTION_H
 
 #include "google/cloud/appengine/authorized_certificates_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/appengine/v1/mocks/mock_authorized_certificates_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in appengine_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace appengine_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockAuthorizedCertificatesConnection
-    : public appengine::AuthorizedCertificatesConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(
-      StreamRange<google::appengine::v1::AuthorizedCertificate>,
-      ListAuthorizedCertificates,
-      (google::appengine::v1::ListAuthorizedCertificatesRequest request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::appengine::v1::AuthorizedCertificate>,
-      GetAuthorizedCertificate,
-      (google::appengine::v1::GetAuthorizedCertificateRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::appengine::v1::AuthorizedCertificate>,
-              CreateAuthorizedCertificate,
-              (google::appengine::v1::CreateAuthorizedCertificateRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::appengine::v1::AuthorizedCertificate>,
-              UpdateAuthorizedCertificate,
-              (google::appengine::v1::UpdateAuthorizedCertificateRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(Status, DeleteAuthorizedCertificate,
-              (google::appengine::v1::DeleteAuthorizedCertificateRequest const&
-                   request),
-              (override));
-};
+/// @deprecated Use appengine_v1_mocks::MockAuthorizedCertificatesConnection
+/// directly.
+using ::google::cloud::appengine_v1_mocks::MockAuthorizedCertificatesConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine_mocks

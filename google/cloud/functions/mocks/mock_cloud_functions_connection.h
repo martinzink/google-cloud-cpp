@@ -20,77 +20,19 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_FUNCTIONS_MOCKS_MOCK_CLOUD_FUNCTIONS_CONNECTION_H
 
 #include "google/cloud/functions/cloud_functions_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/functions/v1/mocks/mock_cloud_functions_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in functions_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace functions_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockCloudFunctionsServiceConnection
-    : public functions::CloudFunctionsServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::cloud::functions::v1::CloudFunction>,
-              ListFunctions,
-              (google::cloud::functions::v1::ListFunctionsRequest request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::functions::v1::CloudFunction>,
-              GetFunction,
-              (google::cloud::functions::v1::GetFunctionRequest const& request),
-              (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::functions::v1::CloudFunction>>,
-      CreateFunction,
-      (google::cloud::functions::v1::CreateFunctionRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::functions::v1::CloudFunction>>,
-      UpdateFunction,
-      (google::cloud::functions::v1::UpdateFunctionRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      future<StatusOr<google::cloud::functions::v1::OperationMetadataV1>>,
-      DeleteFunction,
-      (google::cloud::functions::v1::DeleteFunctionRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::functions::v1::CallFunctionResponse>,
-      CallFunction,
-      (google::cloud::functions::v1::CallFunctionRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::functions::v1::GenerateUploadUrlResponse>,
-      GenerateUploadUrl,
-      (google::cloud::functions::v1::GenerateUploadUrlRequest const& request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::cloud::functions::v1::GenerateDownloadUrlResponse>,
-      GenerateDownloadUrl,
-      (google::cloud::functions::v1::GenerateDownloadUrlRequest const& request),
-      (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::Policy>, SetIamPolicy,
-              (google::iam::v1::SetIamPolicyRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::Policy>, GetIamPolicy,
-              (google::iam::v1::GetIamPolicyRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::iam::v1::TestIamPermissionsResponse>,
-              TestIamPermissions,
-              (google::iam::v1::TestIamPermissionsRequest const& request),
-              (override));
-};
+/// @deprecated Use functions_v1_mocks::MockCloudFunctionsServiceConnection
+/// directly.
+using ::google::cloud::functions_v1_mocks::MockCloudFunctionsServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace functions_mocks

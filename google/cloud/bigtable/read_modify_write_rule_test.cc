@@ -1,4 +1,4 @@
-// Copyright 2018 Google Inc.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,15 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
 namespace btproto = ::google::bigtable::v2;
+
+TEST(ReadModifyWriteRuleTest, Equality) {
+  auto r1 = ReadModifyWriteRule::AppendValue("fam", "col", "foo");
+  auto r2 = ReadModifyWriteRule::IncrementAmount("fam", "col", 42);
+  EXPECT_NE(r1, r2);
+
+  r2 = r1;
+  EXPECT_EQ(r1, r2);
+}
 
 TEST(ReadModifyWriteRuleTest, AppendValue) {
   auto const proto =

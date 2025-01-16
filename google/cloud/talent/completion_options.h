@@ -21,34 +21,25 @@
 
 #include "google/cloud/talent/completion_connection.h"
 #include "google/cloud/talent/completion_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/talent/v4/completion_options.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CompletionRetryPolicyOption {
-  using Type = std::shared_ptr<CompletionRetryPolicy>;
-};
+/// @deprecated Use talent_v4::CompletionBackoffPolicyOption directly.
+using ::google::cloud::talent_v4::CompletionBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CompletionBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use talent_v4::CompletionConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::talent_v4::CompletionConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CompletionConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CompletionConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use talent_v4::CompletionPolicyOptionList directly.
+using ::google::cloud::talent_v4::CompletionPolicyOptionList;
 
-using CompletionPolicyOptionList =
-    OptionList<CompletionRetryPolicyOption, CompletionBackoffPolicyOption,
-               CompletionConnectionIdempotencyPolicyOption>;
+/// @deprecated Use talent_v4::CompletionRetryPolicyOption directly.
+using ::google::cloud::talent_v4::CompletionRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent

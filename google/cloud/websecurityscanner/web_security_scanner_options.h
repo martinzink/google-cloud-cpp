@@ -19,37 +19,35 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WEBSECURITYSCANNER_WEB_SECURITY_SCANNER_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WEBSECURITYSCANNER_WEB_SECURITY_SCANNER_OPTIONS_H
 
+#include "google/cloud/websecurityscanner/v1/web_security_scanner_options.h"
 #include "google/cloud/websecurityscanner/web_security_scanner_connection.h"
 #include "google/cloud/websecurityscanner/web_security_scanner_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace websecurityscanner {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct WebSecurityScannerRetryPolicyOption {
-  using Type = std::shared_ptr<WebSecurityScannerRetryPolicy>;
-};
+/// @deprecated Use websecurityscanner_v1::WebSecurityScannerBackoffPolicyOption
+/// directly.
+using ::google::cloud::websecurityscanner_v1::
+    WebSecurityScannerBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WebSecurityScannerBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// websecurityscanner_v1::WebSecurityScannerConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::websecurityscanner_v1::
+    WebSecurityScannerConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WebSecurityScannerConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<WebSecurityScannerConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use websecurityscanner_v1::WebSecurityScannerPolicyOptionList
+/// directly.
+using ::google::cloud::websecurityscanner_v1::
+    WebSecurityScannerPolicyOptionList;
 
-using WebSecurityScannerPolicyOptionList =
-    OptionList<WebSecurityScannerRetryPolicyOption,
-               WebSecurityScannerBackoffPolicyOption,
-               WebSecurityScannerConnectionIdempotencyPolicyOption>;
+/// @deprecated Use websecurityscanner_v1::WebSecurityScannerRetryPolicyOption
+/// directly.
+using ::google::cloud::websecurityscanner_v1::
+    WebSecurityScannerRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace websecurityscanner

@@ -17,13 +17,23 @@
 #include "google/cloud/storage/oauth2/credentials.h"
 #include "google/cloud/storage/oauth2/google_credentials.h"
 #include "google/cloud/internal/absl_str_join_quiet.h"
+#include "google/cloud/internal/curl_options.h"
 #include "google/cloud/internal/getenv.h"
+#include "google/cloud/internal/populate_common_options.h"
+#include "google/cloud/internal/rest_options.h"
+#include "google/cloud/internal/rest_response.h"
+#include "google/cloud/internal/service_endpoint.h"
 #include "google/cloud/log.h"
+#include "google/cloud/opentelemetry_options.h"
+#include "google/cloud/universe_domain_options.h"
 #include "absl/strings/str_split.h"
 #include <cstdlib>
+#include <memory>
 #include <set>
 #include <sstream>
+#include <string>
 #include <thread>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -102,6 +112,20 @@ std::size_t DefaultConnectionPoolSize() {
 
 namespace internal {
 
+std::string RestEndpoint(Options const& options) {
+  return GetEmulator().value_or(options.get<RestEndpointOption>());
+}
+
+std::string IamRestEndpoint(Options const& options) {
+  return GetEmulator().value_or(options.get<IamEndpointOption>());
+}
+
+std::string IamRestPath() {
+  auto emulator = GetEmulator();
+  if (emulator) return "/iamapi";
+  return {};
+}
+
 std::string JsonEndpoint(Options const& options) {
   return GetEmulator().value_or(options.get<RestEndpointOption>()) +
          "/storage/" + options.get<TargetApiVersionOption>();
@@ -151,11 +175,20 @@ Options ApplyPolicy(Options opts, IdempotencyPolicy const& p) {
 
 Options DefaultOptions(std::shared_ptr<oauth2::Credentials> credentials,
                        Options opts) {
+  auto ud = GetEnv("GOOGLE_CLOUD_UNIVERSE_DOMAIN");
+  if (ud && !ud->empty()) {
+    opts.set<google::cloud::internal::UniverseDomainOption>(*std::move(ud));
+  }
+  auto gcs_ep = google::cloud::internal::UniverseDomainEndpoint(
+      "https://storage.googleapis.com", opts);
+  auto iam_ep = absl::StrCat(google::cloud::internal::UniverseDomainEndpoint(
+                                 "https://iamcredentials.googleapis.com", opts),
+                             "/v1");
   auto o =
       Options{}
           .set<Oauth2CredentialsOption>(std::move(credentials))
-          .set<RestEndpointOption>("https://storage.googleapis.com")
-          .set<IamEndpointOption>("https://iamcredentials.googleapis.com/v1")
+          .set<RestEndpointOption>(std::move(gcs_ep))
+          .set<IamEndpointOption>(std::move(iam_ep))
           .set<TargetApiVersionOption>("v1")
           .set<ConnectionPoolSizeOption>(DefaultConnectionPoolSize())
           .set<DownloadBufferSizeOption>(
@@ -170,6 +203,8 @@ Options DefaultOptions(std::shared_ptr<oauth2::Credentials> credentials,
           .set<MaximumCurlSocketSendSizeOption>(0)
           .set<TransferStallTimeoutOption>(std::chrono::seconds(
               GOOGLE_CLOUD_CPP_STORAGE_DEFAULT_DOWNLOAD_STALL_TIMEOUT))
+          .set<TransferStallMinimumRateOption>(1)
+          .set<DownloadStallMinimumRateOption>(1)
           .set<RetryPolicyOption>(
               LimitedTimeRetryPolicy(
                   STORAGE_CLIENT_DEFAULT_MAXIMUM_RETRY_PERIOD)
@@ -197,26 +232,60 @@ Options DefaultOptions(std::shared_ptr<oauth2::Credentials> credentials,
                                                                 "/iamapi");
   }
 
-  auto tracing =
-      google::cloud::internal::GetEnv("CLOUD_STORAGE_ENABLE_TRACING");
-  if (tracing.has_value()) {
-    std::set<std::string> const enabled = absl::StrSplit(*tracing, ',');
-    if (enabled.end() != enabled.find("http")) {
-      GCP_LOG(INFO) << "Enabling logging for http";
-      o.lookup<TracingComponentsOption>().insert("http");
-    }
-    if (enabled.end() != enabled.find("raw-client")) {
-      GCP_LOG(INFO) << "Enabling logging for RawClient functions";
-      o.lookup<TracingComponentsOption>().insert("raw-client");
+  auto logging = GetEnv("CLOUD_STORAGE_ENABLE_TRACING");
+  if (logging) {
+    for (auto c : absl::StrSplit(*logging, ',')) {
+      GCP_LOG(INFO) << "Enabling logging for " << c;
+      o.lookup<LoggingComponentsOption>().insert(std::string(c));
     }
   }
 
-  auto project_id = google::cloud::internal::GetEnv("GOOGLE_CLOUD_PROJECT");
+  auto tracing = GetEnv("GOOGLE_CLOUD_CPP_OPENTELEMETRY_TRACING");
+  if (tracing && !tracing->empty()) {
+    o.set<OpenTelemetryTracingOption>(true);
+  }
+
+  auto project_id = GetEnv("GOOGLE_CLOUD_PROJECT");
   if (project_id.has_value()) {
     o.set<ProjectIdOption>(std::move(*project_id));
   }
 
-  return o;
+  // Always apply the RestClient defaults, even if it is not in use. Now that we
+  // use the low-level initialization code in
+  // google/cloud/internal/curl_wrappers.cc, these are always needed.
+  namespace rest = ::google::cloud::rest_internal;
+  auto rest_defaults = Options{}
+                           .set<rest::DownloadStallTimeoutOption>(
+                               o.get<DownloadStallTimeoutOption>())
+                           .set<rest::DownloadStallMinimumRateOption>(
+                               o.get<DownloadStallMinimumRateOption>())
+                           .set<rest::TransferStallTimeoutOption>(
+                               o.get<TransferStallTimeoutOption>())
+                           .set<rest::TransferStallMinimumRateOption>(
+                               o.get<TransferStallMinimumRateOption>())
+                           .set<rest::MaximumCurlSocketRecvSizeOption>(
+                               o.get<MaximumCurlSocketRecvSizeOption>())
+                           .set<rest::MaximumCurlSocketSendSizeOption>(
+                               o.get<MaximumCurlSocketSendSizeOption>())
+                           .set<rest::ConnectionPoolSizeOption>(
+                               o.get<ConnectionPoolSizeOption>())
+                           .set<rest::EnableCurlSslLockingOption>(
+                               o.get<EnableCurlSslLockingOption>())
+                           .set<rest::EnableCurlSigpipeHandlerOption>(
+                               o.get<EnableCurlSigpipeHandlerOption>());
+
+  // These two are not always present, but if they are, and only if they are, we
+  // need to map their value to the corresponding option in `rest_internal::`.
+  if (o.has<storage_experimental::HttpVersionOption>()) {
+    rest_defaults.set<rest::HttpVersionOption>(
+        o.get<storage_experimental::HttpVersionOption>());
+  }
+  if (o.has<internal::CAPathOption>()) {
+    rest_defaults.set<rest::CAPathOption>(o.get<internal::CAPathOption>());
+  }
+
+  return google::cloud::internal::MergeOptions(std::move(o),
+                                               std::move(rest_defaults));
 }
 
 Options DefaultOptionsWithCredentials(Options opts) {
@@ -226,17 +295,18 @@ Options DefaultOptionsWithCredentials(Options opts) {
   }
   if (opts.has<UnifiedCredentialsOption>()) {
     auto credentials =
-        internal::MapCredentials(opts.get<UnifiedCredentialsOption>());
+        internal::MapCredentials(*opts.get<UnifiedCredentialsOption>());
     return internal::DefaultOptions(std::move(credentials), std::move(opts));
   }
   if (GetEmulator().has_value()) {
     return internal::DefaultOptions(
-        internal::MapCredentials(google::cloud::MakeInsecureCredentials()),
+        internal::MapCredentials(*google::cloud::MakeInsecureCredentials()),
         std::move(opts));
   }
-  return internal::DefaultOptions(
-      internal::MapCredentials(google::cloud::MakeGoogleDefaultCredentials()),
-      std::move(opts));
+  auto credentials =
+      internal::MapCredentials(*google::cloud::MakeGoogleDefaultCredentials(
+          google::cloud::internal::MakeAuthOptions(opts)));
+  return internal::DefaultOptions(std::move(credentials), std::move(opts));
 }
 
 }  // namespace internal
@@ -265,27 +335,27 @@ ClientOptions::ClientOptions(Options o)
 }
 
 bool ClientOptions::enable_http_tracing() const {
-  return opts_.get<TracingComponentsOption>().count("http") != 0;
+  return opts_.get<LoggingComponentsOption>().count("http") != 0;
 }
 
 ClientOptions& ClientOptions::set_enable_http_tracing(bool enable) {
   if (enable) {
-    opts_.lookup<TracingComponentsOption>().insert("http");
+    opts_.lookup<LoggingComponentsOption>().insert("http");
   } else {
-    opts_.lookup<TracingComponentsOption>().erase("http");
+    opts_.lookup<LoggingComponentsOption>().erase("http");
   }
   return *this;
 }
 
 bool ClientOptions::enable_raw_client_tracing() const {
-  return opts_.get<TracingComponentsOption>().count("raw-client") != 0;
+  return opts_.get<LoggingComponentsOption>().count("raw-client") != 0;
 }
 
 ClientOptions& ClientOptions::set_enable_raw_client_tracing(bool enable) {
   if (enable) {
-    opts_.lookup<TracingComponentsOption>().insert("raw-client");
+    opts_.lookup<LoggingComponentsOption>().insert("raw-client");
   } else {
-    opts_.lookup<TracingComponentsOption>().erase("raw-client");
+    opts_.lookup<LoggingComponentsOption>().erase("raw-client");
   }
   return *this;
 }

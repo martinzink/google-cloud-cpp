@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,7 +96,8 @@ class TableIntegrationTest
   void SetUp() override;
 
   /// Gets a Table object for the current test.
-  bigtable::Table GetTable();
+  bigtable::Table GetTable(
+      std::string const& implementation = "with-data-client");
 
   /// Return all the cells in @p table that pass @p filter.
   static std::vector<bigtable::Cell> ReadRows(bigtable::Table& table,
@@ -130,8 +131,8 @@ class TableIntegrationTest
    * Compare two sets of cells.
    * Unordered because ReadRows does not guarantee a particular order.
    */
-  static void CheckEqualUnordered(std::vector<bigtable::Cell> expected,
-                                  std::vector<bigtable::Cell> actual);
+  static void CheckEqualUnordered(std::vector<bigtable::Cell> const& expected,
+                                  std::vector<bigtable::Cell> const& actual);
 
   /**
    * Generate a random table id.
@@ -179,6 +180,7 @@ class TableIntegrationTest
   }
 
   std::shared_ptr<bigtable::DataClient> data_client_;
+  std::shared_ptr<bigtable::DataConnection> data_connection_;
 };
 
 }  // namespace testing

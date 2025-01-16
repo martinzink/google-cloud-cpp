@@ -19,105 +19,34 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TRANSLATE_TRANSLATION_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TRANSLATE_TRANSLATION_CONNECTION_H
 
-#include "google/cloud/translate/internal/translation_retry_traits.h"
-#include "google/cloud/translate/internal/translation_stub.h"
 #include "google/cloud/translate/translation_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/translate/v3/translation_connection.h"
 
 namespace google {
 namespace cloud {
 namespace translate {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using TranslationServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        translate_internal::TranslationServiceRetryTraits>;
+/// @deprecated Use translate_v3::MakeTranslationServiceConnection directly.
+using ::google::cloud::translate_v3::MakeTranslationServiceConnection;
 
-using TranslationServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        translate_internal::TranslationServiceRetryTraits>;
+/// @deprecated Use translate_v3::TranslationServiceConnection directly.
+using ::google::cloud::translate_v3::TranslationServiceConnection;
 
-using TranslationServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        translate_internal::TranslationServiceRetryTraits>;
+/// @deprecated Use translate_v3::TranslationServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::translate_v3::
+    TranslationServiceLimitedErrorCountRetryPolicy;
 
-class TranslationServiceConnection {
- public:
-  virtual ~TranslationServiceConnection() = 0;
+/// @deprecated Use translate_v3::TranslationServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::translate_v3::TranslationServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::translation::v3::TranslateTextResponse>
-  TranslateText(
-      google::cloud::translation::v3::TranslateTextRequest const& request);
-
-  virtual StatusOr<google::cloud::translation::v3::DetectLanguageResponse>
-  DetectLanguage(
-      google::cloud::translation::v3::DetectLanguageRequest const& request);
-
-  virtual StatusOr<google::cloud::translation::v3::SupportedLanguages>
-  GetSupportedLanguages(
-      google::cloud::translation::v3::GetSupportedLanguagesRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::translation::v3::TranslateDocumentResponse>
-  TranslateDocument(
-      google::cloud::translation::v3::TranslateDocumentRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::translation::v3::BatchTranslateResponse>>
-  BatchTranslateText(
-      google::cloud::translation::v3::BatchTranslateTextRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::translation::v3::BatchTranslateDocumentResponse>>
-  BatchTranslateDocument(
-      google::cloud::translation::v3::BatchTranslateDocumentRequest const&
-          request);
-
-  virtual future<StatusOr<google::cloud::translation::v3::Glossary>>
-  CreateGlossary(
-      google::cloud::translation::v3::CreateGlossaryRequest const& request);
-
-  virtual StreamRange<google::cloud::translation::v3::Glossary> ListGlossaries(
-      google::cloud::translation::v3::ListGlossariesRequest request);
-
-  virtual StatusOr<google::cloud::translation::v3::Glossary> GetGlossary(
-      google::cloud::translation::v3::GetGlossaryRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::translation::v3::DeleteGlossaryResponse>>
-  DeleteGlossary(
-      google::cloud::translation::v3::DeleteGlossaryRequest const& request);
-};
-
-std::shared_ptr<TranslationServiceConnection> MakeTranslationServiceConnection(
-    Options options = {});
+/// @deprecated Use translate_v3::TranslationServiceRetryPolicy directly.
+using ::google::cloud::translate_v3::TranslationServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace translate
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace translate_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<translate::TranslationServiceConnection>
-MakeTranslationServiceConnection(std::shared_ptr<TranslationServiceStub> stub,
-                                 Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace translate_internal
 }  // namespace cloud
 }  // namespace google
 

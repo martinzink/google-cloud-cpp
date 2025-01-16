@@ -70,7 +70,7 @@ google::protobuf::Value MakeProtoValue(std::vector<T> v) {
 TEST(MergeChunk, ExampleStrings) {
   auto a = MakeProtoValue("foo");
   auto b = MakeProtoValue("bar");
-  ASSERT_STATUS_OK(MergeChunk(a, std::move(b)));
+  EXPECT_STATUS_OK(MergeChunk(a, std::move(b)));
 
   auto expected = MakeProtoValue("foobar");
   EXPECT_THAT(a, IsProtoEqual(expected));
@@ -83,7 +83,7 @@ TEST(MergeChunk, ExampleStrings) {
 TEST(MergeChunk, ExampleListOfInts) {
   auto a = MakeProtoValue(std::vector<double>{2, 3});
   auto b = MakeProtoValue(std::vector<double>{4});
-  ASSERT_STATUS_OK(MergeChunk(a, std::move(b)));
+  EXPECT_STATUS_OK(MergeChunk(a, std::move(b)));
 
   auto expected = MakeProtoValue(std::vector<double>{2, 3, 4});
   EXPECT_THAT(a, IsProtoEqual(expected));
@@ -96,7 +96,7 @@ TEST(MergeChunk, ExampleListOfInts) {
 TEST(MergeChunk, ExampleListOfStrings) {
   auto a = MakeProtoValue(std::vector<std::string>{"a", "b"});
   auto b = MakeProtoValue(std::vector<std::string>{"c", "d"});
-  ASSERT_STATUS_OK(MergeChunk(a, std::move(b)));
+  EXPECT_STATUS_OK(MergeChunk(a, std::move(b)));
 
   auto expected = MakeProtoValue(std::vector<std::string>{"a", "bc", "d"});
   EXPECT_THAT(a, IsProtoEqual(expected));
@@ -112,7 +112,7 @@ TEST(MergeChunk, ExampleListsOfListOfString) {
       Value("a"), Value(std::vector<std::string>{"b", "c"})});
   auto b = MakeProtoValue(
       std::vector<Value>{Value(std::vector<std::string>{"d"}), Value("e")});
-  ASSERT_STATUS_OK(MergeChunk(a, std::move(b)));
+  EXPECT_STATUS_OK(MergeChunk(a, std::move(b)));
 
   auto expected = MakeProtoValue(std::vector<Value>{
       Value("a"), Value(std::vector<std::string>{"b", "cd"}), Value("e")});
@@ -125,13 +125,13 @@ TEST(MergeChunk, ExampleListsOfListOfString) {
 
 TEST(MergeChunk, EmptyStringFirst) {
   auto empty = MakeProtoValue("");
-  ASSERT_STATUS_OK(MergeChunk(empty, MakeProtoValue("foo")));
+  EXPECT_STATUS_OK(MergeChunk(empty, MakeProtoValue("foo")));
   EXPECT_THAT(empty, IsProtoEqual(MakeProtoValue("foo")));
 }
 
 TEST(MergeChunk, EmptyStringSecond) {
   auto value = MakeProtoValue("foo");
-  ASSERT_STATUS_OK(MergeChunk(value, MakeProtoValue("")));
+  EXPECT_STATUS_OK(MergeChunk(value, MakeProtoValue("")));
   EXPECT_THAT(value, IsProtoEqual(MakeProtoValue("foo")));
 }
 
@@ -141,7 +141,7 @@ TEST(MergeChunk, EmptyListFirst) {
 
   auto b = MakeProtoValue(std::vector<std::string>{"a", "b"});
   auto const expected = b;
-  ASSERT_STATUS_OK(MergeChunk(empty_list, std::move(b)));
+  EXPECT_STATUS_OK(MergeChunk(empty_list, std::move(b)));
   EXPECT_THAT(empty_list, IsProtoEqual(expected));
 }
 
@@ -152,7 +152,7 @@ TEST(MergeChunk, EmptyListSecond) {
 
   empty_list.mutable_list_value();
 
-  ASSERT_STATUS_OK(MergeChunk(a, std::move(empty_list)));
+  EXPECT_STATUS_OK(MergeChunk(a, std::move(empty_list)));
   EXPECT_THAT(a, IsProtoEqual(expected));
 }
 
@@ -164,8 +164,8 @@ TEST(MergeChunk, ErrorMismatchedTypes) {
   auto value = MakeProtoValue(std::vector<std::string>{"hello"});
   auto status = MergeChunk(value, MakeProtoValue("world"));
 
-  EXPECT_THAT(status, StatusIs(Not(StatusCode::kOk),
-                               testing::HasSubstr("mismatched types")));
+  EXPECT_THAT(status,
+              StatusIs(Not(StatusCode::kOk), HasSubstr("mismatched types")));
 }
 
 //
@@ -180,8 +180,8 @@ TEST(MergeChunk, CannotMergeBools) {
   bool2.set_bool_value(true);
 
   auto status = MergeChunk(bool1, std::move(bool2));
-  EXPECT_THAT(status, StatusIs(Not(StatusCode::kOk),
-                               testing::HasSubstr("invalid type")));
+  EXPECT_THAT(status,
+              StatusIs(Not(StatusCode::kOk), HasSubstr("invalid type")));
 }
 
 TEST(MergeChunk, CannotMergeNumbers) {
@@ -192,8 +192,8 @@ TEST(MergeChunk, CannotMergeNumbers) {
   number2.set_number_value(2.0);
 
   auto status = MergeChunk(number1, std::move(number2));
-  EXPECT_THAT(status, StatusIs(Not(StatusCode::kOk),
-                               testing::HasSubstr("invalid type")));
+  EXPECT_THAT(status,
+              StatusIs(Not(StatusCode::kOk), HasSubstr("invalid type")));
 }
 
 TEST(MergeChunk, CannotMergeNull) {
@@ -204,8 +204,8 @@ TEST(MergeChunk, CannotMergeNull) {
   null2.set_null_value(google::protobuf::NullValue::NULL_VALUE);
 
   auto status = MergeChunk(null1, std::move(null2));
-  EXPECT_THAT(status, StatusIs(Not(StatusCode::kOk),
-                               testing::HasSubstr("invalid type")));
+  EXPECT_THAT(status,
+              StatusIs(Not(StatusCode::kOk), HasSubstr("invalid type")));
 }
 
 TEST(MergeChunk, CannotMergeStruct) {
@@ -216,8 +216,8 @@ TEST(MergeChunk, CannotMergeStruct) {
   struct2.mutable_struct_value();
 
   auto status = MergeChunk(struct1, std::move(struct2));
-  EXPECT_THAT(status, StatusIs(Not(StatusCode::kOk),
-                               testing::HasSubstr("invalid type")));
+  EXPECT_THAT(status,
+              StatusIs(Not(StatusCode::kOk), HasSubstr("invalid type")));
 }
 
 }  // namespace

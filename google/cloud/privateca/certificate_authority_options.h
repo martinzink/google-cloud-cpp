@@ -21,42 +21,38 @@
 
 #include "google/cloud/privateca/certificate_authority_connection.h"
 #include "google/cloud/privateca/certificate_authority_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/privateca/v1/certificate_authority_options.h"
 
 namespace google {
 namespace cloud {
 namespace privateca {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CertificateAuthorityServiceRetryPolicyOption {
-  using Type = std::shared_ptr<CertificateAuthorityServiceRetryPolicy>;
-};
+/// @deprecated Use privateca_v1::CertificateAuthorityServicePollingPolicyOption
+/// directly.
+using ::google::cloud::privateca_v1::
+    CertificateAuthorityServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CertificateAuthorityServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use privateca_v1::CertificateAuthorityServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::privateca_v1::
+    CertificateAuthorityServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CertificateAuthorityServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// privateca_v1::CertificateAuthorityServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::privateca_v1::
+    CertificateAuthorityServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CertificateAuthorityServiceConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<CertificateAuthorityServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use privateca_v1::CertificateAuthorityServicePolicyOptionList
+/// directly.
+using ::google::cloud::privateca_v1::
+    CertificateAuthorityServicePolicyOptionList;
 
-using CertificateAuthorityServicePolicyOptionList =
-    OptionList<CertificateAuthorityServiceRetryPolicyOption,
-               CertificateAuthorityServiceBackoffPolicyOption,
-               CertificateAuthorityServicePollingPolicyOption,
-               CertificateAuthorityServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use privateca_v1::CertificateAuthorityServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::privateca_v1::
+    CertificateAuthorityServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace privateca

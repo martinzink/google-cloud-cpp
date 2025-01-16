@@ -19,42 +19,30 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_VERSIONS_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_VERSIONS_OPTIONS_H
 
+#include "google/cloud/appengine/v1/versions_options.h"
 #include "google/cloud/appengine/versions_connection.h"
 #include "google/cloud/appengine/versions_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct VersionsRetryPolicyOption {
-  using Type = std::shared_ptr<VersionsRetryPolicy>;
-};
+/// @deprecated Use appengine_v1::VersionsPollingPolicyOption directly.
+using ::google::cloud::appengine_v1::VersionsPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct VersionsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use appengine_v1::VersionsBackoffPolicyOption directly.
+using ::google::cloud::appengine_v1::VersionsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct VersionsPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use appengine_v1::VersionsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::appengine_v1::VersionsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct VersionsConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<VersionsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use appengine_v1::VersionsPolicyOptionList directly.
+using ::google::cloud::appengine_v1::VersionsPolicyOptionList;
 
-using VersionsPolicyOptionList =
-    OptionList<VersionsRetryPolicyOption, VersionsBackoffPolicyOption,
-               VersionsPollingPolicyOption,
-               VersionsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use appengine_v1::VersionsRetryPolicyOption directly.
+using ::google::cloud::appengine_v1::VersionsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine

@@ -19,70 +19,32 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WEBRISK_WEB_RISK_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_WEBRISK_WEB_RISK_CONNECTION_H
 
-#include "google/cloud/webrisk/internal/web_risk_retry_traits.h"
-#include "google/cloud/webrisk/internal/web_risk_stub.h"
+#include "google/cloud/webrisk/v1/web_risk_connection.h"
 #include "google/cloud/webrisk/web_risk_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace webrisk {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using WebRiskServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        webrisk_internal::WebRiskServiceRetryTraits>;
+/// @deprecated Use webrisk_v1::MakeWebRiskServiceConnection directly.
+using ::google::cloud::webrisk_v1::MakeWebRiskServiceConnection;
 
-using WebRiskServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        webrisk_internal::WebRiskServiceRetryTraits>;
+/// @deprecated Use webrisk_v1::WebRiskServiceConnection directly.
+using ::google::cloud::webrisk_v1::WebRiskServiceConnection;
 
-using WebRiskServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        webrisk_internal::WebRiskServiceRetryTraits>;
+/// @deprecated Use webrisk_v1::WebRiskServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::webrisk_v1::WebRiskServiceLimitedErrorCountRetryPolicy;
 
-class WebRiskServiceConnection {
- public:
-  virtual ~WebRiskServiceConnection() = 0;
+/// @deprecated Use webrisk_v1::WebRiskServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::webrisk_v1::WebRiskServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::webrisk::v1::ComputeThreatListDiffResponse>
-  ComputeThreatListDiff(
-      google::cloud::webrisk::v1::ComputeThreatListDiffRequest const& request);
-
-  virtual StatusOr<google::cloud::webrisk::v1::SearchUrisResponse> SearchUris(
-      google::cloud::webrisk::v1::SearchUrisRequest const& request);
-
-  virtual StatusOr<google::cloud::webrisk::v1::SearchHashesResponse>
-  SearchHashes(google::cloud::webrisk::v1::SearchHashesRequest const& request);
-
-  virtual StatusOr<google::cloud::webrisk::v1::Submission> CreateSubmission(
-      google::cloud::webrisk::v1::CreateSubmissionRequest const& request);
-};
-
-std::shared_ptr<WebRiskServiceConnection> MakeWebRiskServiceConnection(
-    Options options = {});
+/// @deprecated Use webrisk_v1::WebRiskServiceRetryPolicy directly.
+using ::google::cloud::webrisk_v1::WebRiskServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace webrisk
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace webrisk_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<webrisk::WebRiskServiceConnection> MakeWebRiskServiceConnection(
-    std::shared_ptr<WebRiskServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace webrisk_internal
 }  // namespace cloud
 }  // namespace google
 

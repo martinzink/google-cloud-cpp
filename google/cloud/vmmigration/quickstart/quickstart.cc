@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/vmmigration/vm_migration_client.h"
+//! [all]
+#include "google/cloud/vmmigration/v1/vm_migration_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -22,18 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace vmmigration = ::google::cloud::vmmigration;
+  auto const location = google::cloud::Location(argv[1], "-");
+
+  namespace vmmigration = ::google::cloud::vmmigration_v1;
   auto client =
       vmmigration::VmMigrationClient(vmmigration::MakeVmMigrationConnection());
 
-  auto const parent = std::string{"projects/"} + argv[1] + "/locations/-";
-  for (auto s : client.ListSources(parent)) {
-    if (!s) throw std::runtime_error(s.status().message());
+  for (auto s : client.ListSources(location.FullName())) {
+    if (!s) throw std::move(s).status();
     std::cout << s->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

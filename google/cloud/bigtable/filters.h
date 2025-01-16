@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "google/cloud/bigtable/version.h"
 #include "absl/meta/type_traits.h"
 #include <google/bigtable/v2/data.pb.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <chrono>
 #include <string>
 
@@ -25,6 +26,7 @@ namespace google {
 namespace cloud {
 namespace bigtable {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
 /**
  * Define the interfaces to create filter expressions.
  *
@@ -56,6 +58,14 @@ class Filter {
   Filter& operator=(Filter&&) = default;
   Filter(Filter const&) = default;
   Filter& operator=(Filter const&) = default;
+
+  friend bool operator==(Filter const& a, Filter const& b) noexcept {
+    return google::protobuf::util::MessageDifferencer::Equivalent(a.filter_,
+                                                                  b.filter_);
+  }
+  friend bool operator!=(Filter const& a, Filter const& b) noexcept {
+    return !(a == b);
+  }
 
   /// Return a filter that passes on all data.
   static Filter PassAllFilter() {
@@ -332,7 +342,7 @@ class Filter {
     return tmp;
   }
 
-  //@{
+  ///@{
   /**
    * @name Less common range filters.
    *
@@ -473,7 +483,7 @@ class Filter {
     range.set_end_qualifier_open(std::move(end));
     return tmp;
   }
-  //@}
+  ///@}
 
   /**
    * Return a filter that transforms any values into the empty string.
@@ -490,7 +500,7 @@ class Filter {
   /**
    * Returns a filter that applies a label to each value.
    *
-   * Each value accepted by previous filters in modified to include the @p
+   * Each value accepted by previous filters is modified to include the @p
    * label.
    *
    * @note Currently, it is not possible to apply more than one label in a
@@ -512,9 +522,8 @@ class Filter {
     tmp.filter_.set_apply_label_transformer(std::move(label));
     return tmp;
   }
-  //@}
 
-  //@{
+  ///@{
   /**
    * @name Compound filters.
    *
@@ -678,7 +687,7 @@ class Filter {
     tmp.filter_.set_sink(true);
     return tmp;
   }
-  //@}
+  ///@}
 
   /// Return the filter expression as a protobuf.
   ::google::bigtable::v2::RowFilter const& as_proto() const& { return filter_; }

@@ -21,40 +21,28 @@
 
 #include "google/cloud/appengine/instances_connection.h"
 #include "google/cloud/appengine/instances_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/appengine/v1/instances_options.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct InstancesRetryPolicyOption {
-  using Type = std::shared_ptr<InstancesRetryPolicy>;
-};
+/// @deprecated Use appengine_v1::InstancesPollingPolicyOption directly.
+using ::google::cloud::appengine_v1::InstancesPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct InstancesBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use appengine_v1::InstancesBackoffPolicyOption directly.
+using ::google::cloud::appengine_v1::InstancesBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct InstancesPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use appengine_v1::InstancesConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::appengine_v1::InstancesConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct InstancesConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<InstancesConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use appengine_v1::InstancesPolicyOptionList directly.
+using ::google::cloud::appengine_v1::InstancesPolicyOptionList;
 
-using InstancesPolicyOptionList =
-    OptionList<InstancesRetryPolicyOption, InstancesBackoffPolicyOption,
-               InstancesPollingPolicyOption,
-               InstancesConnectionIdempotencyPolicyOption>;
+/// @deprecated Use appengine_v1::InstancesRetryPolicyOption directly.
+using ::google::cloud::appengine_v1::InstancesRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine

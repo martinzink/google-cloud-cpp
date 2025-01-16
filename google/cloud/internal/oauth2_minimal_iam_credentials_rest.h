@@ -17,7 +17,9 @@
 
 #include "google/cloud//version.h"
 #include "google/cloud/internal/credentials_impl.h"
+#include "google/cloud/internal/error_context.h"
 #include "google/cloud/internal/oauth2_credentials.h"
+#include "google/cloud/internal/oauth2_http_client_factory.h"
 #include "google/cloud/internal/rest_client.h"
 #include "google/cloud/options.h"
 #include "google/cloud/status_or.h"
@@ -37,6 +39,11 @@ struct GenerateAccessTokenRequest {
   std::vector<std::string> delegates;
 };
 
+/// Parse the HTTP response from a `GenerateAccessToken()` call.
+StatusOr<google::cloud::AccessToken> ParseGenerateAccessTokenResponse(
+    rest_internal::RestResponse& response,
+    google::cloud::internal::ErrorContext const& ec);
+
 /**
  * Wrapper for IAM Credentials intended for use with
  * `ImpersonateServiceAccountCredentials`.
@@ -45,8 +52,11 @@ class MinimalIamCredentialsRest {
  public:
   virtual ~MinimalIamCredentialsRest() = default;
 
-  virtual StatusOr<google::cloud::internal::AccessToken> GenerateAccessToken(
+  virtual StatusOr<google::cloud::AccessToken> GenerateAccessToken(
       GenerateAccessTokenRequest const& request) = 0;
+
+  virtual StatusOr<std::string> universe_domain(
+      Options const& options) const = 0;
 };
 
 /**
@@ -57,25 +67,27 @@ class MinimalIamCredentialsRestStub : public MinimalIamCredentialsRest {
   /**
    * Creates an instance of MinimalIamCredentialsRestStub.
    *
-   * @param rest_client a dependency injection point. It makes it possible to
+   * @param client_factory a dependency injection point. It makes it possible to
    *     mock internal REST types. This should generally not be overridden
    *     except for testing.
    */
   MinimalIamCredentialsRestStub(
       std::shared_ptr<oauth2_internal::Credentials> credentials,
-      Options options,
-      std::shared_ptr<rest_internal::RestClient> rest_client = nullptr);
+      Options options, HttpClientFactory client_factory);
 
-  StatusOr<google::cloud::internal::AccessToken> GenerateAccessToken(
+  StatusOr<google::cloud::AccessToken> GenerateAccessToken(
       GenerateAccessTokenRequest const& request) override;
 
- private:
-  static std::string MakeRequestPath(GenerateAccessTokenRequest const& request);
+  StatusOr<std::string> universe_domain(Options const& options) const override {
+    return credentials_->universe_domain(options);
+  }
 
-  std::string endpoint_;
+ private:
+  std::string MakeRequestPath(GenerateAccessTokenRequest const& request) const;
+
   std::shared_ptr<oauth2_internal::Credentials> credentials_;
-  std::shared_ptr<rest_internal::RestClient> rest_client_;
   Options options_;
+  HttpClientFactory client_factory_;
 };
 
 /**
@@ -86,16 +98,20 @@ class MinimalIamCredentialsRestLogging : public MinimalIamCredentialsRest {
   explicit MinimalIamCredentialsRestLogging(
       std::shared_ptr<MinimalIamCredentialsRest> child);
 
-  StatusOr<google::cloud::internal::AccessToken> GenerateAccessToken(
+  StatusOr<google::cloud::AccessToken> GenerateAccessToken(
       GenerateAccessTokenRequest const& request) override;
+
+  StatusOr<std::string> universe_domain(Options const& options) const override {
+    return child_->universe_domain(options);
+  }
 
  private:
   std::shared_ptr<MinimalIamCredentialsRest> child_;
 };
 
 std::shared_ptr<MinimalIamCredentialsRest> MakeMinimalIamCredentialsRestStub(
-    std::shared_ptr<oauth2_internal::Credentials> credentials,
-    Options options = {});
+    std::shared_ptr<oauth2_internal::Credentials> credentials, Options options,
+    HttpClientFactory client_factory);
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace oauth2_internal

@@ -21,6 +21,7 @@
 #include <chrono>
 #include <cinttypes>
 #include <deque>
+#include <mutex>
 #include <unordered_map>
 
 namespace google {
@@ -31,7 +32,7 @@ namespace internal {
 /**
  * The default implementation for `CompletionQueue`.
  */
-class DefaultCompletionQueueImpl
+class DefaultCompletionQueueImpl final
     : public CompletionQueueImpl,
       public std::enable_shared_from_this<DefaultCompletionQueueImpl> {
  public:
@@ -63,7 +64,7 @@ class DefaultCompletionQueueImpl
                       absl::FunctionRef<void(void*)> start) override;
 
   /// The underlying gRPC completion queue.
-  grpc::CompletionQueue& cq() override;
+  grpc::CompletionQueue* cq() override;
 
   /// Some counters for testing and debugging.
   std::int64_t notify_counter() const { return notify_counter_.load(); }

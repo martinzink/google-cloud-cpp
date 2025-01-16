@@ -21,41 +21,36 @@
 
 #include "google/cloud/datamigration/data_migration_connection.h"
 #include "google/cloud/datamigration/data_migration_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/datamigration/v1/data_migration_options.h"
 
 namespace google {
 namespace cloud {
 namespace datamigration {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct DataMigrationServiceRetryPolicyOption {
-  using Type = std::shared_ptr<DataMigrationServiceRetryPolicy>;
-};
+/// @deprecated Use datamigration_v1::DataMigrationServicePollingPolicyOption
+/// directly.
+using ::google::cloud::datamigration_v1::
+    DataMigrationServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DataMigrationServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use datamigration_v1::DataMigrationServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::datamigration_v1::
+    DataMigrationServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DataMigrationServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// datamigration_v1::DataMigrationServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::datamigration_v1::
+    DataMigrationServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DataMigrationServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<DataMigrationServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use datamigration_v1::DataMigrationServicePolicyOptionList
+/// directly.
+using ::google::cloud::datamigration_v1::DataMigrationServicePolicyOptionList;
 
-using DataMigrationServicePolicyOptionList =
-    OptionList<DataMigrationServiceRetryPolicyOption,
-               DataMigrationServiceBackoffPolicyOption,
-               DataMigrationServicePollingPolicyOption,
-               DataMigrationServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use datamigration_v1::DataMigrationServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::datamigration_v1::DataMigrationServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace datamigration

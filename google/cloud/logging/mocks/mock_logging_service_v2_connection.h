@@ -20,44 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_LOGGING_MOCKS_MOCK_LOGGING_SERVICE_V2_CONNECTION_H
 
 #include "google/cloud/logging/logging_service_v2_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/logging/v2/mocks/mock_logging_service_v2_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in logging_v2_mocks instead of the aliases
+///     defined in this namespace.
 namespace logging_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockLoggingServiceV2Connection
-    : public logging::LoggingServiceV2Connection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(Status, DeleteLog,
-              (google::logging::v2::DeleteLogRequest const& request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::logging::v2::WriteLogEntriesResponse>,
-              WriteLogEntries,
-              (google::logging::v2::WriteLogEntriesRequest const& request),
-              (override));
-
-  MOCK_METHOD(StreamRange<google::logging::v2::LogEntry>, ListLogEntries,
-              (google::logging::v2::ListLogEntriesRequest request), (override));
-
-  MOCK_METHOD(
-      StreamRange<google::api::MonitoredResourceDescriptor>,
-      ListMonitoredResourceDescriptors,
-      (google::logging::v2::ListMonitoredResourceDescriptorsRequest request),
-      (override));
-
-  MOCK_METHOD(StreamRange<std::string>, ListLogs,
-              (google::logging::v2::ListLogsRequest request), (override));
-
-  MOCK_METHOD((std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
-                   google::logging::v2::TailLogEntriesRequest,
-                   google::logging::v2::TailLogEntriesResponse>>),
-              AsyncTailLogEntries, (ExperimentalTag), (override));
-};
+/// @deprecated Use logging_v2_mocks::MockLoggingServiceV2Connection directly.
+using ::google::cloud::logging_v2_mocks::MockLoggingServiceV2Connection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace logging_mocks

@@ -21,34 +21,26 @@
 
 #include "google/cloud/billing/cloud_catalog_connection.h"
 #include "google/cloud/billing/cloud_catalog_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/billing/v1/cloud_catalog_options.h"
 
 namespace google {
 namespace cloud {
 namespace billing {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CloudCatalogRetryPolicyOption {
-  using Type = std::shared_ptr<CloudCatalogRetryPolicy>;
-};
+/// @deprecated Use billing_v1::CloudCatalogBackoffPolicyOption directly.
+using ::google::cloud::billing_v1::CloudCatalogBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudCatalogBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use billing_v1::CloudCatalogConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::billing_v1::
+    CloudCatalogConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudCatalogConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CloudCatalogConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use billing_v1::CloudCatalogPolicyOptionList directly.
+using ::google::cloud::billing_v1::CloudCatalogPolicyOptionList;
 
-using CloudCatalogPolicyOptionList =
-    OptionList<CloudCatalogRetryPolicyOption, CloudCatalogBackoffPolicyOption,
-               CloudCatalogConnectionIdempotencyPolicyOption>;
+/// @deprecated Use billing_v1::CloudCatalogRetryPolicyOption directly.
+using ::google::cloud::billing_v1::CloudCatalogRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace billing

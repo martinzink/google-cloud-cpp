@@ -21,39 +21,27 @@
 
 #include "google/cloud/tpu/tpu_connection.h"
 #include "google/cloud/tpu/tpu_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/tpu/v1/tpu_options.h"
 
 namespace google {
 namespace cloud {
 namespace tpu {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct TpuRetryPolicyOption {
-  using Type = std::shared_ptr<TpuRetryPolicy>;
-};
+/// @deprecated Use tpu_v1::TpuPollingPolicyOption directly.
+using ::google::cloud::tpu_v1::TpuPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TpuBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use tpu_v1::TpuBackoffPolicyOption directly.
+using ::google::cloud::tpu_v1::TpuBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TpuPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use tpu_v1::TpuConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::tpu_v1::TpuConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct TpuConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<TpuConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use tpu_v1::TpuPolicyOptionList directly.
+using ::google::cloud::tpu_v1::TpuPolicyOptionList;
 
-using TpuPolicyOptionList =
-    OptionList<TpuRetryPolicyOption, TpuBackoffPolicyOption,
-               TpuPollingPolicyOption, TpuConnectionIdempotencyPolicyOption>;
+/// @deprecated Use tpu_v1::TpuRetryPolicyOption directly.
+using ::google::cloud::tpu_v1::TpuRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace tpu

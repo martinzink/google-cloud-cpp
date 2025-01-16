@@ -19,26 +19,21 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BINARYAUTHORIZATION_MOCKS_MOCK_VALIDATION_HELPER_V1_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BINARYAUTHORIZATION_MOCKS_MOCK_VALIDATION_HELPER_V1_CONNECTION_H
 
+#include "google/cloud/binaryauthorization/v1/mocks/mock_validation_helper_v1_connection.h"
 #include "google/cloud/binaryauthorization/validation_helper_v1_connection.h"
-#include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in binaryauthorization_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace binaryauthorization_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockValidationHelperV1Connection
-    : public binaryauthorization::ValidationHelperV1Connection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::cloud::binaryauthorization::v1::
-                           ValidateAttestationOccurrenceResponse>,
-              ValidateAttestationOccurrence,
-              (google::cloud::binaryauthorization::v1::
-                   ValidateAttestationOccurrenceRequest const& request),
-              (override));
-};
+/// @deprecated Use
+/// binaryauthorization_v1_mocks::MockValidationHelperV1Connection directly.
+using ::google::cloud::binaryauthorization_v1_mocks::
+    MockValidationHelperV1Connection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace binaryauthorization_mocks

@@ -21,42 +21,38 @@
 
 #include "google/cloud/contactcenterinsights/contact_center_insights_connection.h"
 #include "google/cloud/contactcenterinsights/contact_center_insights_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/contactcenterinsights/v1/contact_center_insights_options.h"
 
 namespace google {
 namespace cloud {
 namespace contactcenterinsights {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ContactCenterInsightsRetryPolicyOption {
-  using Type = std::shared_ptr<ContactCenterInsightsRetryPolicy>;
-};
+/// @deprecated Use
+/// contactcenterinsights_v1::ContactCenterInsightsPollingPolicyOption directly.
+using ::google::cloud::contactcenterinsights_v1::
+    ContactCenterInsightsPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ContactCenterInsightsBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// contactcenterinsights_v1::ContactCenterInsightsBackoffPolicyOption directly.
+using ::google::cloud::contactcenterinsights_v1::
+    ContactCenterInsightsBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ContactCenterInsightsPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// contactcenterinsights_v1::ContactCenterInsightsConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::contactcenterinsights_v1::
+    ContactCenterInsightsConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ContactCenterInsightsConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<ContactCenterInsightsConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use
+/// contactcenterinsights_v1::ContactCenterInsightsPolicyOptionList directly.
+using ::google::cloud::contactcenterinsights_v1::
+    ContactCenterInsightsPolicyOptionList;
 
-using ContactCenterInsightsPolicyOptionList =
-    OptionList<ContactCenterInsightsRetryPolicyOption,
-               ContactCenterInsightsBackoffPolicyOption,
-               ContactCenterInsightsPollingPolicyOption,
-               ContactCenterInsightsConnectionIdempotencyPolicyOption>;
+/// @deprecated Use
+/// contactcenterinsights_v1::ContactCenterInsightsRetryPolicyOption directly.
+using ::google::cloud::contactcenterinsights_v1::
+    ContactCenterInsightsRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace contactcenterinsights

@@ -19,37 +19,35 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_DASHBOARDS_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_DASHBOARDS_OPTIONS_H
 
+#include "google/cloud/monitoring/dashboard/v1/dashboards_options.h"
 #include "google/cloud/monitoring/dashboards_connection.h"
 #include "google/cloud/monitoring/dashboards_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct DashboardsServiceRetryPolicyOption {
-  using Type = std::shared_ptr<DashboardsServiceRetryPolicy>;
-};
+/// @deprecated Use
+/// monitoring_dashboard_v1::DashboardsServiceBackoffPolicyOption directly.
+using ::google::cloud::monitoring_dashboard_v1::
+    DashboardsServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DashboardsServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// monitoring_dashboard_v1::DashboardsServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::monitoring_dashboard_v1::
+    DashboardsServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct DashboardsServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<DashboardsServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use monitoring_dashboard_v1::DashboardsServicePolicyOptionList
+/// directly.
+using ::google::cloud::monitoring_dashboard_v1::
+    DashboardsServicePolicyOptionList;
 
-using DashboardsServicePolicyOptionList =
-    OptionList<DashboardsServiceRetryPolicyOption,
-               DashboardsServiceBackoffPolicyOption,
-               DashboardsServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use monitoring_dashboard_v1::DashboardsServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::monitoring_dashboard_v1::
+    DashboardsServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring

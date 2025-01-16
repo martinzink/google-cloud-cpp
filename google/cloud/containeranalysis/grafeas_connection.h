@@ -20,97 +20,33 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_CONTAINERANALYSIS_GRAFEAS_CONNECTION_H
 
 #include "google/cloud/containeranalysis/grafeas_connection_idempotency_policy.h"
-#include "google/cloud/containeranalysis/internal/grafeas_retry_traits.h"
-#include "google/cloud/containeranalysis/internal/grafeas_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/containeranalysis/v1/grafeas_connection.h"
 
 namespace google {
 namespace cloud {
 namespace containeranalysis {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using GrafeasRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    containeranalysis_internal::GrafeasRetryTraits>;
+/// @deprecated Use containeranalysis_v1::MakeGrafeasConnection directly.
+using ::google::cloud::containeranalysis_v1::MakeGrafeasConnection;
 
-using GrafeasLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        containeranalysis_internal::GrafeasRetryTraits>;
+/// @deprecated Use containeranalysis_v1::GrafeasConnection directly.
+using ::google::cloud::containeranalysis_v1::GrafeasConnection;
 
-using GrafeasLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        containeranalysis_internal::GrafeasRetryTraits>;
+/// @deprecated Use containeranalysis_v1::GrafeasLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::containeranalysis_v1::
+    GrafeasLimitedErrorCountRetryPolicy;
 
-class GrafeasConnection {
- public:
-  virtual ~GrafeasConnection() = 0;
+/// @deprecated Use containeranalysis_v1::GrafeasLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::containeranalysis_v1::GrafeasLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<grafeas::v1::Occurrence> GetOccurrence(
-      grafeas::v1::GetOccurrenceRequest const& request);
-
-  virtual StreamRange<grafeas::v1::Occurrence> ListOccurrences(
-      grafeas::v1::ListOccurrencesRequest request);
-
-  virtual Status DeleteOccurrence(
-      grafeas::v1::DeleteOccurrenceRequest const& request);
-
-  virtual StatusOr<grafeas::v1::Occurrence> CreateOccurrence(
-      grafeas::v1::CreateOccurrenceRequest const& request);
-
-  virtual StatusOr<grafeas::v1::BatchCreateOccurrencesResponse>
-  BatchCreateOccurrences(
-      grafeas::v1::BatchCreateOccurrencesRequest const& request);
-
-  virtual StatusOr<grafeas::v1::Occurrence> UpdateOccurrence(
-      grafeas::v1::UpdateOccurrenceRequest const& request);
-
-  virtual StatusOr<grafeas::v1::Note> GetOccurrenceNote(
-      grafeas::v1::GetOccurrenceNoteRequest const& request);
-
-  virtual StatusOr<grafeas::v1::Note> GetNote(
-      grafeas::v1::GetNoteRequest const& request);
-
-  virtual StreamRange<grafeas::v1::Note> ListNotes(
-      grafeas::v1::ListNotesRequest request);
-
-  virtual Status DeleteNote(grafeas::v1::DeleteNoteRequest const& request);
-
-  virtual StatusOr<grafeas::v1::Note> CreateNote(
-      grafeas::v1::CreateNoteRequest const& request);
-
-  virtual StatusOr<grafeas::v1::BatchCreateNotesResponse> BatchCreateNotes(
-      grafeas::v1::BatchCreateNotesRequest const& request);
-
-  virtual StatusOr<grafeas::v1::Note> UpdateNote(
-      grafeas::v1::UpdateNoteRequest const& request);
-
-  virtual StreamRange<grafeas::v1::Occurrence> ListNoteOccurrences(
-      grafeas::v1::ListNoteOccurrencesRequest request);
-};
-
-std::shared_ptr<GrafeasConnection> MakeGrafeasConnection(Options options = {});
+/// @deprecated Use containeranalysis_v1::GrafeasRetryPolicy directly.
+using ::google::cloud::containeranalysis_v1::GrafeasRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace containeranalysis
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace containeranalysis_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<containeranalysis::GrafeasConnection> MakeGrafeasConnection(
-    std::shared_ptr<GrafeasStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace containeranalysis_internal
 }  // namespace cloud
 }  // namespace google
 

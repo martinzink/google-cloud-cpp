@@ -19,91 +19,39 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_CONNECTION_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BIGQUERY_CONNECTION_CONNECTION_H
 
+#include "google/cloud/bigquery/connection/v1/connection_connection.h"
 #include "google/cloud/bigquery/connection_connection_idempotency_policy.h"
-#include "google/cloud/bigquery/internal/connection_retry_traits.h"
-#include "google/cloud/bigquery/internal/connection_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace bigquery {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ConnectionServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        bigquery_internal::ConnectionServiceRetryTraits>;
+/// @deprecated Use bigquery_connection_v1::MakeConnectionServiceConnection
+/// directly.
+using ::google::cloud::bigquery_connection_v1::MakeConnectionServiceConnection;
 
-using ConnectionServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        bigquery_internal::ConnectionServiceRetryTraits>;
+/// @deprecated Use bigquery_connection_v1::ConnectionServiceConnection
+/// directly.
+using ::google::cloud::bigquery_connection_v1::ConnectionServiceConnection;
 
-using ConnectionServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        bigquery_internal::ConnectionServiceRetryTraits>;
+/// @deprecated Use
+/// bigquery_connection_v1::ConnectionServiceLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::bigquery_connection_v1::
+    ConnectionServiceLimitedErrorCountRetryPolicy;
 
-class ConnectionServiceConnection {
- public:
-  virtual ~ConnectionServiceConnection() = 0;
+/// @deprecated Use
+/// bigquery_connection_v1::ConnectionServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::bigquery_connection_v1::
+    ConnectionServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::bigquery::connection::v1::Connection>
-  CreateConnection(
-      google::cloud::bigquery::connection::v1::CreateConnectionRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::bigquery::connection::v1::Connection>
-  GetConnection(
-      google::cloud::bigquery::connection::v1::GetConnectionRequest const&
-          request);
-
-  virtual StreamRange<google::cloud::bigquery::connection::v1::Connection>
-  ListConnections(
-      google::cloud::bigquery::connection::v1::ListConnectionsRequest request);
-
-  virtual StatusOr<google::cloud::bigquery::connection::v1::Connection>
-  UpdateConnection(
-      google::cloud::bigquery::connection::v1::UpdateConnectionRequest const&
-          request);
-
-  virtual Status DeleteConnection(
-      google::cloud::bigquery::connection::v1::DeleteConnectionRequest const&
-          request);
-
-  virtual StatusOr<google::iam::v1::Policy> GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::TestIamPermissionsResponse>
-  TestIamPermissions(google::iam::v1::TestIamPermissionsRequest const& request);
-};
-
-std::shared_ptr<ConnectionServiceConnection> MakeConnectionServiceConnection(
-    Options options = {});
+/// @deprecated Use bigquery_connection_v1::ConnectionServiceRetryPolicy
+/// directly.
+using ::google::cloud::bigquery_connection_v1::ConnectionServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigquery
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace bigquery_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<bigquery::ConnectionServiceConnection>
-MakeConnectionServiceConnection(std::shared_ptr<ConnectionServiceStub> stub,
-                                Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace bigquery_internal
 }  // namespace cloud
 }  // namespace google
 

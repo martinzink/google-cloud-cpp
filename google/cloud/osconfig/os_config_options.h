@@ -21,35 +21,26 @@
 
 #include "google/cloud/osconfig/os_config_connection.h"
 #include "google/cloud/osconfig/os_config_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/osconfig/v1/os_config_options.h"
 
 namespace google {
 namespace cloud {
 namespace osconfig {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct OsConfigServiceRetryPolicyOption {
-  using Type = std::shared_ptr<OsConfigServiceRetryPolicy>;
-};
+/// @deprecated Use osconfig_v1::OsConfigServiceBackoffPolicyOption directly.
+using ::google::cloud::osconfig_v1::OsConfigServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct OsConfigServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// osconfig_v1::OsConfigServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::osconfig_v1::
+    OsConfigServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct OsConfigServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<OsConfigServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use osconfig_v1::OsConfigServicePolicyOptionList directly.
+using ::google::cloud::osconfig_v1::OsConfigServicePolicyOptionList;
 
-using OsConfigServicePolicyOptionList =
-    OptionList<OsConfigServiceRetryPolicyOption,
-               OsConfigServiceBackoffPolicyOption,
-               OsConfigServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use osconfig_v1::OsConfigServiceRetryPolicyOption directly.
+using ::google::cloud::osconfig_v1::OsConfigServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace osconfig

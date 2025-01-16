@@ -20,106 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ASSET_ASSET_CONNECTION_H
 
 #include "google/cloud/asset/asset_connection_idempotency_policy.h"
-#include "google/cloud/asset/internal/asset_retry_traits.h"
-#include "google/cloud/asset/internal/asset_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/asset/v1/asset_connection.h"
 
 namespace google {
 namespace cloud {
 namespace asset {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using AssetServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        asset_internal::AssetServiceRetryTraits>;
+/// @deprecated Use asset_v1::MakeAssetServiceConnection directly.
+using ::google::cloud::asset_v1::MakeAssetServiceConnection;
 
-using AssetServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        asset_internal::AssetServiceRetryTraits>;
+/// @deprecated Use asset_v1::AssetServiceConnection directly.
+using ::google::cloud::asset_v1::AssetServiceConnection;
 
-using AssetServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        asset_internal::AssetServiceRetryTraits>;
+/// @deprecated Use asset_v1::AssetServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::asset_v1::AssetServiceLimitedErrorCountRetryPolicy;
 
-class AssetServiceConnection {
- public:
-  virtual ~AssetServiceConnection() = 0;
+/// @deprecated Use asset_v1::AssetServiceLimitedTimeRetryPolicy directly.
+using ::google::cloud::asset_v1::AssetServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual future<StatusOr<google::cloud::asset::v1::ExportAssetsResponse>>
-  ExportAssets(google::cloud::asset::v1::ExportAssetsRequest const& request);
-
-  virtual StreamRange<google::cloud::asset::v1::Asset> ListAssets(
-      google::cloud::asset::v1::ListAssetsRequest request);
-
-  virtual StatusOr<google::cloud::asset::v1::BatchGetAssetsHistoryResponse>
-  BatchGetAssetsHistory(
-      google::cloud::asset::v1::BatchGetAssetsHistoryRequest const& request);
-
-  virtual StatusOr<google::cloud::asset::v1::Feed> CreateFeed(
-      google::cloud::asset::v1::CreateFeedRequest const& request);
-
-  virtual StatusOr<google::cloud::asset::v1::Feed> GetFeed(
-      google::cloud::asset::v1::GetFeedRequest const& request);
-
-  virtual StatusOr<google::cloud::asset::v1::ListFeedsResponse> ListFeeds(
-      google::cloud::asset::v1::ListFeedsRequest const& request);
-
-  virtual StatusOr<google::cloud::asset::v1::Feed> UpdateFeed(
-      google::cloud::asset::v1::UpdateFeedRequest const& request);
-
-  virtual Status DeleteFeed(
-      google::cloud::asset::v1::DeleteFeedRequest const& request);
-
-  virtual StreamRange<google::cloud::asset::v1::ResourceSearchResult>
-  SearchAllResources(
-      google::cloud::asset::v1::SearchAllResourcesRequest request);
-
-  virtual StreamRange<google::cloud::asset::v1::IamPolicySearchResult>
-  SearchAllIamPolicies(
-      google::cloud::asset::v1::SearchAllIamPoliciesRequest request);
-
-  virtual StatusOr<google::cloud::asset::v1::AnalyzeIamPolicyResponse>
-  AnalyzeIamPolicy(
-      google::cloud::asset::v1::AnalyzeIamPolicyRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::asset::v1::AnalyzeIamPolicyLongrunningResponse>>
-  AnalyzeIamPolicyLongrunning(
-      google::cloud::asset::v1::AnalyzeIamPolicyLongrunningRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::asset::v1::AnalyzeMoveResponse> AnalyzeMove(
-      google::cloud::asset::v1::AnalyzeMoveRequest const& request);
-};
-
-std::shared_ptr<AssetServiceConnection> MakeAssetServiceConnection(
-    Options options = {});
+/// @deprecated Use asset_v1::AssetServiceRetryPolicy directly.
+using ::google::cloud::asset_v1::AssetServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace asset
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace asset_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<asset::AssetServiceConnection> MakeAssetServiceConnection(
-    std::shared_ptr<AssetServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace asset_internal
 }  // namespace cloud
 }  // namespace google
 

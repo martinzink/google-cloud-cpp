@@ -19,63 +19,34 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICEDIRECTORY_LOOKUP_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SERVICEDIRECTORY_LOOKUP_CONNECTION_H
 
-#include "google/cloud/servicedirectory/internal/lookup_retry_traits.h"
-#include "google/cloud/servicedirectory/internal/lookup_stub.h"
 #include "google/cloud/servicedirectory/lookup_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/servicedirectory/v1/lookup_connection.h"
 
 namespace google {
 namespace cloud {
 namespace servicedirectory {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using LookupServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        servicedirectory_internal::LookupServiceRetryTraits>;
+/// @deprecated Use servicedirectory_v1::MakeLookupServiceConnection directly.
+using ::google::cloud::servicedirectory_v1::MakeLookupServiceConnection;
 
-using LookupServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        servicedirectory_internal::LookupServiceRetryTraits>;
+/// @deprecated Use servicedirectory_v1::LookupServiceConnection directly.
+using ::google::cloud::servicedirectory_v1::LookupServiceConnection;
 
-using LookupServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        servicedirectory_internal::LookupServiceRetryTraits>;
+/// @deprecated Use
+/// servicedirectory_v1::LookupServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::servicedirectory_v1::
+    LookupServiceLimitedErrorCountRetryPolicy;
 
-class LookupServiceConnection {
- public:
-  virtual ~LookupServiceConnection() = 0;
+/// @deprecated Use servicedirectory_v1::LookupServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::servicedirectory_v1::LookupServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::servicedirectory::v1::ResolveServiceResponse>
-  ResolveService(
-      google::cloud::servicedirectory::v1::ResolveServiceRequest const&
-          request);
-};
-
-std::shared_ptr<LookupServiceConnection> MakeLookupServiceConnection(
-    Options options = {});
+/// @deprecated Use servicedirectory_v1::LookupServiceRetryPolicy directly.
+using ::google::cloud::servicedirectory_v1::LookupServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace servicedirectory
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace servicedirectory_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<servicedirectory::LookupServiceConnection>
-MakeLookupServiceConnection(std::shared_ptr<LookupServiceStub> stub,
-                            Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace servicedirectory_internal
 }  // namespace cloud
 }  // namespace google
 

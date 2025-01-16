@@ -19,72 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_SERVICES_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_SERVICES_CONNECTION_H
 
-#include "google/cloud/appengine/internal/services_retry_traits.h"
-#include "google/cloud/appengine/internal/services_stub.h"
 #include "google/cloud/appengine/services_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/appengine/v1/services_connection.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ServicesRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    appengine_internal::ServicesRetryTraits>;
+/// @deprecated Use appengine_v1::MakeServicesConnection directly.
+using ::google::cloud::appengine_v1::MakeServicesConnection;
 
-using ServicesLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::ServicesRetryTraits>;
+/// @deprecated Use appengine_v1::ServicesConnection directly.
+using ::google::cloud::appengine_v1::ServicesConnection;
 
-using ServicesLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::ServicesRetryTraits>;
+/// @deprecated Use appengine_v1::ServicesLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::appengine_v1::ServicesLimitedErrorCountRetryPolicy;
 
-class ServicesConnection {
- public:
-  virtual ~ServicesConnection() = 0;
+/// @deprecated Use appengine_v1::ServicesLimitedTimeRetryPolicy directly.
+using ::google::cloud::appengine_v1::ServicesLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::appengine::v1::Service> ListServices(
-      google::appengine::v1::ListServicesRequest request);
-
-  virtual StatusOr<google::appengine::v1::Service> GetService(
-      google::appengine::v1::GetServiceRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::Service>> UpdateService(
-      google::appengine::v1::UpdateServiceRequest const& request);
-
-  virtual future<StatusOr<google::appengine::v1::OperationMetadataV1>>
-  DeleteService(google::appengine::v1::DeleteServiceRequest const& request);
-};
-
-std::shared_ptr<ServicesConnection> MakeServicesConnection(
-    Options options = {});
+/// @deprecated Use appengine_v1::ServicesRetryPolicy directly.
+using ::google::cloud::appengine_v1::ServicesRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::ServicesConnection> MakeServicesConnection(
-    std::shared_ptr<ServicesStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

@@ -37,7 +37,7 @@ void GetIamPolicy(google::cloud::bigtable_admin::BigtableTableAdminClient admin,
      std::string const& instance_id, std::string const& table_id) {
     std::string table_name = cbt::TableName(project_id, instance_id, table_id);
     StatusOr<google::iam::v1::Policy> policy = admin.GetIamPolicy(table_name);
-    if (!policy) throw std::runtime_error(policy.status().message());
+    if (!policy) throw std::move(policy).status();
     std::cout << "The IAM Policy for " << table_id << " is\n"
               << policy->DebugString() << "\n";
   }
@@ -56,7 +56,7 @@ void SetIamPolicy(google::cloud::bigtable_admin::BigtableTableAdminClient admin,
      std::string const& role, std::string const& member) {
     std::string table_name = cbt::TableName(project_id, instance_id, table_id);
     StatusOr<google::iam::v1::Policy> current = admin.GetIamPolicy(table_name);
-    if (!current) throw std::runtime_error(current.status().message());
+    if (!current) throw std::move(current).status();
     // This example adds the member to all existing bindings for that role. If
     // there are no such bindings, it adds a new one. This might not be what the
     // user wants, e.g. in case of conditional bindings.
@@ -72,7 +72,7 @@ void SetIamPolicy(google::cloud::bigtable_admin::BigtableTableAdminClient admin,
     }
     StatusOr<google::iam::v1::Policy> policy =
         admin.SetIamPolicy(table_name, *current);
-    if (!policy) throw std::runtime_error(policy.status().message());
+    if (!policy) throw std::move(policy).status();
     std::cout << "The IAM Policy for " << table_id << " is\n"
               << policy->DebugString() << "\n";
   }
@@ -107,7 +107,7 @@ void TestIamPermissions(std::vector<std::string> const& argv) {
      std::vector<std::string> const& permissions) {
     std::string table_name = cbt::TableName(project_id, instance_id, table_id);
     auto result = admin.TestIamPermissions(table_name, permissions);
-    if (!result) throw std::runtime_error(result.status().message());
+    if (!result) throw std::move(result).status();
     std::cout << "The current user has the following permissions [";
     std::cout << absl::StrJoin(result->permissions(), ", ");
     std::cout << "]\n";
@@ -155,16 +155,12 @@ void RunAll(std::vector<std::string> const& argv) {
   // Create a table to run the tests on.
   google::bigtable::admin::v2::Table t;
   auto& families = *t.mutable_column_families();
-  google::bigtable::admin::v2::GcRule gc1;
-  gc1.set_max_num_versions(10);
-  *families["fam"].mutable_gc_rule() = std::move(gc1);
-  google::bigtable::admin::v2::GcRule gc2;
-  gc2.set_max_num_versions(3);
-  *families["foo"].mutable_gc_rule() = std::move(gc2);
+  families["fam"].mutable_gc_rule()->set_max_num_versions(10);
+  families["foo"].mutable_gc_rule()->set_max_num_versions(3);
 
   auto table = admin.CreateTable(cbt::InstanceName(project_id, instance_id),
                                  table_id, std::move(t));
-  if (!table) throw std::runtime_error(table.status().message());
+  if (!table) throw std::move(table).status();
 
   std::cout << "\nRunning GetIamPolicy() example" << std::endl;
   GetIamPolicy(admin, {project_id, instance_id, table_id});

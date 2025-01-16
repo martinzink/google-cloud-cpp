@@ -21,35 +21,26 @@
 
 #include "google/cloud/kms/key_management_connection.h"
 #include "google/cloud/kms/key_management_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/kms/v1/key_management_options.h"
 
 namespace google {
 namespace cloud {
 namespace kms {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct KeyManagementServiceRetryPolicyOption {
-  using Type = std::shared_ptr<KeyManagementServiceRetryPolicy>;
-};
+/// @deprecated Use kms_v1::KeyManagementServiceBackoffPolicyOption directly.
+using ::google::cloud::kms_v1::KeyManagementServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct KeyManagementServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// kms_v1::KeyManagementServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::kms_v1::
+    KeyManagementServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct KeyManagementServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<KeyManagementServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use kms_v1::KeyManagementServicePolicyOptionList directly.
+using ::google::cloud::kms_v1::KeyManagementServicePolicyOptionList;
 
-using KeyManagementServicePolicyOptionList =
-    OptionList<KeyManagementServiceRetryPolicyOption,
-               KeyManagementServiceBackoffPolicyOption,
-               KeyManagementServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use kms_v1::KeyManagementServiceRetryPolicyOption directly.
+using ::google::cloud::kms_v1::KeyManagementServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace kms

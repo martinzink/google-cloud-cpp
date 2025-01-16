@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/scheduler/cloud_scheduler_client.h"
+//! [all]
+#include "google/cloud/scheduler/v1/cloud_scheduler_client.h"
+#include "google/cloud/location.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 3) {
@@ -22,18 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace scheduler = ::google::cloud::scheduler;
+  auto const location = google::cloud::Location(argv[1], argv[2]);
+
+  namespace scheduler = ::google::cloud::scheduler_v1;
   auto client = scheduler::CloudSchedulerClient(
       scheduler::MakeCloudSchedulerConnection());
-  auto const parent =
-      std::string{"projects/"} + argv[1] + "/locations/" + argv[2];
-  for (auto j : client.ListJobs(parent)) {
-    if (!j) throw std::runtime_error(j.status().message());
+
+  for (auto j : client.ListJobs(location.FullName())) {
+    if (!j) throw std::move(j).status();
     std::cout << j->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

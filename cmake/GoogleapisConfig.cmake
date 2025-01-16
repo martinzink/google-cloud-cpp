@@ -17,15 +17,21 @@
 # Give application developers a hook to configure the version and hash
 # downloaded from GitHub.
 set(GOOGLE_CLOUD_CPP_GOOGLEAPIS_COMMIT_SHA
-    "28c6bb97cac6f16c69879be4e655674a74b886ef"
-    CACHE STRING "Configure the commit SHA (or tag) for the googleapis protos.")
-mark_as_advanced(GOOGLE_CLOUD_CPP_GOOGLEAPIS_SHA)
+    ""
+    CACHE STRING "Deprecated. Use GOOGLE_CLOUD_CPP_OVERRIDE_GOOGLEAPIS_URL")
+mark_as_advanced(GOOGLE_CLOUD_CPP_GOOGLEAPIS_COMMIT_SHA)
 set(GOOGLE_CLOUD_CPP_GOOGLEAPIS_SHA256
-    "3bc4ccd42fab472ae4ff9220cd715c5fb40894249e8470e95182e6d81b3873ae"
-    CACHE STRING "Configure the SHA256 checksum of the googleapis tarball.")
+    ""
+    CACHE STRING
+          "Deprecated. Use GOOGLE_CLOUD_CPP_OVERRIDE_GOOGLEAPIS_URL_HASH")
 mark_as_advanced(GOOGLE_CLOUD_CPP_GOOGLEAPIS_SHA256)
 
+set(_GOOGLE_CLOUD_CPP_GOOGLEAPIS_COMMIT_SHA
+    "c3556b45dc35a145e04b5692bc72e01a4f58a6b2")
+set(_GOOGLE_CLOUD_CPP_GOOGLEAPIS_SHA256
+    "1995c464c6e4a51167ba82635e1e1d31746d30c94b6b604b3f44aa65bf98713c")
+
 set(DOXYGEN_ALIASES
-    "googleapis_link{2}=\"[\\1](https://github.com/googleapis/googleapis/blob/${GOOGLE_CLOUD_CPP_GOOGLEAPIS_COMMIT_SHA}/\\2)\""
-    "googleapis_reference_link{1}=\"https://github.com/googleapis/googleapis/blob/${GOOGLE_CLOUD_CPP_GOOGLEAPIS_COMMIT_SHA}/\\1\""
+    "googleapis_link{2}=\"[\\1](https://github.com/googleapis/googleapis/blob/${_GOOGLE_CLOUD_CPP_GOOGLEAPIS_COMMIT_SHA}/\\2)\""
+    "googleapis_reference_link{1}=\"https://github.com/googleapis/googleapis/blob/${_GOOGLE_CLOUD_CPP_GOOGLEAPIS_COMMIT_SHA}/\\1\""
 )

@@ -20,80 +20,35 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_AUTOSCALING_POLICY_CONNECTION_H
 
 #include "google/cloud/dataproc/autoscaling_policy_connection_idempotency_policy.h"
-#include "google/cloud/dataproc/internal/autoscaling_policy_retry_traits.h"
-#include "google/cloud/dataproc/internal/autoscaling_policy_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/dataproc/v1/autoscaling_policy_connection.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using AutoscalingPolicyServiceRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        dataproc_internal::AutoscalingPolicyServiceRetryTraits>;
+/// @deprecated Use dataproc_v1::MakeAutoscalingPolicyServiceConnection
+/// directly.
+using ::google::cloud::dataproc_v1::MakeAutoscalingPolicyServiceConnection;
 
-using AutoscalingPolicyServiceLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        dataproc_internal::AutoscalingPolicyServiceRetryTraits>;
+/// @deprecated Use dataproc_v1::AutoscalingPolicyServiceConnection directly.
+using ::google::cloud::dataproc_v1::AutoscalingPolicyServiceConnection;
 
-using AutoscalingPolicyServiceLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        dataproc_internal::AutoscalingPolicyServiceRetryTraits>;
+/// @deprecated Use
+/// dataproc_v1::AutoscalingPolicyServiceLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::dataproc_v1::
+    AutoscalingPolicyServiceLimitedErrorCountRetryPolicy;
 
-class AutoscalingPolicyServiceConnection {
- public:
-  virtual ~AutoscalingPolicyServiceConnection() = 0;
+/// @deprecated Use dataproc_v1::AutoscalingPolicyServiceLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::dataproc_v1::
+    AutoscalingPolicyServiceLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::dataproc::v1::AutoscalingPolicy>
-  CreateAutoscalingPolicy(
-      google::cloud::dataproc::v1::CreateAutoscalingPolicyRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::AutoscalingPolicy>
-  UpdateAutoscalingPolicy(
-      google::cloud::dataproc::v1::UpdateAutoscalingPolicyRequest const&
-          request);
-
-  virtual StatusOr<google::cloud::dataproc::v1::AutoscalingPolicy>
-  GetAutoscalingPolicy(
-      google::cloud::dataproc::v1::GetAutoscalingPolicyRequest const& request);
-
-  virtual StreamRange<google::cloud::dataproc::v1::AutoscalingPolicy>
-  ListAutoscalingPolicies(
-      google::cloud::dataproc::v1::ListAutoscalingPoliciesRequest request);
-
-  virtual Status DeleteAutoscalingPolicy(
-      google::cloud::dataproc::v1::DeleteAutoscalingPolicyRequest const&
-          request);
-};
-
-std::shared_ptr<AutoscalingPolicyServiceConnection>
-MakeAutoscalingPolicyServiceConnection(Options options = {});
+/// @deprecated Use dataproc_v1::AutoscalingPolicyServiceRetryPolicy directly.
+using ::google::cloud::dataproc_v1::AutoscalingPolicyServiceRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace dataproc_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<dataproc::AutoscalingPolicyServiceConnection>
-MakeAutoscalingPolicyServiceConnection(
-    std::shared_ptr<AutoscalingPolicyServiceStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace dataproc_internal
 }  // namespace cloud
 }  // namespace google
 

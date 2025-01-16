@@ -20,82 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SCHEDULER_CLOUD_SCHEDULER_CONNECTION_H
 
 #include "google/cloud/scheduler/cloud_scheduler_connection_idempotency_policy.h"
-#include "google/cloud/scheduler/internal/cloud_scheduler_retry_traits.h"
-#include "google/cloud/scheduler/internal/cloud_scheduler_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/scheduler/v1/cloud_scheduler_connection.h"
 
 namespace google {
 namespace cloud {
 namespace scheduler {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CloudSchedulerRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        scheduler_internal::CloudSchedulerRetryTraits>;
+/// @deprecated Use scheduler_v1::MakeCloudSchedulerConnection directly.
+using ::google::cloud::scheduler_v1::MakeCloudSchedulerConnection;
 
-using CloudSchedulerLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        scheduler_internal::CloudSchedulerRetryTraits>;
+/// @deprecated Use scheduler_v1::CloudSchedulerConnection directly.
+using ::google::cloud::scheduler_v1::CloudSchedulerConnection;
 
-using CloudSchedulerLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        scheduler_internal::CloudSchedulerRetryTraits>;
+/// @deprecated Use scheduler_v1::CloudSchedulerLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::scheduler_v1::CloudSchedulerLimitedErrorCountRetryPolicy;
 
-class CloudSchedulerConnection {
- public:
-  virtual ~CloudSchedulerConnection() = 0;
+/// @deprecated Use scheduler_v1::CloudSchedulerLimitedTimeRetryPolicy directly.
+using ::google::cloud::scheduler_v1::CloudSchedulerLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::scheduler::v1::Job> ListJobs(
-      google::cloud::scheduler::v1::ListJobsRequest request);
-
-  virtual StatusOr<google::cloud::scheduler::v1::Job> GetJob(
-      google::cloud::scheduler::v1::GetJobRequest const& request);
-
-  virtual StatusOr<google::cloud::scheduler::v1::Job> CreateJob(
-      google::cloud::scheduler::v1::CreateJobRequest const& request);
-
-  virtual StatusOr<google::cloud::scheduler::v1::Job> UpdateJob(
-      google::cloud::scheduler::v1::UpdateJobRequest const& request);
-
-  virtual Status DeleteJob(
-      google::cloud::scheduler::v1::DeleteJobRequest const& request);
-
-  virtual StatusOr<google::cloud::scheduler::v1::Job> PauseJob(
-      google::cloud::scheduler::v1::PauseJobRequest const& request);
-
-  virtual StatusOr<google::cloud::scheduler::v1::Job> ResumeJob(
-      google::cloud::scheduler::v1::ResumeJobRequest const& request);
-
-  virtual StatusOr<google::cloud::scheduler::v1::Job> RunJob(
-      google::cloud::scheduler::v1::RunJobRequest const& request);
-};
-
-std::shared_ptr<CloudSchedulerConnection> MakeCloudSchedulerConnection(
-    Options options = {});
+/// @deprecated Use scheduler_v1::CloudSchedulerRetryPolicy directly.
+using ::google::cloud::scheduler_v1::CloudSchedulerRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace scheduler
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace scheduler_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<scheduler::CloudSchedulerConnection>
-MakeCloudSchedulerConnection(std::shared_ptr<CloudSchedulerStub> stub,
-                             Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace scheduler_internal
 }  // namespace cloud
 }  // namespace google
 

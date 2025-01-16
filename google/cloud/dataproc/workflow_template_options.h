@@ -19,44 +19,36 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_WORKFLOW_TEMPLATE_OPTIONS_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_DATAPROC_WORKFLOW_TEMPLATE_OPTIONS_H
 
+#include "google/cloud/dataproc/v1/workflow_template_options.h"
 #include "google/cloud/dataproc/workflow_template_connection.h"
 #include "google/cloud/dataproc/workflow_template_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowTemplateServiceRetryPolicyOption {
-  using Type = std::shared_ptr<WorkflowTemplateServiceRetryPolicy>;
-};
+/// @deprecated Use dataproc_v1::WorkflowTemplateServicePollingPolicyOption
+/// directly.
+using ::google::cloud::dataproc_v1::WorkflowTemplateServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowTemplateServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use dataproc_v1::WorkflowTemplateServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::dataproc_v1::WorkflowTemplateServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowTemplateServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// dataproc_v1::WorkflowTemplateServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::dataproc_v1::
+    WorkflowTemplateServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct WorkflowTemplateServiceConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<WorkflowTemplateServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use dataproc_v1::WorkflowTemplateServicePolicyOptionList
+/// directly.
+using ::google::cloud::dataproc_v1::WorkflowTemplateServicePolicyOptionList;
 
-using WorkflowTemplateServicePolicyOptionList =
-    OptionList<WorkflowTemplateServiceRetryPolicyOption,
-               WorkflowTemplateServiceBackoffPolicyOption,
-               WorkflowTemplateServicePollingPolicyOption,
-               WorkflowTemplateServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use dataproc_v1::WorkflowTemplateServiceRetryPolicyOption
+/// directly.
+using ::google::cloud::dataproc_v1::WorkflowTemplateServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc

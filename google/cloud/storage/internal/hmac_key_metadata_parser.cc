@@ -14,6 +14,7 @@
 
 #include "google/cloud/storage/internal/hmac_key_metadata_parser.h"
 #include "google/cloud/storage/internal/metadata_parser.h"
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -22,23 +23,21 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace internal {
 StatusOr<HmacKeyMetadata> HmacKeyMetadataParser::FromJson(
     nlohmann::json const& json) {
-  if (!json.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
+  if (!json.is_object()) return NotJsonObject(json, GCP_ERROR_INFO());
   HmacKeyMetadata result{};
-  result.access_id_ = json.value("accessId", "");
-  result.etag_ = json.value("etag", "");
-  result.id_ = json.value("id", "");
-  result.kind_ = json.value("kind", "");
-  result.project_id_ = json.value("projectId", "");
-  result.service_account_email_ = json.value("serviceAccountEmail", "");
-  result.state_ = json.value("state", "");
+  result.set_access_id(json.value("accessId", ""));
+  result.set_etag(json.value("etag", ""));
+  result.set_id(json.value("id", ""));
+  result.set_kind(json.value("kind", ""));
+  result.set_project_id(json.value("projectId", ""));
+  result.set_service_account_email(json.value("serviceAccountEmail", ""));
+  result.set_state(json.value("state", ""));
   auto time_created = ParseTimestampField(json, "timeCreated");
   if (!time_created) return std::move(time_created).status();
-  result.time_created_ = *time_created;
+  result.set_time_created(*time_created);
   auto updated = ParseTimestampField(json, "updated");
   if (!updated) return std::move(updated).status();
-  result.updated_ = *updated;
+  result.set_updated(*updated);
   return result;
 }
 

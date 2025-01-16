@@ -13,9 +13,10 @@
 // limitations under the License.
 
 #include "generator/internal/mock_connection_generator.h"
-#include "absl/memory/memory.h"
 #include "generator/internal/codegen_utils.h"
 #include "generator/internal/descriptor_utils.h"
+#include "generator/internal/longrunning.h"
+#include "generator/internal/pagination.h"
 #include "generator/internal/predicate_utils.h"
 #include "generator/internal/printer.h"
 #include <google/protobuf/descriptor.h>
@@ -28,10 +29,12 @@ MockConnectionGenerator::MockConnectionGenerator(
     google::protobuf::ServiceDescriptor const* service_descriptor,
     VarsDictionary service_vars,
     std::map<std::string, VarsDictionary> service_method_vars,
-    google::protobuf::compiler::GeneratorContext* context)
+    google::protobuf::compiler::GeneratorContext* context,
+    std::vector<MixinMethod> const& mixin_methods)
     : ServiceCodeGenerator("mock_connection_header_path", service_descriptor,
                            std::move(service_vars),
-                           std::move(service_method_vars), context) {}
+                           std::move(service_method_vars), context,
+                           mixin_methods) {}
 
 Status MockConnectionGenerator::GenerateHeader() {
   HeaderPrint(CopyrightLicenseFileHeader());
@@ -55,9 +58,23 @@ Status MockConnectionGenerator::GenerateHeader() {
 
   // Abstract interface Connection base class
   HeaderPrint(R"""(
+/**
+ * A class to mock `$connection_class_name$`.
+ *
+ * Application developers may want to test their code with simulated responses,
+ * including errors, from an object of type `$client_class_name$`. To do so,
+ * construct an object of type `$client_class_name$` with an instance of this
+ * class. Then use the Google Test framework functions to program the behavior
+ * of this mock.
+ *
+ * @see [This example][bq-mock] for how to test your application with GoogleTest.
+ * While the example showcases types from the BigQuery library, the underlying
+ * principles apply for any pair of `*Client` and `*Connection`.
+ *
+ * [bq-mock]: @cloud_cpp_docs_link{bigquery,bigquery-read-mock}
+ */
 class $mock_connection_class_name$ : public $product_namespace$::$connection_class_name$ {
- public:)""");
-  HeaderPrint(R"""(
+ public:
   MOCK_METHOD(Options, options, (), (override));
 )""");
 
@@ -68,7 +85,7 @@ class $mock_connection_class_name$ : public $product_namespace$::$connection_cla
   MOCK_METHOD((std::unique_ptr<
       ::google::cloud::AsyncStreamingReadWriteRpc<
           $request_type$, $response_type$>>),
-      Async$method_name$, (ExperimentalTag), (override));
+      Async$method_name$, (), (override));
 )""");
       continue;
     }
@@ -76,10 +93,8 @@ class $mock_connection_class_name$ : public $product_namespace$::$connection_cla
         method,
         {MethodPattern(
              {
-                 {IsResponseTypeEmpty,
-                  // clang-format off
-    "\n  MOCK_METHOD(Status,\n",
-    "\n  MOCK_METHOD(StatusOr<$response_type$>,\n"},
+                 {"\n  MOCK_METHOD($return_type$,\n"},
+                 // clang-format off
    {"  $method_name$,\n"
     "  ($request_type$ const& request), (override));\n",}
                  // clang-format on
@@ -88,19 +103,59 @@ class $mock_connection_class_name$ : public $product_namespace$::$connection_cla
                  Not(IsPaginated))),
          MethodPattern(
              {
+                 {
+                     R"""(
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// using ::testing::Matcher;
+  /// EXPECT_CALL(*mock, $method_name$(Matcher<$request_type$ const&>(_)))
+  /// @endcode
+)"""},
                  {IsResponseTypeEmpty,
                   // clang-format off
-    "\n  MOCK_METHOD(future<Status>,\n",
-    "\n  MOCK_METHOD(future<StatusOr<$longrunning_deduced_response_type$>>,\n"},
+    "  MOCK_METHOD(future<Status>,\n",
+    "  MOCK_METHOD(future<StatusOr<$longrunning_deduced_response_type$>>,\n"},
    {"  $method_name$,\n"
-    "  ($request_type$ const& request), (override));\n",}
+    "  ($request_type$ const& request), (override));\n\n",},
                  // clang-format on
+                 {R"""(
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// EXPECT_CALL(*mock, $method_name$(_, _))
+  /// @endcode
+)"""},
+                 {IsResponseTypeEmpty,
+                  // clang-format off
+    "  MOCK_METHOD(Status,\n",
+    "  MOCK_METHOD(StatusOr<$longrunning_operation_type$>,\n"},
+   {"  $method_name$, (NoAwaitTag,\n"
+    "    $request_type$ const& request), (override));\n\n"},
+                 // clang-format on
+                 {R"""(
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// using ::testing::Matcher;
+  /// EXPECT_CALL(*mock, $method_name$(Matcher<$longrunning_operation_type$ const&>(_)))
+  /// @endcode
+)"""},
+                 {IsResponseTypeEmpty,
+                  // clang-format off
+    "  MOCK_METHOD(future<Status>,\n",
+    "  MOCK_METHOD(future<StatusOr<$longrunning_deduced_response_type$>>,\n"},
+   {"  $method_name$, (\n"
+    "    $longrunning_operation_type$ const& operation), (override));\n"}  // clang-format on
              },
              All(IsNonStreaming, IsLongrunningOperation, Not(IsPaginated))),
          MethodPattern(
              {
                  // clang-format off
-   {"\n  MOCK_METHOD(StreamRange<$range_output_type$>,\n"
+   {"\n  MOCK_METHOD((StreamRange<$range_output_type$>),\n"
     "  $method_name$,\n"
     "  ($request_type$ request), (override));\n"},
                  // clang-format on
@@ -123,10 +178,8 @@ class $mock_connection_class_name$ : public $product_namespace$::$connection_cla
         method,
         {MethodPattern(
             {
-                {IsResponseTypeEmpty,
-                 // clang-format off
-    "\n  MOCK_METHOD(future<Status>,\n",
-    "\n  MOCK_METHOD(future<StatusOr<$response_type$>>,\n"},
+                {"\n  MOCK_METHOD(future<$return_type$>,\n"},
+                // clang-format off
    {"  Async$method_name$,\n"
     "  ($request_type$ const& request), (override));\n",}
                 // clang-format on

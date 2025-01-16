@@ -20,77 +20,34 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_AUTHORIZED_CERTIFICATES_CONNECTION_H
 
 #include "google/cloud/appengine/authorized_certificates_connection_idempotency_policy.h"
-#include "google/cloud/appengine/internal/authorized_certificates_retry_traits.h"
-#include "google/cloud/appengine/internal/authorized_certificates_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/appengine/v1/authorized_certificates_connection.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using AuthorizedCertificatesRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        appengine_internal::AuthorizedCertificatesRetryTraits>;
+/// @deprecated Use appengine_v1::MakeAuthorizedCertificatesConnection directly.
+using ::google::cloud::appengine_v1::MakeAuthorizedCertificatesConnection;
 
-using AuthorizedCertificatesLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        appengine_internal::AuthorizedCertificatesRetryTraits>;
+/// @deprecated Use appengine_v1::AuthorizedCertificatesConnection directly.
+using ::google::cloud::appengine_v1::AuthorizedCertificatesConnection;
 
-using AuthorizedCertificatesLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        appengine_internal::AuthorizedCertificatesRetryTraits>;
+/// @deprecated Use
+/// appengine_v1::AuthorizedCertificatesLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::appengine_v1::
+    AuthorizedCertificatesLimitedErrorCountRetryPolicy;
 
-class AuthorizedCertificatesConnection {
- public:
-  virtual ~AuthorizedCertificatesConnection() = 0;
+/// @deprecated Use appengine_v1::AuthorizedCertificatesLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::appengine_v1::
+    AuthorizedCertificatesLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::appengine::v1::AuthorizedCertificate>
-  ListAuthorizedCertificates(
-      google::appengine::v1::ListAuthorizedCertificatesRequest request);
-
-  virtual StatusOr<google::appengine::v1::AuthorizedCertificate>
-  GetAuthorizedCertificate(
-      google::appengine::v1::GetAuthorizedCertificateRequest const& request);
-
-  virtual StatusOr<google::appengine::v1::AuthorizedCertificate>
-  CreateAuthorizedCertificate(
-      google::appengine::v1::CreateAuthorizedCertificateRequest const& request);
-
-  virtual StatusOr<google::appengine::v1::AuthorizedCertificate>
-  UpdateAuthorizedCertificate(
-      google::appengine::v1::UpdateAuthorizedCertificateRequest const& request);
-
-  virtual Status DeleteAuthorizedCertificate(
-      google::appengine::v1::DeleteAuthorizedCertificateRequest const& request);
-};
-
-std::shared_ptr<AuthorizedCertificatesConnection>
-MakeAuthorizedCertificatesConnection(Options options = {});
+/// @deprecated Use appengine_v1::AuthorizedCertificatesRetryPolicy directly.
+using ::google::cloud::appengine_v1::AuthorizedCertificatesRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace appengine_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<appengine::AuthorizedCertificatesConnection>
-MakeAuthorizedCertificatesConnection(
-    std::shared_ptr<AuthorizedCertificatesStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace appengine_internal
 }  // namespace cloud
 }  // namespace google
 

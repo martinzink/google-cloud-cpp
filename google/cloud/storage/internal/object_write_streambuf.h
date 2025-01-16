@@ -18,10 +18,12 @@
 #include "google/cloud/storage/auto_finalize.h"
 #include "google/cloud/storage/internal/hash_function.h"
 #include "google/cloud/storage/internal/hash_validator.h"
-#include "google/cloud/storage/internal/resumable_upload_session.h"
+#include "google/cloud/storage/internal/storage_connection.h"
 #include "google/cloud/storage/version.h"
 #include <iostream>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace google {
 namespace cloud {
@@ -41,7 +43,12 @@ class ObjectWriteStreambuf : public std::basic_streambuf<char> {
  public:
   ObjectWriteStreambuf() = default;
 
-  ObjectWriteStreambuf(std::unique_ptr<ResumableUploadSession> upload_session,
+  explicit ObjectWriteStreambuf(Status status);
+
+  ObjectWriteStreambuf(std::shared_ptr<StorageConnection> connection,
+                       ResumableUploadRequest request, std::string upload_id,
+                       std::uint64_t committed_size,
+                       absl::optional<ObjectMetadata> metadata,
                        std::size_t max_buffer_size,
                        std::unique_ptr<HashFunction> hash_function,
                        HashValues known_hashes,
@@ -55,7 +62,7 @@ class ObjectWriteStreambuf : public std::basic_streambuf<char> {
   ObjectWriteStreambuf(ObjectWriteStreambuf const&) = delete;
   ObjectWriteStreambuf& operator=(ObjectWriteStreambuf const&) = delete;
 
-  virtual StatusOr<ResumableUploadResponse> Close();
+  virtual StatusOr<QueryResumableUploadResponse> Close();
   virtual bool IsOpen() const;
   virtual bool ValidateHash(ObjectMetadata const& meta);
 
@@ -63,16 +70,12 @@ class ObjectWriteStreambuf : public std::basic_streambuf<char> {
   virtual std::string const& computed_hash() const { return computed_hash_; }
 
   /// The session id, if applicable, it is empty for non-resumable uploads.
-  virtual std::string const& resumable_session_id() const {
-    return upload_session_->session_id();
-  }
+  virtual std::string const& resumable_session_id() const { return upload_id_; }
 
   /// The next expected byte, if applicable, always 0 for non-resumable uploads.
-  virtual std::uint64_t next_expected_byte() const {
-    return upload_session_->next_expected_byte();
-  }
+  virtual std::uint64_t next_expected_byte() const { return committed_size_; }
 
-  virtual Status last_status() const { return last_response_.status(); }
+  virtual Status last_status() const { return last_status_; }
 
  protected:
   int sync() override;
@@ -104,12 +107,20 @@ class ObjectWriteStreambuf : public std::basic_streambuf<char> {
   /// The current used bytes in the put area (aka current_ios_buffer_)
   std::size_t put_area_size() const { return pptr() - pbase(); }
 
-  std::unique_ptr<ResumableUploadSession> upload_session_;
+  void UpdatePutArea();
+
+  std::shared_ptr<StorageConnection> connection_;
+  ResumableUploadRequest request_;
+  Status last_status_;
+  std::string upload_id_;
+  std::uint64_t committed_size_ = 0;
+  absl::optional<ObjectMetadata> metadata_;
+  std::multimap<std::string, std::string> headers_;
 
   std::vector<char> current_ios_buffer_;
   std::size_t max_buffer_size_;
 
-  std::unique_ptr<HashFunction> hash_function_;
+  std::shared_ptr<HashFunction> hash_function_;
   HashValues hash_values_;
   HashValues known_hashes_;
   std::unique_ptr<HashValidator> hash_validator_;
@@ -118,8 +129,9 @@ class ObjectWriteStreambuf : public std::basic_streambuf<char> {
   HashValidator::Result hash_validator_result_;
   std::string computed_hash_;
   std::string received_hash_;
-
-  StatusOr<ResumableUploadResponse> last_response_;
+  // Capture the options in effect when the stream was created, to reuse as
+  // new requests are generated.
+  google::cloud::Options span_options_;
 };
 
 }  // namespace internal

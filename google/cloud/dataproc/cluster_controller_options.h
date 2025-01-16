@@ -21,41 +21,29 @@
 
 #include "google/cloud/dataproc/cluster_controller_connection.h"
 #include "google/cloud/dataproc/cluster_controller_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/dataproc/v1/cluster_controller_options.h"
 
 namespace google {
 namespace cloud {
 namespace dataproc {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct ClusterControllerRetryPolicyOption {
-  using Type = std::shared_ptr<ClusterControllerRetryPolicy>;
-};
+/// @deprecated Use dataproc_v1::ClusterControllerPollingPolicyOption directly.
+using ::google::cloud::dataproc_v1::ClusterControllerPollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ClusterControllerBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use dataproc_v1::ClusterControllerBackoffPolicyOption directly.
+using ::google::cloud::dataproc_v1::ClusterControllerBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ClusterControllerPollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// dataproc_v1::ClusterControllerConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::dataproc_v1::
+    ClusterControllerConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct ClusterControllerConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<ClusterControllerConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use dataproc_v1::ClusterControllerPolicyOptionList directly.
+using ::google::cloud::dataproc_v1::ClusterControllerPolicyOptionList;
 
-using ClusterControllerPolicyOptionList =
-    OptionList<ClusterControllerRetryPolicyOption,
-               ClusterControllerBackoffPolicyOption,
-               ClusterControllerPollingPolicyOption,
-               ClusterControllerConnectionIdempotencyPolicyOption>;
+/// @deprecated Use dataproc_v1::ClusterControllerRetryPolicyOption directly.
+using ::google::cloud::dataproc_v1::ClusterControllerRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace dataproc

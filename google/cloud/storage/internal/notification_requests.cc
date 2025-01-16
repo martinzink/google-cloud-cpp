@@ -13,9 +13,13 @@
 // limitations under the License.
 
 #include "google/cloud/storage/internal/notification_requests.h"
+#include "google/cloud/storage/internal/metadata_parser.h"
 #include "google/cloud/storage/internal/notification_metadata_parser.h"
 #include "google/cloud/internal/absl_str_join_quiet.h"
+#include "google/cloud/internal/make_status.h"
 #include <iostream>
+#include <string>
+#include <utility>
 
 namespace google {
 namespace cloud {
@@ -31,9 +35,7 @@ std::ostream& operator<<(std::ostream& os, ListNotificationsRequest const& r) {
 StatusOr<ListNotificationsResponse> ListNotificationsResponse::FromHttpResponse(
     std::string const& payload) {
   auto json = nlohmann::json::parse(payload, nullptr, false);
-  if (!json.is_object()) {
-    return Status(StatusCode::kInvalidArgument, __func__);
-  }
+  if (!json.is_object()) return ExpectedJsonObject(payload, GCP_ERROR_INFO());
   ListNotificationsResponse result;
   for (auto const& kv : json["items"].items()) {
     auto parsed = internal::NotificationMetadataParser::FromJson(kv.value());
@@ -43,6 +45,11 @@ StatusOr<ListNotificationsResponse> ListNotificationsResponse::FromHttpResponse(
     result.items.emplace_back(std::move(*parsed));
   }
   return result;
+}
+
+StatusOr<ListNotificationsResponse> ListNotificationsResponse::FromHttpResponse(
+    HttpResponse const& response) {
+  return FromHttpResponse(response.payload);
 }
 
 std::ostream& operator<<(std::ostream& os, ListNotificationsResponse const& r) {

@@ -16,26 +16,34 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_STORAGE_TESTING_MOCK_CLIENT_H
 
 #include "google/cloud/storage/client.h"
-#include "google/cloud/storage/internal/raw_client.h"
-#include "google/cloud/storage/internal/resumable_upload_session.h"
+#include "google/cloud/storage/internal/storage_connection.h"
 #include <gmock/gmock.h>
+#include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace google {
 namespace cloud {
 namespace storage {
 namespace testing {
 
-class MockClient : public google::cloud::storage::internal::RawClient {
+class MockClient : public google::cloud::storage::internal::StorageConnection {
  public:
   MockClient()
       : client_options_(
             google::cloud::storage::oauth2::CreateAnonymousCredentials()) {
     EXPECT_CALL(*this, client_options())
         .WillRepeatedly(::testing::ReturnRef(client_options_));
+    EXPECT_CALL(*this, options)
+        .WillRepeatedly(
+            ::testing::Return(storage::internal::DefaultOptionsWithCredentials(
+                Options{}.set<UnifiedCredentialsOption>(
+                    MakeInsecureCredentials()))));
   }
 
   MOCK_METHOD(ClientOptions const&, client_options, (), (const, override));
+  MOCK_METHOD(Options, options, (), (const, override));
   MOCK_METHOD(StatusOr<internal::ListBucketsResponse>, ListBuckets,
               (internal::ListBucketsRequest const&), (override));
   MOCK_METHOD(StatusOr<storage::BucketMetadata>, CreateBucket,
@@ -48,12 +56,8 @@ class MockClient : public google::cloud::storage::internal::RawClient {
               (internal::UpdateBucketRequest const&), (override));
   MOCK_METHOD(StatusOr<storage::BucketMetadata>, PatchBucket,
               (internal::PatchBucketRequest const&), (override));
-  MOCK_METHOD(StatusOr<IamPolicy>, GetBucketIamPolicy,
-              (internal::GetBucketIamPolicyRequest const&), (override));
   MOCK_METHOD(StatusOr<NativeIamPolicy>, GetNativeBucketIamPolicy,
               (internal::GetBucketIamPolicyRequest const&), (override));
-  MOCK_METHOD(StatusOr<IamPolicy>, SetBucketIamPolicy,
-              (internal::SetBucketIamPolicyRequest const&), (override));
   MOCK_METHOD(StatusOr<NativeIamPolicy>, SetNativeBucketIamPolicy,
               (internal::SetNativeBucketIamPolicyRequest const&), (override));
   MOCK_METHOD(StatusOr<internal::TestBucketIamPermissionsResponse>,
@@ -76,19 +80,27 @@ class MockClient : public google::cloud::storage::internal::RawClient {
               (internal::DeleteObjectRequest const&), (override));
   MOCK_METHOD(StatusOr<storage::ObjectMetadata>, UpdateObject,
               (internal::UpdateObjectRequest const&), (override));
+  MOCK_METHOD(StatusOr<storage::ObjectMetadata>, MoveObject,
+              (internal::MoveObjectRequest const&), (override));
   MOCK_METHOD(StatusOr<storage::ObjectMetadata>, PatchObject,
               (internal::PatchObjectRequest const&), (override));
   MOCK_METHOD(StatusOr<storage::ObjectMetadata>, ComposeObject,
               (internal::ComposeObjectRequest const&), (override));
   MOCK_METHOD(StatusOr<internal::RewriteObjectResponse>, RewriteObject,
               (internal::RewriteObjectRequest const&), (override));
-  MOCK_METHOD(StatusOr<std::unique_ptr<internal::ResumableUploadSession>>,
-              CreateResumableSession, (internal::ResumableUploadRequest const&),
+  MOCK_METHOD(StatusOr<storage::ObjectMetadata>, RestoreObject,
+              (internal::RestoreObjectRequest const&), (override));
+
+  MOCK_METHOD(StatusOr<internal::CreateResumableUploadResponse>,
+              CreateResumableUpload, (internal::ResumableUploadRequest const&),
               (override));
-  MOCK_METHOD(StatusOr<std::unique_ptr<internal::ResumableUploadSession>>,
-              RestoreResumableSession, (std::string const&), (override));
+  MOCK_METHOD(StatusOr<internal::QueryResumableUploadResponse>,
+              QueryResumableUpload,
+              (internal::QueryResumableUploadRequest const&), (override));
   MOCK_METHOD(StatusOr<internal::EmptyResponse>, DeleteResumableUpload,
               (internal::DeleteResumableUploadRequest const&), (override));
+  MOCK_METHOD(StatusOr<internal::QueryResumableUploadResponse>, UploadChunk,
+              (internal::UploadChunkRequest const&), (override));
 
   MOCK_METHOD(StatusOr<internal::ListBucketAclResponse>, ListBucketAcl,
               (internal::ListBucketAclRequest const&), (override));
@@ -157,26 +169,11 @@ class MockClient : public google::cloud::storage::internal::RawClient {
       StatusOr<std::string>, AuthorizationHeader,
       (std::shared_ptr<google::cloud::storage::oauth2::Credentials> const&));
 
+  MOCK_METHOD(std::vector<std::string>, InspectStackStructure, (),
+              (const, override));
+
  private:
   ClientOptions client_options_;
-};
-
-class MockResumableUploadSession
-    : public google::cloud::storage::internal::ResumableUploadSession {
- public:
-  MOCK_METHOD(StatusOr<internal::ResumableUploadResponse>, UploadChunk,
-              (internal::ConstBufferSequence const&), (override));
-  MOCK_METHOD(StatusOr<internal::ResumableUploadResponse>, UploadFinalChunk,
-              (internal::ConstBufferSequence const&, std::uint64_t,
-               internal::HashValues const&),
-              (override));
-  MOCK_METHOD(StatusOr<internal::ResumableUploadResponse>, ResetSession, (),
-              (override));
-  MOCK_METHOD(std::uint64_t, next_expected_byte, (), (const, override));
-  MOCK_METHOD(std::string const&, session_id, (), (const, override));
-  MOCK_METHOD(bool, done, (), (const, override));
-  MOCK_METHOD(StatusOr<internal::ResumableUploadResponse> const&, last_response,
-              (), (const, override));
 };
 
 class MockObjectReadSource : public internal::ObjectReadSource {
@@ -198,12 +195,25 @@ class MockStreambuf : public internal::ObjectWriteStreambuf {
   MOCK_METHOD(std::uint64_t, next_expected_byte, (), (const, override));
 };
 
-/// Create a client configured to use the given mock.
+/**
+ * Create a client configured to use the given mock.
+ *
+ * @deprecated Unless you specifically need to mock the behavior of retries,
+ *    prefer `UndecoratedClientFromMock()`.
+ */
 template <typename... Policies>
-Client ClientFromMock(std::shared_ptr<MockClient> const& mock,
-                      Policies&&... p) {
+Client ClientFromMock(std::shared_ptr<MockClient> mock, Policies&&... p) {
   return internal::ClientImplDetails::CreateClient(
-      mock, std::forward<Policies>(p)...);
+      std::move(mock), std::forward<Policies>(p)...);
+}
+
+/**
+ * Create a client configured to use the given mock.
+ *
+ * This client does not retry on transient errors.
+ */
+inline Client UndecoratedClientFromMock(std::shared_ptr<MockClient> mock) {
+  return internal::ClientImplDetails::CreateWithoutDecorations(std::move(mock));
 }
 
 }  // namespace testing

@@ -23,6 +23,7 @@
 #include "google/cloud/storage/well_known_parameters.h"
 #include <iosfwd>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace google {
@@ -46,6 +47,8 @@ std::ostream& operator<<(std::ostream& os, ListObjectAclRequest const& r);
 struct ListObjectAclResponse {
   static StatusOr<ListObjectAclResponse> FromHttpResponse(
       std::string const& payload);
+  static StatusOr<ListObjectAclResponse> FromHttpResponse(
+      HttpResponse const& response);
 
   std::vector<ObjectAccessControl> items;
 };
@@ -150,6 +153,7 @@ std::ostream& operator<<(std::ostream& os, UpdateObjectAclRequest const& r);
 class PatchObjectAclRequest
     : public GenericObjectAclRequest<PatchObjectAclRequest> {
  public:
+  PatchObjectAclRequest() = default;
   PatchObjectAclRequest(std::string bucket, std::string object,
                         std::string entity, ObjectAccessControl const& original,
                         ObjectAccessControl const& new_acl);

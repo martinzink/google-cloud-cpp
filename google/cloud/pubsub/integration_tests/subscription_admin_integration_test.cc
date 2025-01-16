@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO(#12987): Remove this file after the deprecation period expires
+#include "google/cloud/internal/disable_deprecation_warnings.inc"
 #include "google/cloud/pubsub/snapshot_builder.h"
 #include "google/cloud/pubsub/subscription.h"
 #include "google/cloud/pubsub/subscription_admin_client.h"
@@ -41,7 +43,6 @@ using ::google::cloud::testing_util::ScopedEnvironment;
 using ::google::cloud::testing_util::StatusIs;
 using ::testing::AnyOf;
 using ::testing::Contains;
-using ::testing::IsEmpty;
 using ::testing::Not;
 using ::testing::NotNull;
 
@@ -148,8 +149,6 @@ TEST_F(SubscriptionAdminIntegrationTest, SubscriptionCRUD) {
 
   // To create snapshots we need at least one subscription, so we test those
   // here too.
-  // TODO(#4792) - cannot test server-side assigned names, the emulator lacks
-  //    support for them.
   Snapshot snapshot(project_id, pubsub_testing::RandomSnapshotId(generator));
   auto create_snapshot_response =
       subscription_admin.CreateSnapshot(subscription, snapshot);
@@ -170,7 +169,7 @@ TEST_F(SubscriptionAdminIntegrationTest, SubscriptionCRUD) {
   ASSERT_STATUS_OK(get_snapshot_response);
   EXPECT_THAT(*get_snapshot_response, IsProtoEqual(*create_snapshot_response));
 
-  // TODO(#4792) - the emulator does not support UpdateSnapshot()
+  // Skip, as this is not supported by the emulator.
   if (!UsingEmulator()) {
     auto update_snapshot_response = subscription_admin.UpdateSnapshot(
         snapshot, SnapshotBuilder{}.add_label("test-label", "test-value"));
@@ -188,7 +187,7 @@ TEST_F(SubscriptionAdminIntegrationTest, SubscriptionCRUD) {
   EXPECT_THAT(snapshot_names(subscription_admin, project_id),
               Not(Contains(snapshot.FullName())));
 
-  // TODO(#4792) - the emulator does not support DetachSubscription()
+  // Skip, as this is not supported by the emulator.
   if (!UsingEmulator()) {
     auto detach_response = topic_admin.DetachSubscription(subscription);
     ASSERT_STATUS_OK(detach_response);
@@ -200,22 +199,6 @@ TEST_F(SubscriptionAdminIntegrationTest, SubscriptionCRUD) {
   names = SubscriptionNames(subscription_admin, project_id);
   ASSERT_STATUS_OK(names);
   EXPECT_THAT(*names, Not(Contains(subscription.FullName())));
-}
-
-TEST_F(SubscriptionAdminIntegrationTest, UnifiedCredentials) {
-  auto project_id =
-      google::cloud::internal::GetEnv("GOOGLE_CLOUD_PROJECT").value_or("");
-  ASSERT_THAT(project_id, Not(IsEmpty()));
-  auto options =
-      Options{}.set<UnifiedCredentialsOption>(MakeGoogleDefaultCredentials());
-  if (UsingEmulator()) {
-    options = Options{}
-                  .set<UnifiedCredentialsOption>(MakeInsecureCredentials())
-                  .set<internal::UseInsecureChannelOption>(true);
-  }
-  auto client = SubscriptionAdminClient(
-      MakeSubscriptionAdminConnection(std::move(options)));
-  ASSERT_STATUS_OK(SubscriptionNames(client, project_id));
 }
 
 TEST_F(SubscriptionAdminIntegrationTest, CreateSubscriptionFailure) {

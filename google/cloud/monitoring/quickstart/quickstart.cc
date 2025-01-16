@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/monitoring/alert_policy_client.h"
+//! [all]
+#include "google/cloud/monitoring/v3/alert_policy_client.h"
 #include "google/cloud/project.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc != 2) {
@@ -23,18 +23,19 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace monitoring = ::google::cloud::monitoring;
+  namespace monitoring = ::google::cloud::monitoring_v3;
   auto client = monitoring::AlertPolicyServiceClient(
       monitoring::MakeAlertPolicyServiceConnection());
 
   auto const project = google::cloud::Project(argv[1]);
   for (auto a : client.ListAlertPolicies(project.FullName())) {
-    if (!a) throw std::runtime_error(a.status().message());
+    if (!a) throw std::move(a).status();
     std::cout << a->DebugString() << "\n";
   }
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

@@ -25,6 +25,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace google {
@@ -43,8 +44,7 @@ namespace internal {
 class ObjectReadStreambuf : public std::basic_streambuf<char> {
  public:
   ObjectReadStreambuf(ReadObjectRangeRequest const& request,
-                      std::unique_ptr<ObjectReadSource> source,
-                      std::streamoff pos_in_stream);
+                      std::unique_ptr<ObjectReadSource> source);
 
   /// Create a streambuf in a permanent error status.
   ObjectReadStreambuf(ReadObjectRangeRequest const& request, Status status);
@@ -78,6 +78,9 @@ class ObjectReadStreambuf : public std::basic_streambuf<char> {
     return storage_class_;
   }
   absl::optional<std::uint64_t> const& size() const { return size_; }
+  absl::optional<std::string> const& transformation() const {
+    return transformation_;
+  }
 
  private:
   int_type ReportError(Status status);
@@ -102,6 +105,7 @@ class ObjectReadStreambuf : public std::basic_streambuf<char> {
   absl::optional<std::int64_t> metageneration_;
   absl::optional<std::string> storage_class_;
   absl::optional<std::uint64_t> size_;
+  absl::optional<std::string> transformation_;
 };
 
 }  // namespace internal

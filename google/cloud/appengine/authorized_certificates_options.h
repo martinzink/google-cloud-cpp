@@ -21,36 +21,30 @@
 
 #include "google/cloud/appengine/authorized_certificates_connection.h"
 #include "google/cloud/appengine/authorized_certificates_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/appengine/v1/authorized_certificates_options.h"
 
 namespace google {
 namespace cloud {
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct AuthorizedCertificatesRetryPolicyOption {
-  using Type = std::shared_ptr<AuthorizedCertificatesRetryPolicy>;
-};
+/// @deprecated Use appengine_v1::AuthorizedCertificatesBackoffPolicyOption
+/// directly.
+using ::google::cloud::appengine_v1::AuthorizedCertificatesBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct AuthorizedCertificatesBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// appengine_v1::AuthorizedCertificatesConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::appengine_v1::
+    AuthorizedCertificatesConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct AuthorizedCertificatesConnectionIdempotencyPolicyOption {
-  using Type =
-      std::shared_ptr<AuthorizedCertificatesConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use appengine_v1::AuthorizedCertificatesPolicyOptionList
+/// directly.
+using ::google::cloud::appengine_v1::AuthorizedCertificatesPolicyOptionList;
 
-using AuthorizedCertificatesPolicyOptionList =
-    OptionList<AuthorizedCertificatesRetryPolicyOption,
-               AuthorizedCertificatesBackoffPolicyOption,
-               AuthorizedCertificatesConnectionIdempotencyPolicyOption>;
+/// @deprecated Use appengine_v1::AuthorizedCertificatesRetryPolicyOption
+/// directly.
+using ::google::cloud::appengine_v1::AuthorizedCertificatesRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine

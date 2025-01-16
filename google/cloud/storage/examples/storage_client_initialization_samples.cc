@@ -19,8 +19,12 @@
 #include "google/cloud/credentials.h"
 #include "google/cloud/internal/getenv.h"
 #include <iostream>
+#include <random>
+#include <stdexcept>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -32,7 +36,7 @@ void PerformSomeOperations(google::cloud::storage::Client client,
 
   auto object = client.InsertObject(bucket_name, object_name, kText).value();
   for (auto&& o : client.ListObjects(bucket_name)) {
-    if (!o) throw std::runtime_error(o.status().message());
+    if (!o) throw std::move(o).status();
     if (o->name() == object_name) break;
   }
   auto status = client.DeleteObject(bucket_name, object_name,
@@ -61,7 +65,7 @@ void SetClientEndpoint(std::vector<std::string> const& argv) {
   namespace examples = ::google::cloud::storage::examples;
   if ((argv.size() == 1 && argv[0] == "--help") || argv.size() != 2) {
     throw examples::Usage{
-        "default-client"
+        "set-client-endpoint"
         " <bucket-name> <object-name>"};
   }
   //! [START storage_set_client_endpoint] [set-client-endpoint]
@@ -115,12 +119,10 @@ void ServiceAccountKeyfile(std::vector<std::string> const& argv) {
         std::string(std::istreambuf_iterator<char>(is.rdbuf()), {});
     auto credentials =
         google::cloud::MakeServiceAccountCredentials(json_string);
-
-    PerformSomeOperations(
-        gcs::Client(
-            google::cloud::Options{}
-                .set<google::cloud::UnifiedCredentialsOption>(credentials)),
-        bucket_name, object_name);
+    auto client = gcs::Client(
+        google::cloud::Options{}.set<google::cloud::UnifiedCredentialsOption>(
+            credentials));
+    PerformSomeOperations(client, bucket_name, object_name);
   }
   //! [service-account-keyfile]
   (argv.at(0), argv.at(1), argv.at(2));
@@ -142,7 +144,8 @@ void RunAll(std::vector<std::string> const& argv) {
   std::cout << "\nCreating bucket to run the example (" << bucket_name << ")"
             << std::endl;
   (void)client
-      .CreateBucketForProject(bucket_name, project_id, gcs::BucketMetadata{})
+      .CreateBucketForProject(bucket_name, project_id, gcs::BucketMetadata{},
+                              examples::CreateBucketOptions())
       .value();
   // In GCS a single project cannot create or delete buckets more often than
   // once every two seconds. We will pause until that time before deleting the

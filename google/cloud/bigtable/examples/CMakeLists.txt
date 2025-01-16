@@ -1,5 +1,5 @@
 # ~~~
-# Copyright 2018 Google Inc.
+# Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ if (BUILD_TESTING)
         bigtable_hello_world.cc
         bigtable_instance_admin_snippets.cc
         bigtable_table_admin_backup_snippets.cc
+        client_samples.cc
         data_async_snippets.cc
         data_filter_snippets.cc
         data_snippets.cc
@@ -47,8 +48,9 @@ if (BUILD_TESTING)
         table_admin_iam_policy_snippets.cc
         table_admin_snippets.cc)
 
-    set(bigtable_examples_unit_tests # cmake-format: sort
-                                     bigtable_examples_common_test.cc)
+    set(bigtable_examples_unit_tests
+        # cmake-format: sort
+        bigtable_examples_common_test.cc howto_mock_data_api.cc)
 
     include(CreateBazelConfig)
     export_list_to_bazel("bigtable_examples.bzl" "bigtable_examples" YEAR

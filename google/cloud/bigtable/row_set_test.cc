@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,15 @@ TEST(RowSetTest, DefaultConstructor) {
   auto proto = RowSet().as_proto();
   EXPECT_EQ(0, proto.row_keys_size());
   EXPECT_EQ(0, proto.row_ranges_size());
+}
+
+TEST(RowSetTest, Equality) {
+  auto rs1 = RowSet("rs1");
+  auto rs2 = RowSet("rs2");
+  EXPECT_NE(rs1, rs2);
+
+  rs2 = rs1;
+  EXPECT_EQ(rs1, rs2);
 }
 
 TEST(RowSetTest, AppendRange) {

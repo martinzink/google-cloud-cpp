@@ -18,9 +18,9 @@
 #include "google/cloud/storage/retry_policy.h"
 #include "google/cloud/storage/testing/canonical_errors.h"
 #include "google/cloud/storage/testing/client_unit_test.h"
-#include "google/cloud/storage/testing/retry_tests.h"
 #include "google/cloud/testing_util/status_matchers.h"
 #include <gmock/gmock.h>
+#include <string>
 
 namespace google {
 namespace cloud {
@@ -28,6 +28,7 @@ namespace storage {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
+using ::google::cloud::internal::CurrentOptions;
 using ::google::cloud::storage::testing::canonical_errors::TransientError;
 using ::testing::Return;
 using ms = std::chrono::milliseconds;
@@ -49,6 +50,8 @@ TEST_F(ObjectCopyTest, CopyObject) {
 
   EXPECT_CALL(*mock_, CopyObject)
       .WillOnce([&expected](internal::CopyObjectRequest const& request) {
+        EXPECT_EQ(CurrentOptions().get<AuthorityOption>(), "a-default");
+        EXPECT_EQ(CurrentOptions().get<UserProjectOption>(), "u-p-test");
         EXPECT_EQ("test-bucket-name", request.destination_bucket());
         EXPECT_EQ("test-object-name", request.destination_object());
         EXPECT_EQ("source-bucket-name", request.source_bucket());
@@ -56,43 +59,11 @@ TEST_F(ObjectCopyTest, CopyObject) {
         return make_status_or(expected);
       });
   auto client = ClientForMock();
-  StatusOr<ObjectMetadata> actual =
-      client.CopyObject("source-bucket-name", "source-object-name",
-                        "test-bucket-name", "test-object-name");
+  StatusOr<ObjectMetadata> actual = client.CopyObject(
+      "source-bucket-name", "source-object-name", "test-bucket-name",
+      "test-object-name", Options{}.set<UserProjectOption>("u-p-test"));
   ASSERT_STATUS_OK(actual);
   EXPECT_EQ(expected, *actual);
-}
-
-TEST_F(ObjectCopyTest, CopyObjectTooManyFailures) {
-  testing::TooManyFailuresStatusTest<ObjectMetadata>(
-      mock_, EXPECT_CALL(*mock_, CopyObject),
-      [](Client& client) {
-        return client
-            .CopyObject("source-bucket-name", "source-object-name",
-                        "test-bucket-name", "test-object-name")
-            .status();
-      },
-      [](Client& client) {
-        return client
-            .CopyObject("source-bucket-name", "source-object-name",
-                        "test-bucket-name", "test-object-name",
-                        IfGenerationMatch(0))
-            .status();
-      },
-      "CopyObject");
-}
-
-TEST_F(ObjectCopyTest, CopyObjectPermanentFailure) {
-  auto client = ClientForMock();
-  testing::PermanentFailureStatusTest<ObjectMetadata>(
-      client, EXPECT_CALL(*mock_, CopyObject),
-      [](Client& client) {
-        return client
-            .CopyObject("source-bucket-name", "source-object-name",
-                        "test-bucket-name", "test-object-name")
-            .status();
-      },
-      "CopyObject");
 }
 
 TEST_F(ObjectCopyTest, ComposeObject) {
@@ -124,6 +95,8 @@ TEST_F(ObjectCopyTest, ComposeObject) {
   EXPECT_CALL(*mock_, ComposeObject)
       .WillOnce(Return(StatusOr<ObjectMetadata>(TransientError())))
       .WillOnce([&expected](internal::ComposeObjectRequest const& r) {
+        EXPECT_EQ(CurrentOptions().get<AuthorityOption>(), "a-default");
+        EXPECT_EQ(CurrentOptions().get<UserProjectOption>(), "u-p-test");
         EXPECT_EQ("test-bucket-name", r.bucket_name());
         EXPECT_EQ("test-object-name", r.object_name());
         auto actual_payload = nlohmann::json::parse(r.JsonPayload());
@@ -134,45 +107,11 @@ TEST_F(ObjectCopyTest, ComposeObject) {
         return make_status_or(expected);
       });
   auto client = ClientForMock();
-  auto actual = client.ComposeObject("test-bucket-name",
-                                     {{"object1", {}, {}}, {"object2", {}, {}}},
-                                     "test-object-name");
+  auto actual = client.ComposeObject(
+      "test-bucket-name", {{"object1", {}, {}}, {"object2", {}, {}}},
+      "test-object-name", Options{}.set<UserProjectOption>("u-p-test"));
   ASSERT_STATUS_OK(actual);
   EXPECT_EQ(expected, *actual);
-}
-
-TEST_F(ObjectCopyTest, ComposeObjectTooManyFailures) {
-  testing::TooManyFailuresStatusTest<ObjectMetadata>(
-      mock_, EXPECT_CALL(*mock_, ComposeObject),
-      [](Client& client) {
-        return client
-            .ComposeObject("test-bucket-name",
-                           {{"object1", {}, {}}, {"object2", {}, {}}},
-                           "test-object-name")
-            .status();
-      },
-      [](Client& client) {
-        return client
-            .ComposeObject("test-bucket-name",
-                           {{"object1", {}, {}}, {"object2", {}, {}}},
-                           "test-object-name", IfGenerationMatch(7))
-            .status();
-      },
-      "ComposeObject");
-}
-
-TEST_F(ObjectCopyTest, ComposeObjectPermanentFailure) {
-  auto client = ClientForMock();
-  testing::PermanentFailureStatusTest<ObjectMetadata>(
-      client, EXPECT_CALL(*mock_, ComposeObject),
-      [](Client& client) {
-        return client
-            .ComposeObject("test-bucket-name",
-                           {{"object1", {}, {}}, {"object2", {}, {}}},
-                           "test-object-name")
-            .status();
-      },
-      "ComposeObject");
 }
 
 TEST_F(ObjectCopyTest, RewriteObject) {
@@ -180,6 +119,8 @@ TEST_F(ObjectCopyTest, RewriteObject) {
       .WillOnce(
           Return(StatusOr<internal::RewriteObjectResponse>(TransientError())))
       .WillOnce([](internal::RewriteObjectRequest const& r) {
+        EXPECT_EQ(CurrentOptions().get<AuthorityOption>(), "a-default");
+        EXPECT_EQ(CurrentOptions().get<UserProjectOption>(), "u-p-test");
         EXPECT_EQ("test-source-bucket-name", r.source_bucket());
         EXPECT_EQ("test-source-object-name", r.source_object());
         EXPECT_EQ("test-destination-bucket-name", r.destination_bucket());
@@ -196,6 +137,8 @@ TEST_F(ObjectCopyTest, RewriteObject) {
         return internal::RewriteObjectResponse::FromHttpResponse(response);
       })
       .WillOnce([](internal::RewriteObjectRequest const& r) {
+        EXPECT_EQ(CurrentOptions().get<AuthorityOption>(), "a-default");
+        EXPECT_EQ(CurrentOptions().get<UserProjectOption>(), "u-p-test");
         EXPECT_EQ("test-source-bucket-name", r.source_bucket());
         EXPECT_EQ("test-source-object-name", r.source_object());
         EXPECT_EQ("test-destination-bucket-name", r.destination_bucket());
@@ -212,6 +155,8 @@ TEST_F(ObjectCopyTest, RewriteObject) {
         return internal::RewriteObjectResponse::FromHttpResponse(response);
       })
       .WillOnce([](internal::RewriteObjectRequest const& r) {
+        EXPECT_EQ(CurrentOptions().get<AuthorityOption>(), "a-default");
+        EXPECT_EQ(CurrentOptions().get<UserProjectOption>(), "u-p-test");
         EXPECT_EQ("test-source-bucket-name", r.source_bucket());
         EXPECT_EQ("test-source-object-name", r.source_object());
         EXPECT_EQ("test-destination-bucket-name", r.destination_bucket());
@@ -236,7 +181,8 @@ TEST_F(ObjectCopyTest, RewriteObject) {
       "test-source-bucket-name", "test-source-object-name",
       "test-destination-bucket-name", "test-destination-object-name",
       WithObjectMetadata(
-          ObjectMetadata().upsert_metadata("test-key", "test-value")));
+          ObjectMetadata().upsert_metadata("test-key", "test-value")),
+      Options{}.set<UserProjectOption>("u-p-test"));
   auto actual = copier.Iterate();
   ASSERT_STATUS_OK(actual);
   EXPECT_FALSE(actual->done);
@@ -259,39 +205,6 @@ TEST_F(ObjectCopyTest, RewriteObject) {
   ASSERT_STATUS_OK(metadata);
   EXPECT_EQ("test-destination-bucket-name", metadata->bucket());
   EXPECT_EQ("test-destination-object-name", metadata->name());
-}
-
-TEST_F(ObjectCopyTest, RewriteObjectTooManyFailures) {
-  testing::TooManyFailuresStatusTest<internal::RewriteObjectResponse>(
-      mock_, EXPECT_CALL(*mock_, RewriteObject),
-      [](Client& client) {
-        auto rewrite = client.RewriteObject(
-            "test-source-bucket-name", "test-source-object",
-            "test-dest-bucket-name", "test-dest-object");
-        return rewrite.Result().status();
-      },
-      [](Client& client) {
-        return client
-            .RewriteObjectBlocking("test-source-bucket-name",
-                                   "test-source-object",
-                                   "test-dest-bucket-name", "test-dest-object",
-                                   IfGenerationMatch(7))
-            .status();
-      },
-      "RewriteObject");
-}
-
-TEST_F(ObjectCopyTest, RewriteObjectPermanentFailure) {
-  auto client = ClientForMock();
-  testing::PermanentFailureStatusTest<internal::RewriteObjectResponse>(
-      client, EXPECT_CALL(*mock_, RewriteObject),
-      [](Client& client) {
-        auto rewrite = client.RewriteObject(
-            "test-source-bucket-name", "test-source-object",
-            "test-dest-bucket-name", "test-dest-object");
-        return rewrite.Result().status();
-      },
-      "RewriteObject");
 }
 
 }  // namespace

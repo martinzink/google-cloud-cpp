@@ -18,7 +18,7 @@
 # The CXX, CXXFLAGS and CXXLD variables are hard-coded. These values work for
 # our tests, but applications would typically make them configurable parameters.
 CXX=g++
-CXXFLAGS=-std=c++11
+CXXFLAGS=
 CXXLD=$(CXX)
 BIN=.
 
@@ -41,4 +41,7 @@ GCS_GRPC_CXXLDFLAGS := $(shell pkg-config $(GCS_GRPC_DEPS) --libs-only-L)
 GCS_GRPC_LIBS       := $(shell pkg-config $(GCS_GRPC_DEPS) --libs-only-l)
 
 $(BIN)/quickstart_grpc: quickstart_grpc.cc
+	$(CXXLD) $(CXXFLAGS) $(GCS_GRPC_CXXFLAGS) $(GCS_GRPC_CXXLDFLAGS) -o $@ $^ $(GCS_GRPC_LIBS)
+
+$(BIN)/quickstart_async: quickstart_async.cc
 	$(CXXLD) $(CXXFLAGS) $(GCS_GRPC_CXXFLAGS) $(GCS_GRPC_CXXLDFLAGS) -o $@ $^ $(GCS_GRPC_LIBS)

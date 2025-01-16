@@ -14,9 +14,12 @@
 
 #include "google/cloud/pubsub/internal/default_batch_sink.h"
 #include "google/cloud/pubsub/internal/defaults.h"
+#include "google/cloud/pubsub/options.h"
 #include "google/cloud/pubsub/testing/mock_publisher_stub.h"
 #include "google/cloud/pubsub/testing/test_retry_policies.h"
 #include "google/cloud/pubsub/topic.h"
+#include "google/cloud/grpc_options.h"
+#include "google/cloud/internal/background_threads_impl.h"
 #include "google/cloud/testing_util/is_proto_equal.h"
 #include "google/cloud/testing_util/status_matchers.h"
 #include <gmock/gmock.h>
@@ -66,11 +69,11 @@ google::pubsub::v1::PublishResponse MakeResponse(
 TEST(DefaultBatchSinkTest, BasicWithRetry) {
   auto mock = std::make_shared<pubsub_testing::MockPublisherStub>();
   EXPECT_CALL(*mock, AsyncPublish)
-      .WillOnce([](Unused, Unused, Unused) {
+      .WillOnce([] {
         return make_ready_future(StatusOr<google::pubsub::v1::PublishResponse>(
             Status{StatusCode::kUnavailable, "try-again"}));
       })
-      .WillOnce([](Unused, Unused,
+      .WillOnce([](Unused, Unused, Unused,
                    google::pubsub::v1::PublishRequest const& request) {
         EXPECT_THAT(request, IsProtoEqual(MakeRequest(3)));
         return make_ready_future(make_status_or(MakeResponse(request)));
@@ -88,7 +91,7 @@ TEST(DefaultBatchSinkTest, BasicWithRetry) {
 
 TEST(DefaultBatchSinkTest, PermanentError) {
   auto mock = std::make_shared<pubsub_testing::MockPublisherStub>();
-  EXPECT_CALL(*mock, AsyncPublish).WillOnce([](Unused, Unused, Unused) {
+  EXPECT_CALL(*mock, AsyncPublish).WillOnce([] {
     return make_ready_future(StatusOr<google::pubsub::v1::PublishResponse>(
         Status{StatusCode::kPermissionDenied, "uh-oh"}));
   });
@@ -103,12 +106,10 @@ TEST(DefaultBatchSinkTest, PermanentError) {
 
 TEST(DefaultBatchSinkTest, TooManyTransients) {
   auto mock = std::make_shared<pubsub_testing::MockPublisherStub>();
-  EXPECT_CALL(*mock, AsyncPublish)
-      .Times(AtLeast(2))
-      .WillRepeatedly([](Unused, Unused, Unused) {
-        return make_ready_future(StatusOr<google::pubsub::v1::PublishResponse>(
-            Status{StatusCode::kUnavailable, "try-again"}));
-      });
+  EXPECT_CALL(*mock, AsyncPublish).Times(AtLeast(2)).WillRepeatedly([] {
+    return make_ready_future(StatusOr<google::pubsub::v1::PublishResponse>(
+        Status{StatusCode::kUnavailable, "try-again"}));
+  });
 
   internal::AutomaticallyCreatedBackgroundThreads background;
   auto uut = MakeTestBatchSink(mock, background.cq());
@@ -116,6 +117,33 @@ TEST(DefaultBatchSinkTest, TooManyTransients) {
   auto response = uut->AsyncPublish(MakeRequest(3)).get();
   ASSERT_THAT(response,
               StatusIs(StatusCode::kUnavailable, HasSubstr("try-again")));
+}
+
+TEST(DefaultBatchSinkTest, BasicWithCompression) {
+  auto mock = std::make_shared<pubsub_testing::MockPublisherStub>();
+  EXPECT_CALL(*mock, AsyncPublish)
+      .WillOnce([](Unused, auto context, Unused,
+                   google::pubsub::v1::PublishRequest const& request) {
+        // The pubsub::CompressionAlgorithmOption takes precedence over
+        // GrpcCompressionAlgorithmOption when the former's threshold is
+        // met.
+        EXPECT_EQ(context->compression_algorithm(), GRPC_COMPRESS_GZIP);
+        EXPECT_THAT(request, IsProtoEqual(MakeRequest(3)));
+        return make_ready_future(make_status_or(MakeResponse(request)));
+      });
+
+  internal::AutomaticallyCreatedBackgroundThreads background;
+  auto uut = DefaultBatchSink::Create(
+      std::move(mock), background.cq(),
+      DefaultPublisherOptions(
+          pubsub_testing::MakeTestOptions()
+              .set<GrpcCompressionAlgorithmOption>(GRPC_COMPRESS_NONE)
+              .set<pubsub::CompressionThresholdOption>(0)
+              .set<pubsub::CompressionAlgorithmOption>(GRPC_COMPRESS_GZIP)));
+
+  auto response = uut->AsyncPublish(MakeRequest(3)).get();
+  ASSERT_THAT(response, IsOk());
+  EXPECT_THAT(*response, IsProtoEqual(MakeResponse(MakeRequest(3))));
 }
 
 }  // namespace

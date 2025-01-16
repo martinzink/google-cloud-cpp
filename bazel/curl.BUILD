@@ -3,6 +3,9 @@
 # Description:
 #   curl is a tool for talking to web servers.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+
 licenses(["notice"])  # MIT/X derivative license
 
 exports_files(["COPYING"])
@@ -22,6 +25,13 @@ config_setting(
         "@platforms//os:macos",
     ],
     visibility = ["//visibility:public"],
+)
+
+# This is unused, it is here just for compatibility with the Bazel Central
+# Registry modules.
+bool_flag(
+    name = "http_only",
+    build_setting_default = False,
 )
 
 # On Linux, libcurl needs to know, at compile time, the location for the
@@ -55,7 +65,9 @@ config_setting(
 
 # This just generates a header file with the right value for the CURL_CA_BUNDLE
 # macro. The file is included by curl_config.h if the macro is *not* provided
-# in the build line using -DCURL_CA_BUNDLE=<some-path>:
+# in the build line using -DCURL_CA_BUNDLE=<some-path>.  Note that this rule
+# only runs on Linux; the dependency is suppressed (via a `select()`) on other
+# platforms.
 genrule(
     name = "gen-ca-bundle-linux",
     outs = ["include/curl_ca_bundle_location.h"],
@@ -154,6 +166,8 @@ cc_library(
     name = "curl",
     srcs = [
         "include/curl_config.h",
+        "lib/altsvc.c",
+        "lib/altsvc.h",
         "lib/amigaos.h",
         "lib/arpa_telnet.h",
         "lib/asyn.h",
@@ -177,6 +191,8 @@ cc_library(
         "lib/curl_endian.h",
         "lib/curl_fnmatch.c",
         "lib/curl_fnmatch.h",
+        "lib/curl_get_line.c",
+        "lib/curl_get_line.h",
         "lib/curl_gethostname.c",
         "lib/curl_gethostname.h",
         "lib/curl_gssapi.h",
@@ -206,6 +222,8 @@ cc_library(
         "lib/curl_threads.h",
         "lib/curlx.h",
         "lib/dict.h",
+        "lib/doh.c",
+        "lib/doh.h",
         "lib/dotdot.c",
         "lib/dotdot.h",
         "lib/easy.c",
@@ -274,16 +292,18 @@ cc_library(
         "lib/nwos.c",
         "lib/parsedate.c",
         "lib/parsedate.h",
-        "lib/pingpong.h",
         "lib/pingpong.c",
+        "lib/pingpong.h",
         "lib/pop3.h",
         "lib/progress.c",
         "lib/progress.h",
+        "lib/psl.c",
+        "lib/psl.h",
         "lib/quic.h",
         "lib/rand.c",
         "lib/rand.h",
-        "lib/rename.h",
         "lib/rename.c",
+        "lib/rename.h",
         "lib/rtsp.c",
         "lib/rtsp.h",
         "lib/security.c",
@@ -304,8 +324,8 @@ cc_library(
         "lib/smb.h",
         "lib/smtp.h",
         "lib/sockaddr.h",
-        "lib/socketpair.h",
         "lib/socketpair.c",
+        "lib/socketpair.h",
         "lib/socks.c",
         "lib/socks.h",
         "lib/speedcheck.c",
@@ -331,6 +351,8 @@ cc_library(
         "lib/transfer.h",
         "lib/url.c",
         "lib/url.h",
+        "lib/urlapi.c",
+        "lib/urlapi-int.h",
         "lib/urldata.h",
         "lib/vauth/cleartext.c",
         "lib/vauth/cram.c",
@@ -346,9 +368,12 @@ cc_library(
         "lib/vtls/gskit.h",
         "lib/vtls/gtls.h",
         "lib/vtls/mbedtls.h",
+        "lib/vtls/mesalink.c",
+        "lib/vtls/mesalink.h",
         "lib/vtls/nssg.h",
         "lib/vtls/openssl.h",
         "lib/vtls/schannel.h",
+        "lib/vtls/sectransp.h",
         "lib/vtls/vtls.c",
         "lib/vtls/vtls.h",
         "lib/vtls/wolfssl.h",
@@ -357,19 +382,6 @@ cc_library(
         "lib/wildcard.c",
         "lib/wildcard.h",
         "lib/x509asn1.h",
-        "lib/psl.h",
-        "lib/psl.c",
-        "lib/vtls/sectransp.h",
-        "lib/vtls/mesalink.h",
-        "lib/vtls/mesalink.c",
-        "lib/curl_get_line.h",
-        "lib/curl_get_line.c",
-        "lib/urlapi-int.h",
-        "lib/urlapi.c",
-        "lib/altsvc.h",
-        "lib/altsvc.c",
-        "lib/doh.h",
-        "lib/doh.c",
     ] + select({
         ":macos": [
             "lib/vtls/sectransp.c",
@@ -416,6 +428,8 @@ cc_library(
         ],
         "//conditions:default": [
             "CURL_MAX_WRITE_SIZE=65536",
+            # Avoid false positives on builds with Undefined Behavior Sanitizer.
+            "CURL_STRICTER",
         ],
     }),
     includes = ["include"],
@@ -438,10 +452,9 @@ cc_library(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        # Use the same version of zlib and c-ares that gRPC does.
-        "//external:madler_zlib",
-        "//external:cares",
         ":define-ca-bundle-location",
+        "@com_github_cares_cares//:ares",
+        "@zlib",
     ] + select({
         ":windows": [],
         "//conditions:default": [
@@ -450,11 +463,10 @@ cc_library(
     }),
 )
 
-genrule(
+write_file(
     name = "configure",
-    outs = ["include/curl_config.h"],
-    cmd = "\n".join([
-        "cat <<'EOF' >$@",
+    out = "include/curl_config.h",
+    content = [
         "#ifndef EXTERNAL_CURL_INCLUDE_CURL_CONFIG_H_",
         "#define EXTERNAL_CURL_INCLUDE_CURL_CONFIG_H_",
         "",
@@ -719,6 +731,5 @@ genrule(
         "#endif",
         "",
         "#endif  // EXTERNAL_CURL_INCLUDE_CURL_CONFIG_H_",
-        "EOF",
-    ]),
+    ],
 )

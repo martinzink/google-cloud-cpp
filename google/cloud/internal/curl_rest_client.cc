@@ -13,18 +13,18 @@
 // limitations under the License.
 
 #include "google/cloud/internal/curl_rest_client.h"
+#include "google/cloud/common_options.h"
 #include "google/cloud/credentials.h"
 #include "google/cloud/internal/absl_str_cat_quiet.h"
 #include "google/cloud/internal/absl_str_join_quiet.h"
-#include "google/cloud/internal/api_client_header.h"
 #include "google/cloud/internal/curl_handle_factory.h"
 #include "google/cloud/internal/curl_impl.h"
 #include "google/cloud/internal/curl_options.h"
 #include "google/cloud/internal/curl_rest_response.h"
 #include "google/cloud/internal/oauth2_google_credentials.h"
-#include "google/cloud/internal/rest_options.h"
+#include "google/cloud/internal/opentelemetry.h"
+#include "google/cloud/internal/tracing_rest_client.h"
 #include "google/cloud/internal/unified_rest_credentials.h"
-#include "google/cloud/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/strip.h"
 
@@ -37,12 +37,14 @@ namespace {
 std::size_t constexpr kDefaultPooledCurlHandleFactorySize = 10;
 
 Status MakeRequestWithPayload(
-    CurlImpl::HttpMethod http_method, RestRequest const& request,
-    CurlImpl& impl, std::vector<absl::Span<char const>> const& payload) {
+    CurlImpl::HttpMethod http_method, RestContext& context,
+    RestRequest const& request, CurlImpl& impl,
+    std::vector<absl::Span<char const>> const& payload) {
   // If no Content-Type is specified for the payload, default to
   // application/x-www-form-urlencoded and encode the payload accordingly before
   // making the request.
   auto content_type = request.GetHeader("Content-Type");
+  if (content_type.empty()) content_type = context.GetHeader("Content-Type");
   if (content_type.empty()) {
     std::string encoded_payload;
     impl.SetHeader("content-type: application/x-www-form-urlencoded");
@@ -51,10 +53,8 @@ Status MakeRequestWithPayload(
       concatenated_payload += std::string(p.begin(), p.end());
     }
     encoded_payload = impl.MakeEscapedString(concatenated_payload);
-    if (!encoded_payload.empty()) {
-      impl.SetHeader(absl::StrCat("content-length: ", encoded_payload.size()));
-    }
-    return impl.MakeRequest(http_method,
+    impl.SetHeader(absl::StrCat("Content-Length: ", encoded_payload.size()));
+    return impl.MakeRequest(http_method, context,
                             {{encoded_payload.data(), encoded_payload.size()}});
   }
 
@@ -62,10 +62,9 @@ Status MakeRequestWithPayload(
   for (auto const& p : payload) {
     content_length += p.size();
   }
-  if (content_length > 0) {
-    impl.SetHeader(absl::StrCat("content-length: ", content_length));
-  }
-  return impl.MakeRequest(http_method, payload);
+
+  impl.SetHeader(absl::StrCat("Content-Length: ", content_length));
+  return impl.MakeRequest(http_method, context, payload);
 }
 
 std::string FormatHostHeaderValue(absl::string_view hostname) {
@@ -75,20 +74,33 @@ std::string FormatHostHeaderValue(absl::string_view hostname) {
   return std::string(hostname.substr(0, hostname.find('/')));
 }
 
+std::unique_ptr<RestClient> MakeRestClient(
+    std::string endpoint_address, std::shared_ptr<CurlHandleFactory> factory,
+    Options options) {
+  bool tracing_enabled = internal::TracingEnabled(options);
+  std::unique_ptr<RestClient> client = std::make_unique<CurlRestClient>(
+      std::move(endpoint_address), std::move(factory), std::move(options));
+  if (tracing_enabled) client = MakeTracingRestClient(std::move(client));
+  return client;
+}
+
 }  // namespace
 
 std::string CurlRestClient::HostHeader(Options const& options,
-                                       std::string const& default_endpoint) {
+                                       std::string const& endpoint) {
   // If this function returns an empty string libcurl will fill out the `Host: `
   // header based on the URL. In most cases this is the correct value. The main
   // exception are applications using `VPC-SC`:
   //     https://cloud.google.com/vpc/docs/configure-private-google-access
-  // In those cases the application would target an URL like
+  // In those cases the application would target a URL like
   // `https://restricted.googleapis.com`, or `https://private.googleapis.com`,
-  // or their own proxy, and need to provide the target's service host.
-  auto const& endpoint = options.get<RestEndpointOption>();
-  if (absl::StrContains(endpoint, "googleapis.com"))
-    return absl::StrCat("Host: ", FormatHostHeaderValue(default_endpoint));
+  // or their own proxy, and need to provide the target's service host via the
+  // AuthorityOption.
+  auto const& auth = options.get<AuthorityOption>();
+  if (!auth.empty()) return absl::StrCat("Host: ", auth);
+  if (absl::StrContains(endpoint, "googleapis.com")) {
+    return absl::StrCat("Host: ", FormatHostHeaderValue(endpoint));
+  }
   return {};
 }
 
@@ -97,29 +109,31 @@ CurlRestClient::CurlRestClient(std::string endpoint_address,
                                Options options)
     : endpoint_address_(std::move(endpoint_address)),
       handle_factory_(std::move(factory)),
-      x_goog_api_client_header_("x-goog-api-client: " +
-                                google::cloud::internal::ApiClientHeader()),
-      options_(std::move(options)) {}
+      options_(std::move(options)) {
+  if (options_.has<UnifiedCredentialsOption>()) {
+    credentials_ = MapCredentials(*options_.get<UnifiedCredentialsOption>());
+  }
+}
 
 StatusOr<std::unique_ptr<CurlImpl>> CurlRestClient::CreateCurlImpl(
-    RestRequest const& request) {
-  auto handle = GetCurlHandle(handle_factory_);
+    RestContext const& context, RestRequest const& request,
+    Options const& options) {
+  auto handle = CurlHandle::MakeFromPool(*handle_factory_);
   auto impl =
-      absl::make_unique<CurlImpl>(std::move(handle), handle_factory_, options_);
-  if (options_.has<UnifiedCredentialsOption>()) {
-    auto credentials = MapCredentials(options_.get<UnifiedCredentialsOption>());
-    auto auth_header = credentials->AuthorizationHeader();
+      std::make_unique<CurlImpl>(std::move(handle), handle_factory_, options);
+  if (credentials_) {
+    auto auth_header =
+        credentials_->AuthenticationHeader(std::chrono::system_clock::now());
     if (!auth_header.ok()) return std::move(auth_header).status();
     impl->SetHeader(auth_header.value());
   }
-  impl->SetHeader(HostHeader(options_, endpoint_address_));
-  impl->SetHeader(x_goog_api_client_header_);
-  impl->SetHeaders(request);
+  impl->SetHeader(HostHeader(options, endpoint_address_));
+  impl->SetHeaders(context, request);
   RestRequest::HttpParameters additional_parameters;
   // The UserIp option has been deprecated in favor of quotaUser. Only add the
   // parameter if the option has been set.
-  if (options_.has<UserIpOption>()) {
-    auto user_ip = options_.get<UserIpOption>();
+  if (options.has<UserIpOption>()) {
+    auto user_ip = options.get<UserIpOption>();
     if (user_ip.empty()) user_ip = impl->LastClientIpAddress();
     if (!user_ip.empty()) additional_parameters.emplace_back("userIp", user_ip);
   }
@@ -134,53 +148,59 @@ StatusOr<std::unique_ptr<CurlImpl>> CurlRestClient::CreateCurlImpl(
 // 2 Access: CurlRestResponse constructor is private, CurlRestClient is a friend
 //           CreateCurlImpl relies heavily on member variables.
 StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Delete(
-    RestRequest const& request) {
-  auto impl = CreateCurlImpl(request);
+    RestContext& context, RestRequest const& request) {
+  auto options = internal::MergeOptions(context.options(), options_);
+  auto impl = CreateCurlImpl(context, request, options);
   if (!impl.ok()) return impl.status();
-  auto response = (*impl)->MakeRequest(CurlImpl::HttpMethod::kDelete);
+  auto response = (*impl)->MakeRequest(CurlImpl::HttpMethod::kDelete, context);
   if (!response.ok()) return response;
   return {std::unique_ptr<CurlRestResponse>(
-      new CurlRestResponse(options_, std::move(*impl)))};
+      new CurlRestResponse(std::move(options), std::move(*impl)))};
 }
 
 StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Get(
-    RestRequest const& request) {
-  auto impl = CreateCurlImpl(request);
+    RestContext& context, RestRequest const& request) {
+  auto options = internal::MergeOptions(context.options(), options_);
+  auto impl = CreateCurlImpl(context, request, options);
   if (!impl.ok()) return impl.status();
-  auto response = (*impl)->MakeRequest(CurlImpl::HttpMethod::kGet);
+  auto response = (*impl)->MakeRequest(CurlImpl::HttpMethod::kGet, context);
   if (!response.ok()) return response;
   return {std::unique_ptr<CurlRestResponse>(
-      new CurlRestResponse(options_, std::move(*impl)))};
+      new CurlRestResponse(std::move(options), std::move(*impl)))};
 }
 
 StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Patch(
-    RestRequest const& request,
+    RestContext& context, RestRequest const& request,
     std::vector<absl::Span<char const>> const& payload) {
-  auto impl = CreateCurlImpl(request);
+  auto options = internal::MergeOptions(context.options(), options_);
+  auto impl = CreateCurlImpl(context, request, options);
   if (!impl.ok()) return impl.status();
   Status response = MakeRequestWithPayload(CurlImpl::HttpMethod::kPatch,
+                                           context, request, **impl, payload);
+  if (!response.ok()) return response;
+  return {std::unique_ptr<CurlRestResponse>(
+      new CurlRestResponse(std::move(options), std::move(*impl)))};
+}
+
+StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Post(
+    RestContext& context, RestRequest const& request,
+    std::vector<absl::Span<char const>> const& payload) {
+  auto options = internal::MergeOptions(context.options(), options_);
+  auto impl = CreateCurlImpl(context, request, options);
+  if (!impl.ok()) return impl.status();
+  Status response = MakeRequestWithPayload(CurlImpl::HttpMethod::kPost, context,
                                            request, **impl, payload);
   if (!response.ok()) return response;
   return {std::unique_ptr<CurlRestResponse>(
-      new CurlRestResponse(options_, std::move(*impl)))};
+      new CurlRestResponse(std::move(options), std::move(*impl)))};
 }
 
 StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Post(
-    RestRequest const& request,
-    std::vector<absl::Span<char const>> const& payload) {
-  auto impl = CreateCurlImpl(request);
-  if (!impl.ok()) return impl.status();
-  Status response = MakeRequestWithPayload(CurlImpl::HttpMethod::kPost, request,
-                                           **impl, payload);
-  if (!response.ok()) return response;
-  return {std::unique_ptr<CurlRestResponse>(
-      new CurlRestResponse(options_, std::move(*impl)))};
-}
-
-StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Post(
-    RestRequest request,
+    RestContext& context, RestRequest const& request,
     std::vector<std::pair<std::string, std::string>> const& form_data) {
-  auto impl = CreateCurlImpl(request);
+  context.AddHeader("content-type", "application/x-www-form-urlencoded");
+  auto options = internal::MergeOptions(context.options(), options_);
+  auto impl = CreateCurlImpl(context, request, options);
   if (!impl.ok()) return impl.status();
   std::string form_payload = absl::StrJoin(
       form_data, "&",
@@ -188,31 +208,31 @@ StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Post(
         out->append(
             absl::StrCat(i.first, "=", (*impl)->MakeEscapedString(i.second)));
       });
-  request.AddHeader("content-type", "application/x-www-form-urlencoded");
-  Status response = MakeRequestWithPayload(CurlImpl::HttpMethod::kPost, request,
-                                           **impl, {form_payload});
+  Status response = MakeRequestWithPayload(CurlImpl::HttpMethod::kPost, context,
+                                           request, **impl, {form_payload});
   if (!response.ok()) return response;
   return {std::unique_ptr<CurlRestResponse>(
-      new CurlRestResponse(options_, std::move(*impl)))};
+      new CurlRestResponse(std::move(options), std::move(*impl)))};
 }
 
 StatusOr<std::unique_ptr<RestResponse>> CurlRestClient::Put(
-    RestRequest const& request,
+    RestContext& context, RestRequest const& request,
     std::vector<absl::Span<char const>> const& payload) {
-  auto impl = CreateCurlImpl(request);
+  auto options = internal::MergeOptions(context.options(), options_);
+  auto impl = CreateCurlImpl(context, request, options);
   if (!impl.ok()) return impl.status();
-  Status response = MakeRequestWithPayload(CurlImpl::HttpMethod::kPut, request,
-                                           **impl, payload);
+  Status response = MakeRequestWithPayload(CurlImpl::HttpMethod::kPut, context,
+                                           request, **impl, payload);
   if (!response.ok()) return response;
   return {std::unique_ptr<CurlRestResponse>(
-      new CurlRestResponse(options_, std::move(*impl)))};
+      new CurlRestResponse(std::move(options), std::move(*impl)))};
 }
 
 std::unique_ptr<RestClient> MakeDefaultRestClient(std::string endpoint_address,
                                                   Options options) {
   auto factory = GetDefaultCurlHandleFactory(options);
-  return std::unique_ptr<RestClient>(new CurlRestClient(
-      std::move(endpoint_address), std::move(factory), std::move(options)));
+  return MakeRestClient(std::move(endpoint_address), std::move(factory),
+                        std::move(options));
 }
 
 std::unique_ptr<RestClient> MakePooledRestClient(std::string endpoint_address,
@@ -221,9 +241,11 @@ std::unique_ptr<RestClient> MakePooledRestClient(std::string endpoint_address,
   if (options.has<ConnectionPoolSizeOption>()) {
     pool_size = options.get<ConnectionPoolSizeOption>();
   }
-  auto factory = std::make_shared<PooledCurlHandleFactory>(pool_size, options);
-  return std::unique_ptr<RestClient>(new CurlRestClient(
-      std::move(endpoint_address), std::move(factory), std::move(options)));
+  auto pool = pool_size > 0 ? std::make_shared<PooledCurlHandleFactory>(
+                                  pool_size, options)
+                            : GetDefaultCurlHandleFactory(options);
+  return MakeRestClient(std::move(endpoint_address), std::move(pool),
+                        std::move(options));
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

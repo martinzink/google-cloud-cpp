@@ -20,34 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_MOCKS_MOCK_INSTANCES_CONNECTION_H
 
 #include "google/cloud/appengine/instances_connection.h"
-#include <gmock/gmock.h>
+#include "google/cloud/appengine/v1/mocks/mock_instances_connection.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in appengine_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace appengine_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockInstancesConnection : public appengine::InstancesConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StreamRange<google::appengine::v1::Instance>, ListInstances,
-              (google::appengine::v1::ListInstancesRequest request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::appengine::v1::Instance>, GetInstance,
-              (google::appengine::v1::GetInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::appengine::v1::OperationMetadataV1>>,
-              DeleteInstance,
-              (google::appengine::v1::DeleteInstanceRequest const& request),
-              (override));
-
-  MOCK_METHOD(future<StatusOr<google::appengine::v1::Instance>>, DebugInstance,
-              (google::appengine::v1::DebugInstanceRequest const& request),
-              (override));
-};
+/// @deprecated Use appengine_v1_mocks::MockInstancesConnection directly.
+using ::google::cloud::appengine_v1_mocks::MockInstancesConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine_mocks

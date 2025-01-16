@@ -19,73 +19,31 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SPEECH_SPEECH_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_SPEECH_SPEECH_CONNECTION_H
 
-#include "google/cloud/speech/internal/speech_retry_traits.h"
-#include "google/cloud/speech/internal/speech_stub.h"
 #include "google/cloud/speech/speech_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/experimental_tag.h"
-#include "google/cloud/future.h"
-#include "google/cloud/internal/async_read_write_stream_impl.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/speech/v1/speech_connection.h"
 
 namespace google {
 namespace cloud {
 namespace speech {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using SpeechRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    speech_internal::SpeechRetryTraits>;
+/// @deprecated Use speech_v1::MakeSpeechConnection directly.
+using ::google::cloud::speech_v1::MakeSpeechConnection;
 
-using SpeechLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        speech_internal::SpeechRetryTraits>;
+/// @deprecated Use speech_v1::SpeechConnection directly.
+using ::google::cloud::speech_v1::SpeechConnection;
 
-using SpeechLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        speech_internal::SpeechRetryTraits>;
+/// @deprecated Use speech_v1::SpeechLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::speech_v1::SpeechLimitedErrorCountRetryPolicy;
 
-class SpeechConnection {
- public:
-  virtual ~SpeechConnection() = 0;
+/// @deprecated Use speech_v1::SpeechLimitedTimeRetryPolicy directly.
+using ::google::cloud::speech_v1::SpeechLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::speech::v1::RecognizeResponse> Recognize(
-      google::cloud::speech::v1::RecognizeRequest const& request);
-
-  virtual future<
-      StatusOr<google::cloud::speech::v1::LongRunningRecognizeResponse>>
-  LongRunningRecognize(
-      google::cloud::speech::v1::LongRunningRecognizeRequest const& request);
-
-  virtual std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
-      google::cloud::speech::v1::StreamingRecognizeRequest,
-      google::cloud::speech::v1::StreamingRecognizeResponse>>
-      AsyncStreamingRecognize(ExperimentalTag);
-};
-
-std::shared_ptr<SpeechConnection> MakeSpeechConnection(Options options = {});
+/// @deprecated Use speech_v1::SpeechRetryPolicy directly.
+using ::google::cloud::speech_v1::SpeechRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace speech
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace speech_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<speech::SpeechConnection> MakeSpeechConnection(
-    std::shared_ptr<SpeechStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace speech_internal
 }  // namespace cloud
 }  // namespace google
 

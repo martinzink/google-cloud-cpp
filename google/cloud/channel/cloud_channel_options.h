@@ -21,41 +21,29 @@
 
 #include "google/cloud/channel/cloud_channel_connection.h"
 #include "google/cloud/channel/cloud_channel_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/channel/v1/cloud_channel_options.h"
 
 namespace google {
 namespace cloud {
 namespace channel {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CloudChannelServiceRetryPolicyOption {
-  using Type = std::shared_ptr<CloudChannelServiceRetryPolicy>;
-};
+/// @deprecated Use channel_v1::CloudChannelServicePollingPolicyOption directly.
+using ::google::cloud::channel_v1::CloudChannelServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudChannelServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use channel_v1::CloudChannelServiceBackoffPolicyOption directly.
+using ::google::cloud::channel_v1::CloudChannelServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudChannelServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// channel_v1::CloudChannelServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::channel_v1::
+    CloudChannelServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CloudChannelServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CloudChannelServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use channel_v1::CloudChannelServicePolicyOptionList directly.
+using ::google::cloud::channel_v1::CloudChannelServicePolicyOptionList;
 
-using CloudChannelServicePolicyOptionList =
-    OptionList<CloudChannelServiceRetryPolicyOption,
-               CloudChannelServiceBackoffPolicyOption,
-               CloudChannelServicePollingPolicyOption,
-               CloudChannelServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use channel_v1::CloudChannelServiceRetryPolicyOption directly.
+using ::google::cloud::channel_v1::CloudChannelServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace channel

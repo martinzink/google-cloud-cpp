@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/webrisk/web_risk_client.h"
+//! [all]
+#include "google/cloud/webrisk/v1/web_risk_client.h"
 #include <iostream>
-#include <stdexcept>
 
 int main(int argc, char* argv[]) try {
   if (argc > 2) {
@@ -23,19 +23,20 @@ int main(int argc, char* argv[]) try {
     return 1;
   }
 
-  namespace webrisk = ::google::cloud::webrisk;
+  namespace webrisk = ::google::cloud::webrisk_v1;
   auto client =
       webrisk::WebRiskServiceClient(webrisk::MakeWebRiskServiceConnection());
 
   auto const uri = std::string{argc == 2 ? argv[1] : "https://www.google.com/"};
-  auto const threat_types = std::vector<webrisk::v1::ThreatType>{
-      webrisk::v1::MALWARE, webrisk::v1::UNWANTED_SOFTWARE};
+  auto const threat_types = {google::cloud::webrisk::v1::MALWARE,
+                             google::cloud::webrisk::v1::UNWANTED_SOFTWARE};
   auto response = client.SearchUris("https://www.google.com/", threat_types);
-  if (!response) throw std::runtime_error(response.status().message());
+  if (!response) throw std::move(response).status();
   std::cout << response->DebugString() << "\n";
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

@@ -20,58 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TALENT_COMPLETION_CONNECTION_H
 
 #include "google/cloud/talent/completion_connection_idempotency_policy.h"
-#include "google/cloud/talent/internal/completion_retry_traits.h"
-#include "google/cloud/talent/internal/completion_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/talent/v4/completion_connection.h"
 
 namespace google {
 namespace cloud {
 namespace talent {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CompletionRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    talent_internal::CompletionRetryTraits>;
+/// @deprecated Use talent_v4::MakeCompletionConnection directly.
+using ::google::cloud::talent_v4::MakeCompletionConnection;
 
-using CompletionLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        talent_internal::CompletionRetryTraits>;
+/// @deprecated Use talent_v4::CompletionConnection directly.
+using ::google::cloud::talent_v4::CompletionConnection;
 
-using CompletionLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        talent_internal::CompletionRetryTraits>;
+/// @deprecated Use talent_v4::CompletionLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::talent_v4::CompletionLimitedErrorCountRetryPolicy;
 
-class CompletionConnection {
- public:
-  virtual ~CompletionConnection() = 0;
+/// @deprecated Use talent_v4::CompletionLimitedTimeRetryPolicy directly.
+using ::google::cloud::talent_v4::CompletionLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::talent::v4::CompleteQueryResponse>
-  CompleteQuery(google::cloud::talent::v4::CompleteQueryRequest const& request);
-};
-
-std::shared_ptr<CompletionConnection> MakeCompletionConnection(
-    Options options = {});
+/// @deprecated Use talent_v4::CompletionRetryPolicy directly.
+using ::google::cloud::talent_v4::CompletionRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace talent
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace talent_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<talent::CompletionConnection> MakeCompletionConnection(
-    std::shared_ptr<CompletionStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace talent_internal
 }  // namespace cloud
 }  // namespace google
 

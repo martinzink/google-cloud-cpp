@@ -1,9 +1,8 @@
 # How-to Guide: Declare a library as GA
 
 This document describes the steps required to promote a `google-cloud-cpp`
-library to GA. The document is intended for contributors to the
-`google-cloud-cpp` libraries. It assumes you are familiar with the build systems
-used in these libraries, and that you are familiar with existing libraries.
+library to GA (General Availability). It is intended for contributors, and
+assumes you are familiar with the build system used in the library.
 
 This document applies to both hand-crafted and generated libraries, but mostly
 it will be using generated libraries as examples.
@@ -12,8 +11,8 @@ it will be using generated libraries as examples.
 
 Declaring a library "GA" is largely a matter of updating the documentation and
 the target names to indicate that the library is no longer experimental. You
-typically need to take three steps, with an intermediate release before the
-last step:
+typically need to take three steps, with an intermediate release before the last
+step:
 
 - Update the README files and Doxygen reference pages to indicate the library is
   now GA.
@@ -23,8 +22,8 @@ last step:
 ## Pre-requisites
 
 Before we can declare a library GA we need to ensure it is of sufficient
-quality. We largely follow the internal guidelines at (go/client-quality).
-For a generated library there are 3 critical checks:
+quality. We largely follow the internal guidelines at (go/client-quality). For a
+generated library there are 3 critical checks:
 
 - The server API is GA: this can be non-trivial if you are developing a library
   while the service is still in private and/or public preview.
@@ -35,63 +34,88 @@ For a generated library there are 3 critical checks:
   you need to wait 28 days after the latest release which included your library.
 
 In addition, we (the Cloud C++ team) require a simple `quickstart.cc` for each
-library.  This program is typically created when the library is generated.
+library. This program is typically created when the library is generated.
 
-## Updating READMEs
+### `cmake/GoogleCloudCppFeatures.cmake`
 
-Verify that the following documents describe the library as GA, or at least do
-not describe the library as experimental:
+Update `cmake/GoogleCloudCppFeatures.cmake`. Move the library from
+`GOOGLE_CLOUD_CPP_EXPERIMENTAL_LIBRARIES` to
+`GOOGLE_CLOUD_CPP_TRANSITION_LIBRARIES`. Do this first as it helps automate the
+following steps.
 
-- `README.md`:
-  - Link the new library README files from the list of GA libraries.
-- `CHANGELOG.md`:
-  - Update the release notes for the next release announcing the new libraries.
-- `google/cloud/${library}/README.md`:
-  - Remove the `:construction:` image
-  - Change the comments stating that the library is experimental to state that
-    the library is GA, and that `google-cloud-cpp` does not follow semantic
-    versioning.
-- `google/cloud/${library}/doc/main.dox`:
-  - Change the comments stating that the library is experimental to state that
-    the library is GA, and that `google-cloud-cpp` does not follow semantic
-    versioning.
-- `google/cloud/${library}/quickstart/README.md`:
-  - Hopefully this file requires no changes.
-- `google/cloud/${library}/CMakeLists.txt`:
-  - Change the definition of the `DOXYGEN_PROJECT_NUMBER` variable from
-    `${PROJECT_VERSION} (Experimental)` to `${PROJECT_VERSION}`.
-
-## Update the targets and rules
-
-Update the top-level `BUILD.bazel` file and **add** rules for `//:${library}`
-and `//:${library}_mocks` without the `experimental-` prefix. You should
-**NOT** remove the existing targets with the `experimental-` prefix. These
-targets are used in the quickstart, and we link the quickstart against the
-**previous** release of `google-cloud-cpp`.  Feel free to mark them as
-deprecated.
-
-Update the CMake targets in `google/cloud/${library}/CMakeLists.txt` and remove
-any existing `experimental-` prefixes. Then add alias targets in the
-`config.cmake.in` file, for example:
-
-```patch
-diff --git a/google/cloud/secretmanager/config.cmake.in b/google/cloud/secretmanager/config.cmake.in
-index ad00ed7eb..996572a0c 100644
---- a/google/cloud/secretmanager/config.cmake.in
-+++ b/google/cloud/secretmanager/config.cmake.in
-@@ -20,3 +20,8 @@ find_dependency(google_cloud_cpp_grpc_utils)
- find_dependency(absl)
-
- include("${CMAKE_CURRENT_LIST_DIR}/google_cloud_cpp_secretmanager-targets.cmake")
-+
-+if (NOT TARGET google-cloud-cpp::experimental-secretmanager)
-+    add_library(google-cloud-cpp::experimental-secretmanager ALIAS
-+                google-cloud-cpp::secretmanager)
-+endif ()
+```shell
+mapfile -t ga < <(cmake -P cmake/print-ga-libraries.cmake 2>&1 |
+  grep -E -v 'storage|bigtable|spanner|pubsub|common|grpc_utils')
 ```
 
-## Remove the `experimental-` rules and targets
+### `CHANGELOG.md`
 
-Once a release is created *and* the release is included in `vcpkg`, change the
-quickstart guide to reference the rules and targets without an `experimental-`
-prefix. Then you can remove these rules and targets.
+Update the release notes for the next release announcing the new libraries.
+
+### `README.md`
+
+Link the new library README files from the list of GA libraries. This is now
+automated. As part of the `checkers-pr` script.
+
+### `google/cloud/${library}/README.md`:
+
+Remove the `:construction:` image
+
+```shell
+for lib in "${ga[@]}"; do sed -i '/:construction:/,+1d' google/cloud/${lib}/README.md; done
+```
+
+Change the comments stating that the library is experimental to state that the
+library is GA, and that `google-cloud-cpp` does not follow semantic versioning.
+
+```shell
+for lib in "${ga[@]}"; do sed -i '/^This library is \*\*experimental/,+1d' google/cloud/${lib}/README.md; done
+for lib in "${ga[@]}"; do sed -i 's/^Please note that the Google Cloud C/While this library is **GA**, please note that the Google Cloud C/' google/cloud/${lib}/README.md; done
+```
+
+### `google/cloud/${library}/doc/main.dox`:
+
+Change the comments stating that the library is experimental to state that the
+library is GA, and that `google-cloud-cpp` does not follow semantic versioning.
+
+```shell
+for lib in "${ga[@]}"; do sed -i '/^This library is \*\*experimental/,+1d' google/cloud/${lib}/doc/main.dox; done
+for lib in "${ga[@]}"; do sed -i 's/^Please note that the Google Cloud C/While this library is **GA**, please note that the Google Cloud C/' google/cloud/${lib}/doc/main.dox; done
+```
+
+### `google/cloud/${library}/CMakeLists.txt`:
+
+Update the CMake library targets and the quickstart runner.
+
+```shell
+for lib in "${ga[@]}"; do sed -i 's/EXPERIMENTAL/TRANSITION/' google/cloud/${lib}/CMakeLists.txt; done
+for lib in "${ga[@]}"; do sed -i 's/experimental-//' google/cloud/${lib}/CMakeLists.txt; done
+```
+
+## Reference the GA targets in the quickstarts
+
+For Bazel, we can drop the `experimental-` prefix as soon as renovate bot
+updates our builds to use a release with the GA version of the library.
+
+```shell
+for lib in "${ga[@]}"; do sed -i 's/experimental-//' google/cloud/${lib}/quickstart/BUILD.bazel; done
+```
+
+For CMake, we can drop the `experimental-` prefix as soon as a release with the
+GA version of the library is included in `vcpkg`.
+
+```shell
+for lib in "${ga[@]}"; do sed -i 's/experimental-//' google/cloud/${lib}/quickstart/CMakeLists.txt; done
+```
+
+## (Eventually) Remove the `experimental-` rules and targets
+
+In the following release, move the libraries from
+`GOOGLE_CLOUD_CPP_TRANSITION_LIBRARIES` to `GOOGLE_CLOUD_CPP_GA_LIBRARIES`, in
+`cmake/GoogleCloudCppFeatures.cmake`.
+
+Then remove the CMake aliases.
+
+```shell
+for lib in "${ga[@]}"; do sed -i 's/TRANSITION//' google/cloud/${lib}/CMakeLists.txt; done
+```

@@ -14,6 +14,7 @@
 
 #include "google/cloud/spanner/internal/instance_admin_metadata.h"
 #include "google/cloud/internal/api_client_header.h"
+#include "google/cloud/internal/url_encode.h"
 #include <grpcpp/grpcpp.h>
 
 namespace google {
@@ -21,73 +22,77 @@ namespace cloud {
 namespace spanner_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-namespace gcsa = ::google::spanner::admin::instance::v1;
+namespace gsai = ::google::spanner::admin::instance;
 
 InstanceAdminMetadata::InstanceAdminMetadata(
     std::shared_ptr<InstanceAdminStub> child)
     : child_(std::move(child)),
-      api_client_header_(google::cloud::internal::ApiClientHeader()) {}
+      api_client_header_(
+          google::cloud::internal::HandCraftedLibClientHeader()) {}
 
-StatusOr<gcsa::Instance> InstanceAdminMetadata::GetInstance(
-    grpc::ClientContext& context, gcsa::GetInstanceRequest const& request) {
-  SetMetadata(context, "name=" + request.name());
+StatusOr<gsai::v1::Instance> InstanceAdminMetadata::GetInstance(
+    grpc::ClientContext& context, gsai::v1::GetInstanceRequest const& request) {
+  SetMetadata(context, "name=" + internal::UrlEncode(request.name()));
   return child_->GetInstance(context, request);
 }
 
 future<StatusOr<google::longrunning::Operation>>
 InstanceAdminMetadata::AsyncCreateInstance(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-    gcsa::CreateInstanceRequest const& request) {
-  SetMetadata(*context, "parent=" + request.parent());
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+    gsai::v1::CreateInstanceRequest const& request) {
+  SetMetadata(*context, "parent=" + internal::UrlEncode(request.parent()));
   return child_->AsyncCreateInstance(cq, std::move(context), request);
 }
 
 future<StatusOr<google::longrunning::Operation>>
 InstanceAdminMetadata::AsyncUpdateInstance(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-    gcsa::UpdateInstanceRequest const& request) {
-  SetMetadata(*context, "instance.name=" + request.instance().name());
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+    gsai::v1::UpdateInstanceRequest const& request) {
+  SetMetadata(*context, "instance.name=" +
+                            internal::UrlEncode(request.instance().name()));
   return child_->AsyncUpdateInstance(cq, std::move(context), request);
 }
 
 Status InstanceAdminMetadata::DeleteInstance(
-    grpc::ClientContext& context, gcsa::DeleteInstanceRequest const& request) {
-  SetMetadata(context, "name=" + request.name());
+    grpc::ClientContext& context,
+    gsai::v1::DeleteInstanceRequest const& request) {
+  SetMetadata(context, "name=" + internal::UrlEncode(request.name()));
   return child_->DeleteInstance(context, request);
 }
 
-StatusOr<gcsa::InstanceConfig> InstanceAdminMetadata::GetInstanceConfig(
+StatusOr<gsai::v1::InstanceConfig> InstanceAdminMetadata::GetInstanceConfig(
     grpc::ClientContext& context,
-    gcsa::GetInstanceConfigRequest const& request) {
-  SetMetadata(context, "name=" + request.name());
+    gsai::v1::GetInstanceConfigRequest const& request) {
+  SetMetadata(context, "name=" + internal::UrlEncode(request.name()));
   return child_->GetInstanceConfig(context, request);
 }
 
-StatusOr<gcsa::ListInstanceConfigsResponse>
+StatusOr<gsai::v1::ListInstanceConfigsResponse>
 InstanceAdminMetadata::ListInstanceConfigs(
     grpc::ClientContext& context,
-    gcsa::ListInstanceConfigsRequest const& request) {
-  SetMetadata(context, "parent=" + request.parent());
+    gsai::v1::ListInstanceConfigsRequest const& request) {
+  SetMetadata(context, "parent=" + internal::UrlEncode(request.parent()));
   return child_->ListInstanceConfigs(context, request);
 }
 
-StatusOr<gcsa::ListInstancesResponse> InstanceAdminMetadata::ListInstances(
-    grpc::ClientContext& context, gcsa::ListInstancesRequest const& request) {
-  SetMetadata(context, "parent=" + request.parent());
+StatusOr<gsai::v1::ListInstancesResponse> InstanceAdminMetadata::ListInstances(
+    grpc::ClientContext& context,
+    gsai::v1::ListInstancesRequest const& request) {
+  SetMetadata(context, "parent=" + internal::UrlEncode(request.parent()));
   return child_->ListInstances(context, request);
 }
 
 StatusOr<google::iam::v1::Policy> InstanceAdminMetadata::GetIamPolicy(
     grpc::ClientContext& context,
     google::iam::v1::GetIamPolicyRequest const& request) {
-  SetMetadata(context, "resource=" + request.resource());
+  SetMetadata(context, "resource=" + internal::UrlEncode(request.resource()));
   return child_->GetIamPolicy(context, request);
 }
 
 StatusOr<google::iam::v1::Policy> InstanceAdminMetadata::SetIamPolicy(
     grpc::ClientContext& context,
     google::iam::v1::SetIamPolicyRequest const& request) {
-  SetMetadata(context, "resource=" + request.resource());
+  SetMetadata(context, "resource=" + internal::UrlEncode(request.resource()));
   return child_->SetIamPolicy(context, request);
 }
 
@@ -95,22 +100,22 @@ StatusOr<google::iam::v1::TestIamPermissionsResponse>
 InstanceAdminMetadata::TestIamPermissions(
     grpc::ClientContext& context,
     google::iam::v1::TestIamPermissionsRequest const& request) {
-  SetMetadata(context, "resource=" + request.resource());
+  SetMetadata(context, "resource=" + internal::UrlEncode(request.resource()));
   return child_->TestIamPermissions(context, request);
 }
 
 future<StatusOr<google::longrunning::Operation>>
 InstanceAdminMetadata::AsyncGetOperation(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
     google::longrunning::GetOperationRequest const& request) {
-  SetMetadata(*context, "name=" + request.name());
+  SetMetadata(*context, "name=" + internal::UrlEncode(request.name()));
   return child_->AsyncGetOperation(cq, std::move(context), request);
 }
 
 future<Status> InstanceAdminMetadata::AsyncCancelOperation(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
     google::longrunning::CancelOperationRequest const& request) {
-  SetMetadata(*context, "name=" + request.name());
+  SetMetadata(*context, "name=" + internal::UrlEncode(request.name()));
   return child_->AsyncCancelOperation(cq, std::move(context), request);
 }
 

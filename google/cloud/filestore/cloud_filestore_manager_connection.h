@@ -20,99 +20,34 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_FILESTORE_CLOUD_FILESTORE_MANAGER_CONNECTION_H
 
 #include "google/cloud/filestore/cloud_filestore_manager_connection_idempotency_policy.h"
-#include "google/cloud/filestore/internal/cloud_filestore_manager_retry_traits.h"
-#include "google/cloud/filestore/internal/cloud_filestore_manager_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/filestore/v1/cloud_filestore_manager_connection.h"
 
 namespace google {
 namespace cloud {
 namespace filestore {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CloudFilestoreManagerRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        filestore_internal::CloudFilestoreManagerRetryTraits>;
+/// @deprecated Use filestore_v1::MakeCloudFilestoreManagerConnection directly.
+using ::google::cloud::filestore_v1::MakeCloudFilestoreManagerConnection;
 
-using CloudFilestoreManagerLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        filestore_internal::CloudFilestoreManagerRetryTraits>;
+/// @deprecated Use filestore_v1::CloudFilestoreManagerConnection directly.
+using ::google::cloud::filestore_v1::CloudFilestoreManagerConnection;
 
-using CloudFilestoreManagerLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        filestore_internal::CloudFilestoreManagerRetryTraits>;
+/// @deprecated Use
+/// filestore_v1::CloudFilestoreManagerLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::filestore_v1::
+    CloudFilestoreManagerLimitedErrorCountRetryPolicy;
 
-class CloudFilestoreManagerConnection {
- public:
-  virtual ~CloudFilestoreManagerConnection() = 0;
+/// @deprecated Use filestore_v1::CloudFilestoreManagerLimitedTimeRetryPolicy
+/// directly.
+using ::google::cloud::filestore_v1::
+    CloudFilestoreManagerLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::filestore::v1::Instance> ListInstances(
-      google::cloud::filestore::v1::ListInstancesRequest request);
-
-  virtual StatusOr<google::cloud::filestore::v1::Instance> GetInstance(
-      google::cloud::filestore::v1::GetInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::filestore::v1::Instance>>
-  CreateInstance(
-      google::cloud::filestore::v1::CreateInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::filestore::v1::Instance>>
-  UpdateInstance(
-      google::cloud::filestore::v1::UpdateInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::filestore::v1::Instance>>
-  RestoreInstance(
-      google::cloud::filestore::v1::RestoreInstanceRequest const& request);
-
-  virtual future<StatusOr<google::cloud::common::OperationMetadata>>
-  DeleteInstance(
-      google::cloud::filestore::v1::DeleteInstanceRequest const& request);
-
-  virtual StreamRange<google::cloud::filestore::v1::Backup> ListBackups(
-      google::cloud::filestore::v1::ListBackupsRequest request);
-
-  virtual StatusOr<google::cloud::filestore::v1::Backup> GetBackup(
-      google::cloud::filestore::v1::GetBackupRequest const& request);
-
-  virtual future<StatusOr<google::cloud::filestore::v1::Backup>> CreateBackup(
-      google::cloud::filestore::v1::CreateBackupRequest const& request);
-
-  virtual future<StatusOr<google::cloud::common::OperationMetadata>>
-  DeleteBackup(
-      google::cloud::filestore::v1::DeleteBackupRequest const& request);
-
-  virtual future<StatusOr<google::cloud::filestore::v1::Backup>> UpdateBackup(
-      google::cloud::filestore::v1::UpdateBackupRequest const& request);
-};
-
-std::shared_ptr<CloudFilestoreManagerConnection>
-MakeCloudFilestoreManagerConnection(Options options = {});
+/// @deprecated Use filestore_v1::CloudFilestoreManagerRetryPolicy directly.
+using ::google::cloud::filestore_v1::CloudFilestoreManagerRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace filestore
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace filestore_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<filestore::CloudFilestoreManagerConnection>
-MakeCloudFilestoreManagerConnection(
-    std::shared_ptr<CloudFilestoreManagerStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace filestore_internal
 }  // namespace cloud
 }  // namespace google
 

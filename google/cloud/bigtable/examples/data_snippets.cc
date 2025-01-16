@@ -54,11 +54,14 @@ void Apply(google::cloud::bigtable::Table table,
 void ApplyRelaxedIdempotency(google::cloud::bigtable::Table const& table,
                              std::vector<std::string> const& argv) {
   //! [apply relaxed idempotency]
+  using ::google::cloud::Options;
   namespace cbt = ::google::cloud::bigtable;
   [](std::string const& project_id, std::string const& instance_id,
      std::string const& table_id, std::string const& row_key) {
-    cbt::Table table(cbt::MakeDataClient(project_id, instance_id), table_id,
-                     cbt::AlwaysRetryMutationPolicy());
+    cbt::Table table(cbt::MakeDataConnection(),
+                     cbt::TableResource(project_id, instance_id, table_id),
+                     Options{}.set<cbt::IdempotentMutationPolicyOption>(
+                         cbt::AlwaysRetryMutationPolicy().clone()));
     // Normally this is not retried on transient failures, because the operation
     // is not idempotent (each retry would set a different timestamp), in this
     // case it would, because the table is setup to always retry.
@@ -74,11 +77,14 @@ void ApplyRelaxedIdempotency(google::cloud::bigtable::Table const& table,
 void ApplyCustomRetry(google::cloud::bigtable::Table const& table,
                       std::vector<std::string> const& argv) {
   //! [apply custom retry]
+  using ::google::cloud::Options;
   namespace cbt = ::google::cloud::bigtable;
   [](std::string const& project_id, std::string const& instance_id,
      std::string const& table_id, std::string const& row_key) {
-    cbt::Table table(cbt::MakeDataClient(project_id, instance_id), table_id,
-                     cbt::LimitedErrorCountRetryPolicy(7));
+    cbt::Table table(cbt::MakeDataConnection(),
+                     cbt::TableResource(project_id, instance_id, table_id),
+                     Options{}.set<cbt::DataRetryPolicyOption>(
+                         cbt::DataLimitedErrorCountRetryPolicy(7).clone()));
     cbt::SingleRowMutation mutation(
         row_key, cbt::SetCell("fam", "some-column",
                               std::chrono::milliseconds(0), "some-value"));
@@ -154,7 +160,7 @@ void CheckAndMutate(google::cloud::bigtable::Table table,
                                 {cbt::SetCell("fam", "flip-flop", "on"),
                                  cbt::SetCell("fam", "flop-flip", "off")});
 
-    if (!branch) throw std::runtime_error(branch.status().message());
+    if (!branch) throw std::move(branch).status();
     if (*branch == cbt::MutationBranch::kPredicateMatched) {
       std::cout << "The predicate was matched\n";
     } else {
@@ -182,7 +188,7 @@ void CheckAndMutateNotPresent(google::cloud::bigtable::Table table,
         row_key, std::move(predicate), {},
         {cbt::SetCell("fam", "had-test-column", "false")});
 
-    if (!branch) throw std::runtime_error(branch.status().message());
+    if (!branch) throw std::move(branch).status();
     if (*branch == cbt::MutationBranch::kPredicateMatched) {
       std::cout << "The predicate was matched\n";
     } else {
@@ -236,7 +242,7 @@ void SampleRows(google::cloud::bigtable::Table table,
   using ::google::cloud::StatusOr;
   [](cbt::Table table) {
     StatusOr<std::vector<cbt::RowKeySample>> samples = table.SampleRows();
-    if (!samples) throw std::runtime_error(samples.status().message());
+    if (!samples) throw std::move(samples).status();
     for (auto const& sample : *samples) {
       std::cout << "key=" << sample.row_key << " - " << sample.offset_bytes
                 << "\n";
@@ -303,7 +309,7 @@ void RowExists(google::cloud::bigtable::Table table,
 
     // Read a row, this returns a tuple (bool, row)
     StatusOr<std::pair<bool, cbt::Row>> status = table.ReadRow(row_key, filter);
-    if (!status) throw std::runtime_error(status.status().message());
+    if (!status) throw std::move(status).status();
 
     if (!status->first) {
       std::cout << "Row  not found\n";
@@ -336,13 +342,13 @@ void MutateDeleteColumns(std::vector<std::string> const& argv) {
       throw std::runtime_error("Invalid argument (" + *it +
                                ") should be in family:column format");
     }
-    columns.emplace_back(
-        std::make_pair(it->substr(0, pos), it->substr(pos + 1)));
+    columns.emplace_back(it->substr(0, pos), it->substr(pos + 1));
   }
   //! [connect data]
   google::cloud::bigtable::Table table(
-      google::cloud::bigtable::MakeDataClient(project_id, instance_id),
-      table_id);
+      google::cloud::bigtable::MakeDataConnection(),
+      google::cloud::bigtable::TableResource(project_id, instance_id,
+                                             table_id));
   //! [connect data]
 
   // [START bigtable_mutate_delete_columns]
@@ -400,8 +406,9 @@ void MutateDeleteRowsCommand(std::vector<std::string> const& argv) {
   auto const table_id = *it++;
   std::vector<std::string> rows(it, argv.cend());
   google::cloud::bigtable::Table table(
-      google::cloud::bigtable::MakeDataClient(project_id, instance_id),
-      table_id);
+      google::cloud::bigtable::MakeDataConnection(),
+      google::cloud::bigtable::TableResource(project_id, instance_id,
+                                             table_id));
   MutateDeleteRows(table, std::move(rows));
 }
 
@@ -468,8 +475,9 @@ void MutateInsertUpdateRowsCommand(std::vector<std::string> const& argv) {
   auto const table_id = *it++;
   std::vector<std::string> rows(it, argv.cend());
   google::cloud::bigtable::Table table(
-      google::cloud::bigtable::MakeDataClient(project_id, instance_id),
-      table_id);
+      google::cloud::bigtable::MakeDataConnection(),
+      google::cloud::bigtable::TableResource(project_id, instance_id,
+                                             table_id));
   MutateInsertUpdateRows(table, std::move(rows));
 }
 
@@ -484,7 +492,7 @@ void RenameColumn(google::cloud::bigtable::Table table,
     StatusOr<std::pair<bool, cbt::Row>> row =
         table.ReadRow(key, cbt::Filter::ColumnName(family, old_name));
 
-    if (!row) throw std::runtime_error(row.status().message());
+    if (!row) throw std::move(row).status();
     if (!row->first) throw std::runtime_error("Cannot find row " + key);
 
     cbt::SingleRowMutation mutation(key);
@@ -549,7 +557,7 @@ void InsertTestData(google::cloud::bigtable::Table table,
   for (auto const& f : failures) {
     std::cerr << "index[" << f.original_index() << "]=" << f.status() << "\n";
   }
-  throw std::runtime_error(failures.front().status().message());
+  throw google::cloud::Status(failures.front().status());
 }
 
 // This command just generates data suitable for other examples to run. This
@@ -652,7 +660,7 @@ void WriteIncrement(google::cloud::bigtable::Table table,
         row_key, cbt::ReadModifyWriteRule::IncrementAmount(
                      column_family, "connected_wifi", -1));
 
-    if (!row) throw std::runtime_error(row.status().message());
+    if (!row) throw std::move(row).status();
     std::cout << "Successfully updated row" << row->row_key() << "\n";
   }
   // [END bigtable_writes_increment]
@@ -679,7 +687,7 @@ void WriteConditionally(google::cloud::bigtable::Table table,
             row_key, std::move(predicate),
             {cbt::SetCell(column_family, "os_name", timestamp, "android")}, {});
 
-    if (!branch) throw std::runtime_error(branch.status().message());
+    if (!branch) throw std::move(branch).status();
     if (*branch == cbt::MutationBranch::kPredicateMatched) {
       std::cout << "Successfully updated row\n";
     } else {
@@ -698,8 +706,8 @@ void ConfigureConnectionPoolSize(std::vector<std::string> const& argv) {
      std::string const& table_id) {
     auto constexpr kPoolSize = 10;
     auto options = gc::Options{}.set<gc::GrpcNumChannelsOption>(kPoolSize);
-    auto table = cbt::Table(
-        cbt::MakeDataClient(project_id, instance_id, options), table_id);
+    cbt::Table table(cbt::MakeDataConnection(options),
+                     cbt::TableResource(project_id, instance_id, table_id));
     std::cout << "Connected with channel pool size of " << kPoolSize << "\n";
   }
   // [END bigtable_configure_connection_pool]
@@ -714,17 +722,18 @@ void RunMutateExamples(
 
   // Create a table to run the tests on
   auto table_id = cbt::testing::RandomTableId(generator);
-  google::bigtable::admin::v2::GcRule gc;
-  gc.set_max_num_versions(10);
   google::bigtable::admin::v2::Table t;
   auto& families = *t.mutable_column_families();
-  *families["fam"].mutable_gc_rule() = std::move(gc);
+  families["fam"].mutable_gc_rule()->set_max_num_versions(10);
   auto schema = admin.CreateTable(cbt::InstanceName(project_id, instance_id),
                                   table_id, std::move(t));
-  if (!schema) throw std::runtime_error(schema.status().message());
+  if (!schema) throw std::move(schema).status();
 
-  cbt::Table table(cbt::MakeDataClient(project_id, instance_id), table_id,
-                   cbt::AlwaysRetryMutationPolicy());
+  using ::google::cloud::Options;
+  cbt::Table table(cbt::MakeDataConnection(),
+                   cbt::TableResource(project_id, instance_id, table_id),
+                   Options{}.set<cbt::IdempotentMutationPolicyOption>(
+                       cbt::AlwaysRetryMutationPolicy().clone()));
 
   std::cout << "Running MutateInsertUpdateRows() example [1]" << std::endl;
   MutateInsertUpdateRows(table, {"row1", "fam:col1=value1.1",
@@ -744,17 +753,18 @@ void RunWriteExamples(
 
   // Create a table to run the tests on
   auto table_id = google::cloud::bigtable::testing::RandomTableId(generator);
-  google::bigtable::admin::v2::GcRule gc;
-  gc.set_max_num_versions(11);
   google::bigtable::admin::v2::Table t;
   auto& families = *t.mutable_column_families();
-  *families["stats_summary"].mutable_gc_rule() = std::move(gc);
+  families["stats_summary"].mutable_gc_rule()->set_max_num_versions(11);
   auto schema = admin.CreateTable(cbt::InstanceName(project_id, instance_id),
                                   table_id, std::move(t));
-  if (!schema) throw std::runtime_error(schema.status().message());
+  if (!schema) throw std::move(schema).status();
 
-  cbt::Table table(cbt::MakeDataClient(project_id, instance_id), table_id,
-                   cbt::AlwaysRetryMutationPolicy());
+  using ::google::cloud::Options;
+  cbt::Table table(cbt::MakeDataConnection(),
+                   cbt::TableResource(project_id, instance_id, table_id),
+                   Options{}.set<cbt::IdempotentMutationPolicyOption>(
+                       cbt::AlwaysRetryMutationPolicy().clone()));
 
   std::cout << "Running WriteSimple() example" << std::endl;
   WriteSimple(table, {});
@@ -777,17 +787,18 @@ void RunDataExamples(
   // Create a table to run the tests on
   auto table_id = cbt::testing::RandomTableId(generator);
   std::cout << "Creating table " << table_id << std::endl;
-  google::bigtable::admin::v2::GcRule gc;
-  gc.set_max_num_versions(10);
   google::bigtable::admin::v2::Table t;
   auto& families = *t.mutable_column_families();
-  *families["fam"].mutable_gc_rule() = std::move(gc);
+  families["fam"].mutable_gc_rule()->set_max_num_versions(10);
   auto schema = admin.CreateTable(cbt::InstanceName(project_id, instance_id),
                                   table_id, std::move(t));
-  if (!schema) throw std::runtime_error(schema.status().message());
+  if (!schema) throw std::move(schema).status();
 
-  cbt::Table table(cbt::MakeDataClient(project_id, instance_id), table_id,
-                   cbt::AlwaysRetryMutationPolicy());
+  using ::google::cloud::Options;
+  cbt::Table table(cbt::MakeDataConnection(),
+                   cbt::TableResource(project_id, instance_id, table_id),
+                   Options{}.set<cbt::IdempotentMutationPolicyOption>(
+                       cbt::AlwaysRetryMutationPolicy().clone()));
 
   std::cout << "\nRunning ConfigureConnectionPoolSize()" << std::endl;
   ConfigureConnectionPoolSize({project_id, instance_id, table_id});

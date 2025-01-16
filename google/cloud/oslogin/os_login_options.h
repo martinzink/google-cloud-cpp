@@ -21,35 +21,26 @@
 
 #include "google/cloud/oslogin/os_login_connection.h"
 #include "google/cloud/oslogin/os_login_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/oslogin/v1/os_login_options.h"
 
 namespace google {
 namespace cloud {
 namespace oslogin {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct OsLoginServiceRetryPolicyOption {
-  using Type = std::shared_ptr<OsLoginServiceRetryPolicy>;
-};
+/// @deprecated Use oslogin_v1::OsLoginServiceBackoffPolicyOption directly.
+using ::google::cloud::oslogin_v1::OsLoginServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct OsLoginServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use oslogin_v1::OsLoginServiceConnectionIdempotencyPolicyOption
+/// directly.
+using ::google::cloud::oslogin_v1::
+    OsLoginServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct OsLoginServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<OsLoginServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use oslogin_v1::OsLoginServicePolicyOptionList directly.
+using ::google::cloud::oslogin_v1::OsLoginServicePolicyOptionList;
 
-using OsLoginServicePolicyOptionList =
-    OptionList<OsLoginServiceRetryPolicyOption,
-               OsLoginServiceBackoffPolicyOption,
-               OsLoginServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use oslogin_v1::OsLoginServiceRetryPolicyOption directly.
+using ::google::cloud::oslogin_v1::OsLoginServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace oslogin

@@ -29,12 +29,13 @@ namespace spanner {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
+namespace gsad = ::google::spanner::admin::database;
+
 using ::google::cloud::spanner_mocks::MockDatabaseAdminConnection;
 using ::google::cloud::testing_util::StatusIs;
 using ::testing::AtLeast;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
-namespace gcsa = ::google::spanner::admin::database::v1;
 
 /// @test Verify DatabaseAdminClient uses CreateDatabase() correctly.
 TEST(DatabaseAdminClientTest, CreateDatabase) {
@@ -47,9 +48,9 @@ TEST(DatabaseAdminClientTest, CreateDatabase) {
           [&dbase](DatabaseAdminConnection::CreateDatabaseParams const& p) {
             EXPECT_EQ(p.database, dbase);
             EXPECT_THAT(p.extra_statements, ElementsAre("-- NOT SQL for test"));
-            gcsa::Database database;
+            gsad::v1::Database database;
             database.set_name(dbase.FullName());
-            database.set_state(gcsa::Database::CREATING);
+            database.set_state(gsad::v1::Database::CREATING);
             return make_ready_future(make_status_or(database));
           });
 
@@ -57,10 +58,10 @@ TEST(DatabaseAdminClientTest, CreateDatabase) {
   auto fut = client.CreateDatabase(dbase, {"-- NOT SQL for test"});
   ASSERT_EQ(std::future_status::ready, fut.wait_for(std::chrono::seconds(0)));
   auto db = fut.get();
-  EXPECT_STATUS_OK(db);
+  ASSERT_STATUS_OK(db);
 
   EXPECT_EQ(dbase.FullName(), db->name());
-  EXPECT_EQ(gcsa::Database::CREATING, db->state());
+  EXPECT_EQ(gsad::v1::Database::CREATING, db->state());
 }
 
 /// @test Verify DatabaseAdminClient uses GetDatabase() correctly.
@@ -71,16 +72,16 @@ TEST(DatabaseAdminClientTest, GetDatabase) {
   EXPECT_CALL(*mock, GetDatabase)
       .WillOnce([&dbase](DatabaseAdminConnection::GetDatabaseParams const& p) {
         EXPECT_EQ(dbase, p.database);
-        gcsa::Database response;
+        gsad::v1::Database response;
         response.set_name(p.database.FullName());
-        response.set_state(gcsa::Database::READY);
+        response.set_state(gsad::v1::Database::READY);
         return response;
       });
 
   DatabaseAdminClient client(std::move(mock));
   auto response = client.GetDatabase(dbase);
-  EXPECT_STATUS_OK(response);
-  EXPECT_EQ(gcsa::Database::READY, response->state());
+  ASSERT_STATUS_OK(response);
+  EXPECT_EQ(gsad::v1::Database::READY, response->state());
   EXPECT_EQ(dbase.FullName(), response->name());
 }
 
@@ -94,16 +95,16 @@ TEST(DatabaseAdminClientTest, GetDatabaseDdl) {
       .WillOnce([&expected_name](
                     DatabaseAdminConnection::GetDatabaseDdlParams const& p) {
         EXPECT_EQ(expected_name, p.database);
-        gcsa::GetDatabaseDdlResponse response;
+        gsad::v1::GetDatabaseDdlResponse response;
         response.add_statements("CREATE DATABASE test-database");
         return response;
       });
 
   DatabaseAdminClient client(std::move(mock));
   auto response = client.GetDatabaseDdl(expected_name);
-  EXPECT_STATUS_OK(response);
+  ASSERT_STATUS_OK(response);
   ASSERT_EQ(1, response->statements_size());
-  ASSERT_EQ("CREATE DATABASE test-database", response->statements(0));
+  EXPECT_EQ("CREATE DATABASE test-database", response->statements(0));
 }
 
 /// @test Verify DatabaseAdminClient uses UpdateDatabase() correctly.
@@ -117,7 +118,7 @@ TEST(DatabaseAdminClientTest, UpdateDatabase) {
           [&dbase](DatabaseAdminConnection::UpdateDatabaseParams const& p) {
             EXPECT_EQ(p.database, dbase);
             EXPECT_THAT(p.statements, ElementsAre("-- test only: NOT SQL"));
-            gcsa::UpdateDatabaseDdlMetadata metadata;
+            gsad::v1::UpdateDatabaseDdlMetadata metadata;
             metadata.add_statements("-- test only: NOT SQL");
             return make_ready_future(make_status_or(metadata));
           });
@@ -126,7 +127,7 @@ TEST(DatabaseAdminClientTest, UpdateDatabase) {
   auto fut = client.UpdateDatabase(dbase, {"-- test only: NOT SQL"});
   ASSERT_EQ(std::future_status::ready, fut.wait_for(std::chrono::seconds(0)));
   auto db = fut.get();
-  EXPECT_STATUS_OK(db);
+  ASSERT_STATUS_OK(db);
 
   EXPECT_THAT(db->statements(), ElementsAre("-- test only: NOT SQL"));
 }
@@ -140,13 +141,13 @@ TEST(DatabaseAdminClientTest, ListDatabases) {
         EXPECT_EQ(expected_instance, p.instance);
 
         return google::cloud::internal::MakePaginationRange<ListDatabaseRange>(
-            gcsa::ListDatabasesRequest{},
-            [](gcsa::ListDatabasesRequest const&) {
-              return StatusOr<gcsa::ListDatabasesResponse>(
+            gsad::v1::ListDatabasesRequest{},
+            [](gsad::v1::ListDatabasesRequest const&) {
+              return StatusOr<gsad::v1::ListDatabasesResponse>(
                   Status(StatusCode::kPermissionDenied, "uh-oh"));
             },
-            [](gcsa::ListDatabasesResponse const&) {
-              return std::vector<gcsa::Database>{};
+            [](gsad::v1::ListDatabasesResponse const&) {
+              return std::vector<gsad::v1::Database>{};
             });
       });
 
@@ -176,11 +177,11 @@ TEST(DatabaseAdminClientTest, GetIamPolicy) {
 
   DatabaseAdminClient client(std::move(mock));
   auto response = client.GetIamPolicy(expected_db);
-  EXPECT_STATUS_OK(response);
+  ASSERT_STATUS_OK(response);
   ASSERT_EQ(1, response->bindings().size());
-  ASSERT_EQ(expected_role, response->bindings().Get(0).role());
+  EXPECT_EQ(expected_role, response->bindings().Get(0).role());
   ASSERT_EQ(1, response->bindings().Get(0).members().size());
-  ASSERT_EQ(expected_member, response->bindings().Get(0).members().Get(0));
+  EXPECT_EQ(expected_member, response->bindings().Get(0).members().Get(0));
 }
 
 /// @test Verify DatabaseAdminClient uses SetIamPolicy() correctly.
@@ -335,8 +336,8 @@ TEST(DatabaseAdminClientTest, TestIamPermissions) {
           });
   DatabaseAdminClient client(std::move(mock));
   auto response = client.TestIamPermissions(expected_db, {expected_permission});
-  EXPECT_STATUS_OK(response);
-  EXPECT_EQ(1, response->permissions_size());
+  ASSERT_STATUS_OK(response);
+  ASSERT_EQ(1, response->permissions_size());
   EXPECT_EQ(expected_permission, response->permissions(0));
 }
 
@@ -362,9 +363,9 @@ TEST(DatabaseAdminClientTest, CreateBackup) {
         EXPECT_EQ(p.expire_timestamp, expire_time);
         EXPECT_EQ(p.version_time, version_time);
         EXPECT_EQ(p.backup_id, backup_id);
-        gcsa::Backup backup;
+        gsad::v1::Backup backup;
         backup.set_name(backup_name.FullName());
-        backup.set_state(gcsa::Backup::CREATING);
+        backup.set_state(gsad::v1::Backup::CREATING);
         return make_ready_future(make_status_or(backup));
       })
       .WillOnce([&dbase, &expire_time, &backup_id, &backup_name](
@@ -382,9 +383,9 @@ TEST(DatabaseAdminClientTest, CreateBackup) {
                       .value());  // loss of precision
         EXPECT_FALSE(p.version_time.has_value());
         EXPECT_EQ(p.backup_id, backup_id);
-        gcsa::Backup backup;
+        gsad::v1::Backup backup;
         backup.set_name(backup_name.FullName());
-        backup.set_state(gcsa::Backup::CREATING);
+        backup.set_state(gsad::v1::Backup::CREATING);
         return make_ready_future(make_status_or(backup));
       });
 
@@ -392,9 +393,9 @@ TEST(DatabaseAdminClientTest, CreateBackup) {
   auto fut = client.CreateBackup(dbase, backup_id, expire_time, version_time);
   ASSERT_EQ(std::future_status::ready, fut.wait_for(std::chrono::seconds(0)));
   auto backup = fut.get();
-  EXPECT_STATUS_OK(backup);
+  ASSERT_STATUS_OK(backup);
   EXPECT_EQ(backup_name.FullName(), backup->name());
-  EXPECT_EQ(gcsa::Backup::CREATING, backup->state());
+  EXPECT_EQ(gsad::v1::Backup::CREATING, backup->state());
 
   // Exercise the old interface with just a `time_point` expiration parameter.
   fut = client.CreateBackup(
@@ -402,9 +403,9 @@ TEST(DatabaseAdminClientTest, CreateBackup) {
       expire_time.get<std::chrono::system_clock::time_point>().value());
   ASSERT_EQ(std::future_status::ready, fut.wait_for(std::chrono::seconds(0)));
   backup = fut.get();
-  EXPECT_STATUS_OK(backup);
+  ASSERT_STATUS_OK(backup);
   EXPECT_EQ(backup_name.FullName(), backup->name());
-  EXPECT_EQ(gcsa::Backup::CREATING, backup->state());
+  EXPECT_EQ(gsad::v1::Backup::CREATING, backup->state());
 }
 
 /// @test Verify DatabaseAdminClient uses RestoreDatabase() correctly.
@@ -418,9 +419,9 @@ TEST(DatabaseAdminClientTest, RestoreDatabase) {
                     DatabaseAdminConnection::RestoreDatabaseParams const& p) {
         EXPECT_EQ(p.database, dbase);
         EXPECT_EQ(p.backup_full_name, backup.FullName());
-        gcsa::Database database;
+        gsad::v1::Database database;
         database.set_name(dbase.FullName());
-        database.set_state(gcsa::Database::READY_OPTIMIZING);
+        database.set_state(gsad::v1::Database::READY_OPTIMIZING);
         return make_ready_future(make_status_or(database));
       });
 
@@ -428,10 +429,10 @@ TEST(DatabaseAdminClientTest, RestoreDatabase) {
   auto fut = client.RestoreDatabase(dbase, backup);
   ASSERT_EQ(std::future_status::ready, fut.wait_for(std::chrono::seconds(0)));
   auto database = fut.get();
-  EXPECT_STATUS_OK(database);
+  ASSERT_STATUS_OK(database);
 
   EXPECT_EQ(dbase.FullName(), database->name());
-  EXPECT_EQ(gcsa::Database::READY_OPTIMIZING, database->state());
+  EXPECT_EQ(gsad::v1::Database::READY_OPTIMIZING, database->state());
 }
 
 /// @test Verify DatabaseAdminClient uses RestoreDatabase() correctly.
@@ -440,16 +441,16 @@ TEST(DatabaseAdminClientTest, RestoreDatabaseOverload) {
 
   Database dbase("test-project", "test-instance", "test-db");
   Backup backup_name(dbase.instance(), "test-backup");
-  gcsa::Backup backup;
+  gsad::v1::Backup backup;
   backup.set_name(backup_name.FullName());
   EXPECT_CALL(*mock, RestoreDatabase)
       .WillOnce([&dbase, &backup_name](
                     DatabaseAdminConnection::RestoreDatabaseParams const& p) {
         EXPECT_EQ(p.database, dbase);
         EXPECT_EQ(p.backup_full_name, backup_name.FullName());
-        gcsa::Database database;
+        gsad::v1::Database database;
         database.set_name(dbase.FullName());
-        database.set_state(gcsa::Database::READY_OPTIMIZING);
+        database.set_state(gsad::v1::Database::READY_OPTIMIZING);
         return make_ready_future(make_status_or(database));
       });
 
@@ -457,10 +458,10 @@ TEST(DatabaseAdminClientTest, RestoreDatabaseOverload) {
   auto fut = client.RestoreDatabase(dbase, backup);
   ASSERT_EQ(std::future_status::ready, fut.wait_for(std::chrono::seconds(0)));
   auto database = fut.get();
-  EXPECT_STATUS_OK(database);
+  ASSERT_STATUS_OK(database);
 
   EXPECT_EQ(dbase.FullName(), database->name());
-  EXPECT_EQ(gcsa::Database::READY_OPTIMIZING, database->state());
+  EXPECT_EQ(gsad::v1::Database::READY_OPTIMIZING, database->state());
 }
 
 /// @test Verify DatabaseAdminClient uses GetBackup() correctly.
@@ -471,16 +472,16 @@ TEST(DatabaseAdminClientTest, GetBackup) {
   EXPECT_CALL(*mock, GetBackup)
       .WillOnce([&backup](DatabaseAdminConnection::GetBackupParams const& p) {
         EXPECT_EQ(backup.FullName(), p.backup_full_name);
-        gcsa::Backup response;
+        gsad::v1::Backup response;
         response.set_name(p.backup_full_name);
-        response.set_state(gcsa::Backup::READY);
+        response.set_state(gsad::v1::Backup::READY);
         return response;
       });
 
   DatabaseAdminClient client(std::move(mock));
   auto response = client.GetBackup(backup);
-  EXPECT_STATUS_OK(response);
-  EXPECT_EQ(gcsa::Backup::READY, response->state());
+  ASSERT_STATUS_OK(response);
+  EXPECT_EQ(gsad::v1::Backup::READY, response->state());
   EXPECT_EQ(backup.FullName(), response->name());
 }
 
@@ -505,7 +506,7 @@ TEST(DatabaseAdminClientTest, DeleteBackup) {
 TEST(DatabaseAdminClientTest, DeleteBackupOverload) {
   auto mock = std::make_shared<MockDatabaseAdminConnection>();
   Backup backup_name(Instance("test-project", "test-instance"), "test-backup");
-  gcsa::Backup backup;
+  gsad::v1::Backup backup;
   backup.set_name(backup_name.FullName());
 
   EXPECT_CALL(*mock, DeleteBackup)
@@ -531,13 +532,13 @@ TEST(DatabaseAdminClientTest, ListBackups) {
         EXPECT_EQ(expected_filter, p.filter);
 
         return google::cloud::internal::MakePaginationRange<ListBackupsRange>(
-            gcsa::ListBackupsRequest{},
-            [](gcsa::ListBackupsRequest const&) {
-              return StatusOr<gcsa::ListBackupsResponse>(
+            gsad::v1::ListBackupsRequest{},
+            [](gsad::v1::ListBackupsRequest const&) {
+              return StatusOr<gsad::v1::ListBackupsResponse>(
                   Status(StatusCode::kPermissionDenied, "uh-oh"));
             },
-            [](gcsa::ListBackupsResponse const&) {
-              return std::vector<gcsa::Backup>{};
+            [](gsad::v1::ListBackupsResponse const&) {
+              return std::vector<gsad::v1::Backup>{};
             });
       });
 
@@ -560,10 +561,10 @@ TEST(DatabaseAdminClientTest, UpdateBackupExpireTime) {
         EXPECT_EQ(backup.FullName(), p.request.backup().name());
         EXPECT_THAT(expire_time,
                     MakeTimestamp(p.request.backup().expire_time()).value());
-        gcsa::Backup response;
+        gsad::v1::Backup response;
         response.set_name(p.request.backup().name());
         *response.mutable_expire_time() = p.request.backup().expire_time();
-        response.set_state(gcsa::Backup::READY);
+        response.set_state(gsad::v1::Backup::READY);
         return response;
       })
       .WillOnce([&backup, &expire_time](
@@ -574,25 +575,25 @@ TEST(DatabaseAdminClientTest, UpdateBackupExpireTime) {
                             .value())
                         .value(),  // loss of precision
                     MakeTimestamp(p.request.backup().expire_time()).value());
-        gcsa::Backup response;
+        gsad::v1::Backup response;
         response.set_name(p.request.backup().name());
         *response.mutable_expire_time() = p.request.backup().expire_time();
-        response.set_state(gcsa::Backup::READY);
+        response.set_state(gsad::v1::Backup::READY);
         return response;
       });
 
   DatabaseAdminClient client(std::move(mock));
   auto response = client.UpdateBackupExpireTime(backup, expire_time);
-  EXPECT_STATUS_OK(response);
-  EXPECT_EQ(gcsa::Backup::READY, response->state());
+  ASSERT_STATUS_OK(response);
+  EXPECT_EQ(gsad::v1::Backup::READY, response->state());
   EXPECT_EQ(backup.FullName(), response->name());
   EXPECT_THAT(expire_time, MakeTimestamp(response->expire_time()).value());
 
   // Exercise the old interface with a `time_point` expiration parameter.
   response = client.UpdateBackupExpireTime(
       backup, expire_time.get<std::chrono::system_clock::time_point>().value());
-  EXPECT_STATUS_OK(response);
-  EXPECT_EQ(gcsa::Backup::READY, response->state());
+  ASSERT_STATUS_OK(response);
+  EXPECT_EQ(gsad::v1::Backup::READY, response->state());
   EXPECT_EQ(backup.FullName(), response->name());
   EXPECT_THAT(
       MakeTimestamp(
@@ -605,7 +606,7 @@ TEST(DatabaseAdminClientTest, UpdateBackupExpireTime) {
 TEST(DatabaseAdminClientTest, UpdateBackupExpireTimeOverload) {
   auto mock = std::make_shared<MockDatabaseAdminConnection>();
   Backup backup_name(Instance("test-project", "test-instance"), "test-backup");
-  gcsa::Backup backup;
+  gsad::v1::Backup backup;
   backup.set_name(backup_name.FullName());
   auto expire_time = MakeTimestamp(absl::Now() + absl::Hours(7)).value();
 
@@ -615,10 +616,10 @@ TEST(DatabaseAdminClientTest, UpdateBackupExpireTimeOverload) {
         EXPECT_EQ(backup_name.FullName(), p.request.backup().name());
         EXPECT_THAT(expire_time,
                     MakeTimestamp(p.request.backup().expire_time()).value());
-        gcsa::Backup response;
+        gsad::v1::Backup response;
         response.set_name(p.request.backup().name());
         *response.mutable_expire_time() = p.request.backup().expire_time();
-        response.set_state(gcsa::Backup::READY);
+        response.set_state(gsad::v1::Backup::READY);
         return response;
       })
       .WillOnce([&backup_name, &expire_time](
@@ -629,25 +630,25 @@ TEST(DatabaseAdminClientTest, UpdateBackupExpireTimeOverload) {
                             .value())
                         .value(),  // loss of precision
                     MakeTimestamp(p.request.backup().expire_time()).value());
-        gcsa::Backup response;
+        gsad::v1::Backup response;
         response.set_name(p.request.backup().name());
         *response.mutable_expire_time() = p.request.backup().expire_time();
-        response.set_state(gcsa::Backup::READY);
+        response.set_state(gsad::v1::Backup::READY);
         return response;
       });
 
   DatabaseAdminClient client(std::move(mock));
   auto response = client.UpdateBackupExpireTime(backup, expire_time);
-  EXPECT_STATUS_OK(response);
-  EXPECT_EQ(gcsa::Backup::READY, response->state());
+  ASSERT_STATUS_OK(response);
+  EXPECT_EQ(gsad::v1::Backup::READY, response->state());
   EXPECT_EQ(backup_name.FullName(), response->name());
   EXPECT_THAT(expire_time, MakeTimestamp(response->expire_time()).value());
 
   // Exercise the old interface with a `time_point` expiration parameter.
   response = client.UpdateBackupExpireTime(
       backup, expire_time.get<std::chrono::system_clock::time_point>().value());
-  EXPECT_STATUS_OK(response);
-  EXPECT_EQ(gcsa::Backup::READY, response->state());
+  ASSERT_STATUS_OK(response);
+  EXPECT_EQ(gsad::v1::Backup::READY, response->state());
   EXPECT_EQ(backup_name.FullName(), response->name());
   EXPECT_THAT(
       MakeTimestamp(
@@ -669,12 +670,12 @@ TEST(DatabaseAdminClientTest, ListBackupOperations) {
 
             return google::cloud::internal::MakePaginationRange<
                 ListBackupOperationsRange>(
-                gcsa::ListBackupOperationsRequest{},
-                [](gcsa::ListBackupOperationsRequest const&) {
-                  return StatusOr<gcsa::ListBackupOperationsResponse>(
+                gsad::v1::ListBackupOperationsRequest{},
+                [](gsad::v1::ListBackupOperationsRequest const&) {
+                  return StatusOr<gsad::v1::ListBackupOperationsResponse>(
                       Status(StatusCode::kPermissionDenied, "uh-oh"));
                 },
-                [](gcsa::ListBackupOperationsResponse const&) {
+                [](gsad::v1::ListBackupOperationsResponse const&) {
                   return std::vector<google::longrunning::Operation>{};
                 });
           });
@@ -699,12 +700,12 @@ TEST(DatabaseAdminClientTest, ListDatabaseOperations) {
 
             return google::cloud::internal::MakePaginationRange<
                 ListDatabaseOperationsRange>(
-                gcsa::ListDatabaseOperationsRequest{},
-                [](gcsa::ListDatabaseOperationsRequest const&) {
-                  return StatusOr<gcsa::ListDatabaseOperationsResponse>(
+                gsad::v1::ListDatabaseOperationsRequest{},
+                [](gsad::v1::ListDatabaseOperationsRequest const&) {
+                  return StatusOr<gsad::v1::ListDatabaseOperationsResponse>(
                       Status(StatusCode::kPermissionDenied, "uh-oh"));
                 },
-                [](gcsa::ListDatabaseOperationsResponse const&) {
+                [](gsad::v1::ListDatabaseOperationsResponse const&) {
                   return std::vector<google::longrunning::Operation>{};
                 });
           });

@@ -15,13 +15,19 @@
 #include "google/cloud/pubsub/subscriber_connection.h"
 #include "google/cloud/pubsub/internal/create_channel.h"
 #include "google/cloud/pubsub/internal/defaults.h"
-#include "google/cloud/pubsub/internal/subscriber_auth.h"
-#include "google/cloud/pubsub/internal/subscriber_logging.h"
-#include "google/cloud/pubsub/internal/subscriber_metadata.h"
-#include "google/cloud/pubsub/internal/subscriber_round_robin.h"
-#include "google/cloud/pubsub/internal/subscription_session.h"
+#include "google/cloud/pubsub/internal/subscriber_auth_decorator.h"
+#include "google/cloud/pubsub/internal/subscriber_connection_impl.h"
+#include "google/cloud/pubsub/internal/subscriber_logging_decorator.h"
+#include "google/cloud/pubsub/internal/subscriber_metadata_decorator.h"
+#include "google/cloud/pubsub/internal/subscriber_round_robin_decorator.h"
+#include "google/cloud/pubsub/internal/subscriber_stub_factory.h"
+#include "google/cloud/pubsub/internal/subscriber_tracing_connection.h"
 #include "google/cloud/pubsub/options.h"
 #include "google/cloud/pubsub/retry_policy.h"
+#include "google/cloud/credentials.h"
+#include "google/cloud/internal/api_client_header.h"
+#include "google/cloud/internal/make_status.h"
+#include "google/cloud/internal/opentelemetry.h"
 #include "google/cloud/internal/random.h"
 #include "google/cloud/log.h"
 #include <algorithm>
@@ -33,60 +39,18 @@ namespace pubsub {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 namespace {
 
-class SubscriberConnectionImpl : public pubsub::SubscriberConnection {
- public:
-  explicit SubscriberConnectionImpl(
-      pubsub::Subscription subscription, Options opts,
-      std::shared_ptr<pubsub_internal::SubscriberStub> stub)
-      : subscription_(std::move(subscription)),
-        opts_(std::move(opts)),
-        stub_(std::move(stub)),
-        background_(internal::MakeBackgroundThreadsFactory(opts_)()),
-        generator_(internal::MakeDefaultPRNG()) {}
-
-  ~SubscriberConnectionImpl() override = default;
-
-  future<Status> Subscribe(SubscribeParams p) override {
-    auto client_id = [this] {
-      std::lock_guard<std::mutex> lk(mu_);
-      auto constexpr kLength = 32;
-      auto constexpr kChars = "abcdefghijklmnopqrstuvwxyz0123456789";
-      return internal::Sample(generator_, kLength, kChars);
-    }();
-    return CreateSubscriptionSession(subscription_, opts_, stub_,
-                                     background_->cq(), std::move(client_id),
-                                     std::move(p));
+std::shared_ptr<pubsub::SubscriberConnection> ConnectionFromDecoratedStub(
+    std::shared_ptr<pubsub_internal::SubscriberStub> stub,
+    Options const& opts) {
+  auto tracing_enabled = google::cloud::internal::TracingEnabled(opts);
+  std::shared_ptr<SubscriberConnection> connection =
+      std::make_shared<pubsub_internal::SubscriberConnectionImpl>(
+          opts, std::move(stub));
+  if (tracing_enabled) {
+    connection =
+        pubsub_internal::MakeSubscriberTracingConnection(std::move(connection));
   }
-
- private:
-  pubsub::Subscription const subscription_;
-  Options const opts_;
-  std::shared_ptr<pubsub_internal::SubscriberStub> stub_;
-  std::shared_ptr<BackgroundThreads> background_;
-  std::mutex mu_;
-  internal::DefaultPRNG generator_;
-};
-
-std::shared_ptr<pubsub_internal::SubscriberStub> DecorateSubscriberStub(
-    Options const& opts,
-    std::shared_ptr<internal::GrpcAuthenticationStrategy> auth,
-    std::vector<std::shared_ptr<pubsub_internal::SubscriberStub>> children) {
-  std::shared_ptr<pubsub_internal::SubscriberStub> stub =
-      std::make_shared<pubsub_internal::SubscriberRoundRobin>(
-          std::move(children));
-  if (auth->RequiresConfigureContext()) {
-    stub = std::make_shared<pubsub_internal::SubscriberAuth>(std::move(auth),
-                                                             std::move(stub));
-  }
-  stub = std::make_shared<pubsub_internal::SubscriberMetadata>(std::move(stub));
-  auto const& tracing = opts.get<TracingComponentsOption>();
-  if (internal::Contains(tracing, "rpc")) {
-    GCP_LOG(INFO) << "Enabled logging for gRPC calls";
-    stub = std::make_shared<pubsub_internal::SubscriberLogging>(
-        std::move(stub), opts.get<GrpcTracingOptionsOption>(),
-        internal::Contains(tracing, "rpc-streams"));
-  }
-  return stub;
+  return connection;
 }
 
 }  // namespace
@@ -96,7 +60,18 @@ SubscriberConnection::~SubscriberConnection() = default;
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 future<Status> SubscriberConnection::Subscribe(SubscribeParams) {
   return make_ready_future(
-      Status{StatusCode::kUnimplemented, "needs-override"});
+      internal::UnimplementedError("needs-override", GCP_ERROR_INFO()));
+}
+
+future<Status> SubscriberConnection::ExactlyOnceSubscribe(
+    // NOLINTNEXTLINE(performance-unnecessary-value-param)
+    ExactlyOnceSubscribeParams) {
+  return make_ready_future(
+      internal::UnimplementedError("needs-override", GCP_ERROR_INFO()));
+}
+
+StatusOr<pubsub::PullResponse> SubscriberConnection::Pull() {
+  return internal::UnimplementedError("needs-override", GCP_ERROR_INFO());
 }
 
 std::shared_ptr<SubscriberConnection> MakeSubscriberConnection(
@@ -108,25 +83,16 @@ std::shared_ptr<SubscriberConnection> MakeSubscriberConnection(
 std::shared_ptr<SubscriberConnection> MakeSubscriberConnection(
     Subscription subscription, Options opts) {
   internal::CheckExpectedOptions<CommonOptionList, GrpcOptionList,
-                                 PolicyOptionList, SubscriberOptionList>(
-      opts, __func__);
+                                 UnifiedCredentialsOptionList, PolicyOptionList,
+                                 SubscriberOptionList>(opts, __func__);
+  opts = internal::MergeOptions(
+      std::move(opts),
+      Options{}.set<SubscriptionOption>(std::move(subscription)));
   opts = pubsub_internal::DefaultSubscriberOptions(std::move(opts));
-
   auto background = internal::MakeBackgroundThreadsFactory(opts)();
-  auto auth = google::cloud::internal::CreateAuthenticationStrategy(
-      background->cq(), opts);
-  std::vector<std::shared_ptr<pubsub_internal::SubscriberStub>> children(
-      opts.get<GrpcNumChannelsOption>());
-  int id = 0;
-  std::generate(children.begin(), children.end(), [&id, &opts, &auth] {
-    return pubsub_internal::CreateDefaultSubscriberStub(
-        auth->CreateChannel(opts.get<EndpointOption>(),
-                            pubsub_internal::MakeChannelArguments(opts, id++)));
-  });
   auto stub =
-      DecorateSubscriberStub(opts, std::move(auth), std::move(children));
-  return std::make_shared<SubscriberConnectionImpl>(
-      std::move(subscription), std::move(opts), std::move(stub));
+      pubsub_internal::MakeRoundRobinSubscriberStub(background->cq(), opts);
+  return ConnectionFromDecoratedStub(std::move(stub), std::move(opts));
 }
 
 std::shared_ptr<SubscriberConnection> MakeSubscriberConnection(
@@ -152,12 +118,10 @@ std::shared_ptr<pubsub::SubscriberConnection> MakeTestSubscriberConnection(
     pubsub::Subscription subscription, Options opts,
     std::vector<std::shared_ptr<SubscriberStub>> stubs) {
   auto background = internal::MakeBackgroundThreadsFactory(opts)();
-  auto auth = google::cloud::internal::CreateAuthenticationStrategy(
-      background->cq(), opts);
-  auto stub =
-      pubsub::DecorateSubscriberStub(opts, std::move(auth), std::move(stubs));
-  return std::make_shared<pubsub::SubscriberConnectionImpl>(
-      std::move(subscription), std::move(opts), std::move(stub));
+  auto stub = pubsub_internal::MakeTestSubscriberStub(background->cq(), opts,
+                                                      std::move(stubs));
+  opts.set<pubsub::SubscriptionOption>(std::move(subscription));
+  return pubsub::ConnectionFromDecoratedStub(std::move(stub), std::move(opts));
 }
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

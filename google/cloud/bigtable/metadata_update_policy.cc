@@ -1,4 +1,4 @@
-// Copyright 2018 Google Inc.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #include "google/cloud/bigtable/metadata_update_policy.h"
 #include "google/cloud/bigtable/version.h"
 #include "google/cloud/internal/api_client_header.h"
+#include "google/cloud/internal/url_encode.h"
 
 namespace google {
 namespace cloud {
@@ -41,7 +42,7 @@ MetadataUpdatePolicy::MetadataUpdatePolicy(
     std::string const& resource_name,
     MetadataParamTypes const& metadata_param_type)
     : value_(metadata_param_type.type() + '=' + resource_name),
-      api_client_header_(internal::ApiClientHeader()) {}
+      api_client_header_(internal::HandCraftedLibClientHeader()) {}
 
 void MetadataUpdatePolicy::Setup(grpc::ClientContext& context) const {
   context.AddMetadata(std::string("x-goog-request-params"), value());
@@ -50,5 +51,22 @@ void MetadataUpdatePolicy::Setup(grpc::ClientContext& context) const {
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace bigtable
+namespace bigtable_internal {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+bigtable::MetadataUpdatePolicy MakeMetadataUpdatePolicy(
+    std::string const& table_name, std::string const& app_profile_id) {
+  // The rule is the same for all RPCs in the Data API. We always include the
+  // table name. We append an app profile id only if one was provided.
+  return bigtable::MetadataUpdatePolicy(
+      internal::UrlEncode(table_name) +
+          (app_profile_id.empty()
+               ? ""
+               : "&app_profile_id=" + internal::UrlEncode(app_profile_id)),
+      bigtable::MetadataParamTypes::TABLE_NAME);
+}
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace bigtable_internal
 }  // namespace cloud
 }  // namespace google

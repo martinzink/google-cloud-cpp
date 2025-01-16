@@ -21,41 +21,29 @@
 
 #include "google/cloud/retail/completion_connection.h"
 #include "google/cloud/retail/completion_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/retail/v2/completion_options.h"
 
 namespace google {
 namespace cloud {
 namespace retail {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct CompletionServiceRetryPolicyOption {
-  using Type = std::shared_ptr<CompletionServiceRetryPolicy>;
-};
+/// @deprecated Use retail_v2::CompletionServicePollingPolicyOption directly.
+using ::google::cloud::retail_v2::CompletionServicePollingPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CompletionServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use retail_v2::CompletionServiceBackoffPolicyOption directly.
+using ::google::cloud::retail_v2::CompletionServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CompletionServicePollingPolicyOption {
-  using Type = std::shared_ptr<PollingPolicy>;
-};
+/// @deprecated Use
+/// retail_v2::CompletionServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::retail_v2::
+    CompletionServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct CompletionServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<CompletionServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use retail_v2::CompletionServicePolicyOptionList directly.
+using ::google::cloud::retail_v2::CompletionServicePolicyOptionList;
 
-using CompletionServicePolicyOptionList =
-    OptionList<CompletionServiceRetryPolicyOption,
-               CompletionServiceBackoffPolicyOption,
-               CompletionServicePollingPolicyOption,
-               CompletionServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use retail_v2::CompletionServiceRetryPolicyOption directly.
+using ::google::cloud::retail_v2::CompletionServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail

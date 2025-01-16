@@ -21,35 +21,27 @@
 
 #include "google/cloud/monitoring/alert_policy_connection.h"
 #include "google/cloud/monitoring/alert_policy_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/monitoring/v3/alert_policy_options.h"
 
 namespace google {
 namespace cloud {
 namespace monitoring {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// Option to use with `google::cloud::Options`.
-struct AlertPolicyServiceRetryPolicyOption {
-  using Type = std::shared_ptr<AlertPolicyServiceRetryPolicy>;
-};
+/// @deprecated Use monitoring_v3::AlertPolicyServiceBackoffPolicyOption
+/// directly.
+using ::google::cloud::monitoring_v3::AlertPolicyServiceBackoffPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct AlertPolicyServiceBackoffPolicyOption {
-  using Type = std::shared_ptr<BackoffPolicy>;
-};
+/// @deprecated Use
+/// monitoring_v3::AlertPolicyServiceConnectionIdempotencyPolicyOption directly.
+using ::google::cloud::monitoring_v3::
+    AlertPolicyServiceConnectionIdempotencyPolicyOption;
 
-/// Option to use with `google::cloud::Options`.
-struct AlertPolicyServiceConnectionIdempotencyPolicyOption {
-  using Type = std::shared_ptr<AlertPolicyServiceConnectionIdempotencyPolicy>;
-};
+/// @deprecated Use monitoring_v3::AlertPolicyServicePolicyOptionList directly.
+using ::google::cloud::monitoring_v3::AlertPolicyServicePolicyOptionList;
 
-using AlertPolicyServicePolicyOptionList =
-    OptionList<AlertPolicyServiceRetryPolicyOption,
-               AlertPolicyServiceBackoffPolicyOption,
-               AlertPolicyServiceConnectionIdempotencyPolicyOption>;
+/// @deprecated Use monitoring_v3::AlertPolicyServiceRetryPolicyOption directly.
+using ::google::cloud::monitoring_v3::AlertPolicyServiceRetryPolicyOption;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring

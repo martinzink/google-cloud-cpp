@@ -21,36 +21,38 @@ namespace cloud {
 namespace spanner_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-namespace gcsa = ::google::spanner::admin::database::v1;
+namespace gsad = ::google::spanner::admin::database;
+
 using ::google::cloud::internal::LogWrapper;
 
 future<StatusOr<google::longrunning::Operation>>
 DatabaseAdminLogging::AsyncCreateDatabase(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-    gcsa::CreateDatabaseRequest const& request) {
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+    gsad::v1::CreateDatabaseRequest const& request) {
   return google::cloud::internal::LogWrapper(
-      [this](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             gcsa::CreateDatabaseRequest const& request) {
+      [this](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+             gsad::v1::CreateDatabaseRequest const& request) {
         return child_->AsyncCreateDatabase(cq, std::move(context), request);
       },
       cq, std::move(context), request, __func__, tracing_options_);
 }
 
-StatusOr<gcsa::Database> DatabaseAdminLogging::GetDatabase(
-    grpc::ClientContext& context, gcsa::GetDatabaseRequest const& request) {
+StatusOr<gsad::v1::Database> DatabaseAdminLogging::GetDatabase(
+    grpc::ClientContext& context, gsad::v1::GetDatabaseRequest const& request) {
   return LogWrapper(
       [this](grpc::ClientContext& context,
-             gcsa::GetDatabaseRequest const& request) {
+             gsad::v1::GetDatabaseRequest const& request) {
         return child_->GetDatabase(context, request);
       },
       context, request, __func__, tracing_options_);
 }
 
-StatusOr<gcsa::GetDatabaseDdlResponse> DatabaseAdminLogging::GetDatabaseDdl(
-    grpc::ClientContext& context, gcsa::GetDatabaseDdlRequest const& request) {
+StatusOr<gsad::v1::GetDatabaseDdlResponse> DatabaseAdminLogging::GetDatabaseDdl(
+    grpc::ClientContext& context,
+    gsad::v1::GetDatabaseDdlRequest const& request) {
   return LogWrapper(
       [this](grpc::ClientContext& context,
-             gcsa::GetDatabaseDdlRequest const& request) {
+             gsad::v1::GetDatabaseDdlRequest const& request) {
         return child_->GetDatabaseDdl(context, request);
       },
       context, request, __func__, tracing_options_);
@@ -58,11 +60,11 @@ StatusOr<gcsa::GetDatabaseDdlResponse> DatabaseAdminLogging::GetDatabaseDdl(
 
 future<StatusOr<google::longrunning::Operation>>
 DatabaseAdminLogging::AsyncUpdateDatabaseDdl(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-    gcsa::UpdateDatabaseDdlRequest const& request) {
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+    gsad::v1::UpdateDatabaseDdlRequest const& request) {
   return google::cloud::internal::LogWrapper(
-      [this](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             gcsa::UpdateDatabaseDdlRequest const& request) {
+      [this](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+             gsad::v1::UpdateDatabaseDdlRequest const& request) {
         return child_->AsyncUpdateDatabaseDdl(cq, std::move(context), request);
       },
       cq, std::move(context), request, __func__, tracing_options_);
@@ -73,7 +75,7 @@ Status DatabaseAdminLogging::DropDatabase(
     google::spanner::admin::database::v1::DropDatabaseRequest const& request) {
   return LogWrapper(
       [this](grpc::ClientContext& context,
-             gcsa::DropDatabaseRequest const& request) {
+             gsad::v1::DropDatabaseRequest const& request) {
         return child_->DropDatabase(context, request);
       },
       context, request, __func__, tracing_options_);
@@ -92,11 +94,11 @@ DatabaseAdminLogging::ListDatabases(
 
 future<StatusOr<google::longrunning::Operation>>
 DatabaseAdminLogging::AsyncRestoreDatabase(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-    gcsa::RestoreDatabaseRequest const& request) {
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+    gsad::v1::RestoreDatabaseRequest const& request) {
   return google::cloud::internal::LogWrapper(
-      [this](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             gcsa::RestoreDatabaseRequest const& request) {
+      [this](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+             gsad::v1::RestoreDatabaseRequest const& request) {
         return child_->AsyncRestoreDatabase(cq, std::move(context), request);
       },
       cq, std::move(context), request, __func__, tracing_options_);
@@ -138,21 +140,21 @@ DatabaseAdminLogging::TestIamPermissions(
 
 future<StatusOr<google::longrunning::Operation>>
 DatabaseAdminLogging::AsyncCreateBackup(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-    gcsa::CreateBackupRequest const& request) {
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+    gsad::v1::CreateBackupRequest const& request) {
   return google::cloud::internal::LogWrapper(
-      [this](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
-             gcsa::CreateBackupRequest const& request) {
+      [this](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
+             gsad::v1::CreateBackupRequest const& request) {
         return child_->AsyncCreateBackup(cq, std::move(context), request);
       },
       cq, std::move(context), request, __func__, tracing_options_);
 }
 
-StatusOr<gcsa::Backup> DatabaseAdminLogging::GetBackup(
-    grpc::ClientContext& context, gcsa::GetBackupRequest const& request) {
+StatusOr<gsad::v1::Backup> DatabaseAdminLogging::GetBackup(
+    grpc::ClientContext& context, gsad::v1::GetBackupRequest const& request) {
   return LogWrapper(
       [this](grpc::ClientContext& context,
-             gcsa::GetBackupRequest const& request) {
+             gsad::v1::GetBackupRequest const& request) {
         return child_->GetBackup(context, request);
       },
       context, request, __func__, tracing_options_);
@@ -163,7 +165,7 @@ Status DatabaseAdminLogging::DeleteBackup(
     google::spanner::admin::database::v1::DeleteBackupRequest const& request) {
   return LogWrapper(
       [this](grpc::ClientContext& context,
-             gcsa::DeleteBackupRequest const& request) {
+             gsad::v1::DeleteBackupRequest const& request) {
         return child_->DeleteBackup(context, request);
       },
       context, request, __func__, tracing_options_);
@@ -180,11 +182,12 @@ DatabaseAdminLogging::ListBackups(
       context, request, __func__, tracing_options_);
 }
 
-StatusOr<gcsa::Backup> DatabaseAdminLogging::UpdateBackup(
-    grpc::ClientContext& context, gcsa::UpdateBackupRequest const& request) {
+StatusOr<gsad::v1::Backup> DatabaseAdminLogging::UpdateBackup(
+    grpc::ClientContext& context,
+    gsad::v1::UpdateBackupRequest const& request) {
   return LogWrapper(
       [this](grpc::ClientContext& context,
-             gcsa::UpdateBackupRequest const& request) {
+             gsad::v1::UpdateBackupRequest const& request) {
         return child_->UpdateBackup(context, request);
       },
       context, request, __func__, tracing_options_);
@@ -220,10 +223,10 @@ DatabaseAdminLogging::ListDatabaseOperations(
 
 future<StatusOr<google::longrunning::Operation>>
 DatabaseAdminLogging::AsyncGetOperation(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
     google::longrunning::GetOperationRequest const& request) {
   return google::cloud::internal::LogWrapper(
-      [this](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
+      [this](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
              google::longrunning::GetOperationRequest const& request) {
         return child_->AsyncGetOperation(cq, std::move(context), request);
       },
@@ -231,10 +234,10 @@ DatabaseAdminLogging::AsyncGetOperation(
 }
 
 future<Status> DatabaseAdminLogging::AsyncCancelOperation(
-    CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
+    CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
     google::longrunning::CancelOperationRequest const& request) {
   return google::cloud::internal::LogWrapper(
-      [this](CompletionQueue& cq, std::unique_ptr<grpc::ClientContext> context,
+      [this](CompletionQueue& cq, std::shared_ptr<grpc::ClientContext> context,
              google::longrunning::CancelOperationRequest const& request) {
         return child_->AsyncCancelOperation(cq, std::move(context), request);
       },

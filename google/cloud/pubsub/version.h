@@ -16,6 +16,7 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_VERSION_H
 
 #include "google/cloud/pubsub/version_info.h"
+#include "google/cloud/internal/attributes.h"
 #include "google/cloud/version.h"
 
 // This preprocessor symbol is deprecated and should never be used anywhere. It
@@ -23,13 +24,20 @@
 // have been using it.
 #define GOOGLE_CLOUD_CPP_PUBSUB_NS GOOGLE_CLOUD_CPP_NS
 
+#define GOOGLE_CLOUD_CPP_PUBSUB_ADMIN_API_DEPRECATED(name)                  \
+  GOOGLE_CLOUD_CPP_DEPRECATED(                                              \
+      "google::cloud::pubsub::" name                                        \
+      " is deprecated, and will be removed on or shortly after 2024-12-31." \
+      " Please use google::cloud::pubsub_admin::" name                      \
+      " instead. See GitHub issue #12987 for more information.")
+
 namespace google {
 /**
  * The namespace Google Cloud Platform C++ client libraries.
  */
 namespace cloud {
 /**
- * Contains all the Cloud Pubsub C++ client types and functions.
+ * Contains all the Cloud Pub/Sub C++ client types and functions.
  */
 namespace pubsub {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN

@@ -19,8 +19,16 @@ namespace cloud {
 namespace oauth2_internal {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-StatusOr<std::pair<std::string, std::string>>
-ErrorCredentials::AuthorizationHeader() {
+StatusOr<AccessToken> ErrorCredentials::GetToken(
+    std::chrono::system_clock::time_point /*tp*/) {
+  return status_;
+}
+
+StatusOr<std::string> ErrorCredentials::universe_domain() const {
+  return status_;
+}
+StatusOr<std::string> ErrorCredentials::universe_domain(
+    google::cloud::Options const&) const {
   return status_;
 }
 

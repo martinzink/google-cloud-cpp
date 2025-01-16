@@ -20,148 +20,18 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_APPENGINE_SERVICES_CLIENT_H
 
 #include "google/cloud/appengine/services_connection.h"
-#include "google/cloud/future.h"
-#include "google/cloud/options.h"
-#include "google/cloud/polling_policy.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <google/longrunning/operations.grpc.pb.h>
-#include <memory>
+#include "google/cloud/appengine/v1/services_client.h"
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in appengine_v1 instead of the aliases defined in
+///     this namespace.
 namespace appengine {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-///
-/// Manages services of an application.
-///
-/// @par Equality
-///
-/// Instances of this class created via copy-construction or copy-assignment
-/// always compare equal. Instances created with equal
-/// `std::shared_ptr<*Connection>` objects compare equal. Objects that compare
-/// equal share the same underlying resources.
-///
-/// @par Performance
-///
-/// Creating a new instance of this class is a relatively expensive operation,
-/// new objects establish new connections to the service. In contrast,
-/// copy-construction, move-construction, and the corresponding assignment
-/// operations are relatively efficient as the copies share all underlying
-/// resources.
-///
-/// @par Thread Safety
-///
-/// Concurrent access to different instances of this class, even if they compare
-/// equal, is guaranteed to work. Two or more threads operating on the same
-/// instance of this class is not guaranteed to work. Since copy-construction
-/// and move-construction is a relatively efficient operation, consider using
-/// such a copy when using this class from multiple threads.
-///
-class ServicesClient {
- public:
-  explicit ServicesClient(std::shared_ptr<ServicesConnection> connection,
-                          Options opts = {});
-  ~ServicesClient();
-
-  //@{
-  // @name Copy and move support
-  ServicesClient(ServicesClient const&) = default;
-  ServicesClient& operator=(ServicesClient const&) = default;
-  ServicesClient(ServicesClient&&) = default;
-  ServicesClient& operator=(ServicesClient&&) = default;
-  //@}
-
-  //@{
-  // @name Equality
-  friend bool operator==(ServicesClient const& a, ServicesClient const& b) {
-    return a.connection_ == b.connection_;
-  }
-  friend bool operator!=(ServicesClient const& a, ServicesClient const& b) {
-    return !(a == b);
-  }
-  //@}
-
-  ///
-  /// Lists all the services in the application.
-  ///
-  /// @param request
-  /// @googleapis_link{google::appengine::v1::ListServicesRequest,google/appengine/v1/appengine.proto#L189}
-  /// @param opts Optional. Override the class-level options, such as retry and
-  ///     backoff policies.
-  /// @return
-  /// @googleapis_link{google::appengine::v1::Service,google/appengine/v1/service.proto#L37}
-  ///
-  /// [google.appengine.v1.ListServicesRequest]:
-  /// @googleapis_reference_link{google/appengine/v1/appengine.proto#L189}
-  /// [google.appengine.v1.Service]:
-  /// @googleapis_reference_link{google/appengine/v1/service.proto#L37}
-  ///
-  StreamRange<google::appengine::v1::Service> ListServices(
-      google::appengine::v1::ListServicesRequest request, Options opts = {});
-
-  ///
-  /// Gets the current configuration of the specified service.
-  ///
-  /// @param request
-  /// @googleapis_link{google::appengine::v1::GetServiceRequest,google/appengine/v1/appengine.proto#L210}
-  /// @param opts Optional. Override the class-level options, such as retry and
-  ///     backoff policies.
-  /// @return
-  /// @googleapis_link{google::appengine::v1::Service,google/appengine/v1/service.proto#L37}
-  ///
-  /// [google.appengine.v1.GetServiceRequest]:
-  /// @googleapis_reference_link{google/appengine/v1/appengine.proto#L210}
-  /// [google.appengine.v1.Service]:
-  /// @googleapis_reference_link{google/appengine/v1/service.proto#L37}
-  ///
-  StatusOr<google::appengine::v1::Service> GetService(
-      google::appengine::v1::GetServiceRequest const& request,
-      Options opts = {});
-
-  ///
-  /// Updates the configuration of the specified service.
-  ///
-  /// @param request
-  /// @googleapis_link{google::appengine::v1::UpdateServiceRequest,google/appengine/v1/appengine.proto#L216}
-  /// @param opts Optional. Override the class-level options, such as retry and
-  ///     backoff policies.
-  /// @return
-  /// @googleapis_link{google::appengine::v1::Service,google/appengine/v1/service.proto#L37}
-  ///
-  /// [google.appengine.v1.UpdateServiceRequest]:
-  /// @googleapis_reference_link{google/appengine/v1/appengine.proto#L216}
-  /// [google.appengine.v1.Service]:
-  /// @googleapis_reference_link{google/appengine/v1/service.proto#L37}
-  ///
-  future<StatusOr<google::appengine::v1::Service>> UpdateService(
-      google::appengine::v1::UpdateServiceRequest const& request,
-      Options opts = {});
-
-  ///
-  /// Deletes the specified service and all enclosed versions.
-  ///
-  /// @param request
-  /// @googleapis_link{google::appengine::v1::DeleteServiceRequest,google/appengine/v1/appengine.proto#L243}
-  /// @param opts Optional. Override the class-level options, such as retry and
-  ///     backoff policies.
-  /// @return
-  /// @googleapis_link{google::appengine::v1::OperationMetadataV1,google/appengine/v1/operation.proto#L32}
-  ///
-  /// [google.appengine.v1.DeleteServiceRequest]:
-  /// @googleapis_reference_link{google/appengine/v1/appengine.proto#L243}
-  /// [google.appengine.v1.OperationMetadataV1]:
-  /// @googleapis_reference_link{google/appengine/v1/operation.proto#L32}
-  ///
-  future<StatusOr<google::appengine::v1::OperationMetadataV1>> DeleteService(
-      google::appengine::v1::DeleteServiceRequest const& request,
-      Options opts = {});
-
- private:
-  std::shared_ptr<ServicesConnection> connection_;
-  Options options_;
-};
+/// @deprecated Use appengine_v1::ServicesClient directly.
+using ::google::cloud::appengine_v1::ServicesClient;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace appengine

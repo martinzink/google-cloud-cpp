@@ -19,46 +19,21 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_MOCKS_MOCK_DASHBOARDS_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_MONITORING_MOCKS_MOCK_DASHBOARDS_CONNECTION_H
 
+#include "google/cloud/monitoring/dashboard/v1/mocks/mock_dashboards_connection.h"
 #include "google/cloud/monitoring/dashboards_connection.h"
-#include <gmock/gmock.h>
 
 namespace google {
 namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in monitoring_dashboard_v1_mocks instead of the aliases
+///     defined in this namespace.
 namespace monitoring_mocks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class MockDashboardsServiceConnection
-    : public monitoring::DashboardsServiceConnection {
- public:
-  MOCK_METHOD(Options, options, (), (override));
-
-  MOCK_METHOD(StatusOr<google::monitoring::dashboard::v1::Dashboard>,
-              CreateDashboard,
-              (google::monitoring::dashboard::v1::CreateDashboardRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(
-      StreamRange<google::monitoring::dashboard::v1::Dashboard>, ListDashboards,
-      (google::monitoring::dashboard::v1::ListDashboardsRequest request),
-      (override));
-
-  MOCK_METHOD(
-      StatusOr<google::monitoring::dashboard::v1::Dashboard>, GetDashboard,
-      (google::monitoring::dashboard::v1::GetDashboardRequest const& request),
-      (override));
-
-  MOCK_METHOD(Status, DeleteDashboard,
-              (google::monitoring::dashboard::v1::DeleteDashboardRequest const&
-                   request),
-              (override));
-
-  MOCK_METHOD(StatusOr<google::monitoring::dashboard::v1::Dashboard>,
-              UpdateDashboard,
-              (google::monitoring::dashboard::v1::UpdateDashboardRequest const&
-                   request),
-              (override));
-};
+/// @deprecated Use
+/// monitoring_dashboard_v1_mocks::MockDashboardsServiceConnection directly.
+using ::google::cloud::monitoring_dashboard_v1_mocks::
+    MockDashboardsServiceConnection;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace monitoring_mocks

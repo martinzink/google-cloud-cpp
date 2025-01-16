@@ -40,6 +40,7 @@
 
 #include "google/cloud/pubsub/backoff_policy.h"
 #include "google/cloud/pubsub/retry_policy.h"
+#include "google/cloud/pubsub/subscription.h"
 #include "google/cloud/pubsub/version.h"
 #include "google/cloud/options.h"
 #include <chrono>
@@ -49,12 +50,20 @@ namespace cloud {
 namespace pubsub {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-/// The retry policy
+/**
+ * The retry policy
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
 struct RetryPolicyOption {
   using Type = std::shared_ptr<pubsub::RetryPolicy>;
 };
 
-/// The backoff policy
+/**
+ * The backoff policy
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
 struct BackoffPolicyOption {
   using Type = std::shared_ptr<pubsub::BackoffPolicy>;
 };
@@ -74,6 +83,8 @@ using PolicyOptionList = OptionList<RetryPolicyOption, BackoffPolicyOption>;
  *     set the holding time to 10 milliseconds, start a batch with message 1,
  *     and publish a second message 5 milliseconds later, the second message
  *     will be flushed approximately 5 milliseconds after it is published.
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxHoldTimeOption {
   using Type = std::chrono::microseconds;
@@ -88,6 +99,8 @@ struct MaxHoldTimeOption {
  *    option.
  *
  * [pubsub-quota-link]: https://cloud.google.com/pubsub/quotas#resource_limits
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxBatchMessagesOption {
   using Type = std::size_t;
@@ -102,6 +115,8 @@ struct MaxBatchMessagesOption {
  *    option.
  *
  * [pubsub-quota-link]: https://cloud.google.com/pubsub/quotas#resource_limits
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxBatchBytesOption {
   using Type = std::size_t;
@@ -117,6 +132,8 @@ struct MaxBatchBytesOption {
  * Some applications may have constraints on the number of bytes and/or
  * messages they can tolerate in this pending state, and may prefer to block
  * or reject messages.
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxPendingMessagesOption {
   using Type = std::size_t;
@@ -132,6 +149,8 @@ struct MaxPendingMessagesOption {
  * Some applications may have constraints on the number of bytes and/or
  * messages they can tolerate in this pending state, and may prefer to block
  * or reject messages.
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxPendingBytesOption {
   using Type = std::size_t;
@@ -150,6 +169,8 @@ struct MaxPendingBytesOption {
  * the throughput. Therefore, the behavior is disabled by default.
  *
  * @see the documentation for the `Publisher` class for details.
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MessageOrderingOption {
   using Type = bool;
@@ -164,16 +185,73 @@ enum class FullPublisherAction {
   /// Configure the publisher to block the caller when full.
   kBlocks
 };
-/// The action taken by a full publisher.
+/**
+ * The action taken by a full publisher.
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
 struct FullPublisherActionOption {
   using Type = FullPublisherAction;
+};
+
+/**
+ * Compression threshold.
+ *
+ * If set, the client library turns on gRPC compression for batches larger (in
+ * bytes) than the give threshold.
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
+struct CompressionThresholdOption {
+  using Type = std::size_t;
+};
+
+/**
+ * Compression algorithm.
+ *
+ * Select the gRPC compression algorithm when compression is enabled. As of this
+ * writing, gRPC supports `GRPC_COMPRESS_DEFLATE` and `GRPC_COMPRESS_GZIP`.
+ * Other values may be added in the future and should be settable via this
+ * feature.
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
+struct CompressionAlgorithmOption {
+  using Type = int;
+};
+
+/**
+ * The maximum number of Open Telemetry span links.
+ *
+ * This option controls the number of links contained in a single publish span.
+ *
+ * @note Application developers should keep in mind that Cloud Trace
+ *    sets [limits][cloud-trace-quota-link] on the number of links per span
+ *    (128). Additionally, Open Telemetry sets the default
+ *    [limit][otel-quota-link] to 128.
+ *
+ * @ingroup google-cloud-pubsub-options
+ *
+ * @par Environment variable
+ *    This option is controlled by the `OTEL_SPAN_LINK_COUNT_LIMIT`
+ *    environment variable. If the environment variable is unset or unparsable,
+ *    it uses the user provided value, and then the default of 128.
+ *
+ * [otel-quota-link]:
+ * https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#span-limits
+ * [cloud-trace-quota-link]:
+ * https://github.com/googleapis/googleapis/blob/52180f8ba240022dd8ce756ee69fe5a3c429ad4d/google/devtools/cloudtrace/v2/trace.proto#L266
+ */
+struct MaxOtelLinkCountOption {
+  using Type = std::size_t;
 };
 
 /// The list of options specific to publishers.
 using PublisherOptionList =
     OptionList<MaxHoldTimeOption, MaxBatchMessagesOption, MaxBatchBytesOption,
                MaxPendingMessagesOption, MaxPendingBytesOption,
-               MessageOrderingOption, FullPublisherActionOption>;
+               MessageOrderingOption, FullPublisherActionOption,
+               CompressionThresholdOption, MaxOtelLinkCountOption>;
 
 /**
  * The maximum deadline for each incoming message.
@@ -189,6 +267,8 @@ using PublisherOptionList =
  *     application, thus, if the library receives a batch of N messages their
  *     deadline for all the messages is extended repeatedly. Only once the
  *     message is delivered to a callback does the deadline become immutable.
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxDeadlineTimeOption {
   using Type = std::chrono::seconds;
@@ -197,15 +277,40 @@ struct MaxDeadlineTimeOption {
 /**
  * The maximum time by which the deadline for each incoming message is extended.
  *
- * The Cloud Pub/Sub C++ client library will extend the deadline by at most this
- * amount, while waiting for an ack or nack. The default extension is 10
- * minutes. An application may wish to reduce this extension so that the Pub/Sub
+ * While waiting for an ack or nack, The Cloud Pub/Sub C++ client library will
+ * extend the deadline by at most this amount. The default extension time is 10
+ * minutes. An application may wish to reduce this extension time so the Pub/Sub
  * service will resend a message sooner when it does not hear back from a
- * Subscriber.
+ * Subscriber. With at-least-once semantics, making the time too short may
+ * increase the number of duplicate messages delivered by the service.
  *
- * The value is clamped between 10 seconds and 10 minutes.
+ * The value is clamped between 10 seconds and 10 minutes. Note that this option
+ * also affects the effective range for `MinDeadlineExtensionOption`.
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxDeadlineExtensionOption {
+  using Type = std::chrono::seconds;
+};
+
+/**
+ * The minimum time by which the deadline for each incoming message is extended.
+ *
+ * While waiting for an ack or nack from the application the Cloud Pub/Sub C++
+ * client library will extend the deadline by at least this amount. The default
+ * minimum extension is 1 minute. An application may wish to reduce this
+ * extension so that the Pub/Sub service will resend a message sooner when it
+ * does not hear back from a Subscriber. An application may wish to increase
+ * this extension time to avoid duplicate message delivery.
+ *
+ * The value is clamped between 10 seconds and 10 minutes.  Furthermore, if the
+ * application configures `MaxDeadlineExtensionOption`, then
+ * `MinDeadlineExtensionOption` is clamped between 10 seconds and the value of
+ * `MaxDeadlineExtensionOption`.
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
+struct MinDeadlineExtensionOption {
   using Type = std::chrono::seconds;
 };
 
@@ -221,6 +326,8 @@ struct MaxDeadlineExtensionOption {
  *
  * @par Example
  * @snippet samples.cc subscriber-flow-control
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxOutstandingMessagesOption {
   using Type = std::int64_t;
@@ -237,6 +344,8 @@ struct MaxOutstandingMessagesOption {
  *
  * @par Example
  * @snippet samples.cc subscriber-flow-control
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxOutstandingBytesOption {
   using Type = std::int64_t;
@@ -260,6 +369,8 @@ struct MaxOutstandingBytesOption {
  *
  * @par Example
  * @snippet samples.cc subscriber-concurrency
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct MaxConcurrencyOption {
   using Type = std::size_t;
@@ -273,16 +384,49 @@ struct MaxConcurrencyOption {
  * which is only shutdown once the completion queue servicing the session shuts
  * down. In this latter case the session polls periodically to detect if the CQ
  * has shutdown. This controls how often this polling happens.
+ *
+ * @ingroup google-cloud-pubsub-options
  */
 struct ShutdownPollingPeriodOption {
   using Type = std::chrono::milliseconds;
 };
 
+/**
+ * Override the default subscription for a request.
+ *
+ * Some applications need to receive messages from multiple subscriptions. In
+ * this case they can use this option to override the default subscription
+ * in a `Subscriber::Pull()` or `Subscriber::Subscribe()` call.
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
+struct SubscriptionOption {
+  using Type = Subscription;
+};
+
 /// The list of options specific to subscribers.
+/// @ingroup google-cloud-pubsub-options
 using SubscriberOptionList =
     OptionList<MaxDeadlineTimeOption, MaxDeadlineExtensionOption,
-               MaxOutstandingMessagesOption, MaxOutstandingBytesOption,
-               MaxConcurrencyOption, ShutdownPollingPeriodOption>;
+               MinDeadlineExtensionOption, MaxOutstandingMessagesOption,
+               MaxOutstandingBytesOption, MaxConcurrencyOption,
+               ShutdownPollingPeriodOption, SubscriptionOption>;
+
+/**
+ * Convenience function to initialize a
+ * `google::cloud::iam::IAMPolicyConnection`.
+ *
+ * To manage the IAM policies of Pub/Sub resources you need to configure the
+ * `google::cloud::IAMPolicyClient` to use `pubsub.googleapis.com` as the
+ * `google::cloud::EndpointOption` and `google::cloud::AuthorityOption`.
+ *
+ * This function returns an object that is initialized with these values, you
+ * can provide additional configuration, or override some of the values before
+ * passing the object to `google::cloud::iam::MakeIAMPolicyConnection`.
+ *
+ * @ingroup google-cloud-pubsub-options
+ */
+Options IAMPolicyOptions(Options opts = {});
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace pubsub

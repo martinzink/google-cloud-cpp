@@ -20,62 +20,31 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_COMPOSER_IMAGE_VERSIONS_CONNECTION_H
 
 #include "google/cloud/composer/image_versions_connection_idempotency_policy.h"
-#include "google/cloud/composer/internal/image_versions_retry_traits.h"
-#include "google/cloud/composer/internal/image_versions_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/composer/v1/image_versions_connection.h"
 
 namespace google {
 namespace cloud {
 namespace composer {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ImageVersionsRetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        composer_internal::ImageVersionsRetryTraits>;
+/// @deprecated Use composer_v1::MakeImageVersionsConnection directly.
+using ::google::cloud::composer_v1::MakeImageVersionsConnection;
 
-using ImageVersionsLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        composer_internal::ImageVersionsRetryTraits>;
+/// @deprecated Use composer_v1::ImageVersionsConnection directly.
+using ::google::cloud::composer_v1::ImageVersionsConnection;
 
-using ImageVersionsLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        composer_internal::ImageVersionsRetryTraits>;
+/// @deprecated Use composer_v1::ImageVersionsLimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::composer_v1::ImageVersionsLimitedErrorCountRetryPolicy;
 
-class ImageVersionsConnection {
- public:
-  virtual ~ImageVersionsConnection() = 0;
+/// @deprecated Use composer_v1::ImageVersionsLimitedTimeRetryPolicy directly.
+using ::google::cloud::composer_v1::ImageVersionsLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<
-      google::cloud::orchestration::airflow::service::v1::ImageVersion>
-  ListImageVersions(google::cloud::orchestration::airflow::service::v1::
-                        ListImageVersionsRequest request);
-};
-
-std::shared_ptr<ImageVersionsConnection> MakeImageVersionsConnection(
-    Options options = {});
+/// @deprecated Use composer_v1::ImageVersionsRetryPolicy directly.
+using ::google::cloud::composer_v1::ImageVersionsRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace composer
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace composer_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<composer::ImageVersionsConnection> MakeImageVersionsConnection(
-    std::shared_ptr<ImageVersionsStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace composer_internal
 }  // namespace cloud
 }  // namespace google
 

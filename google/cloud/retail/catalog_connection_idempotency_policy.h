@@ -19,40 +19,21 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_CATALOG_CONNECTION_IDEMPOTENCY_POLICY_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_RETAIL_CATALOG_CONNECTION_IDEMPOTENCY_POLICY_H
 
-#include "google/cloud/idempotency.h"
-#include "google/cloud/internal/retry_policy.h"
-#include "google/cloud/version.h"
-#include <google/cloud/retail/v2/catalog_service.grpc.pb.h>
-#include <memory>
+#include "google/cloud/retail/v2/catalog_connection_idempotency_policy.h"
 
 namespace google {
 namespace cloud {
 namespace retail {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-class CatalogServiceConnectionIdempotencyPolicy {
- public:
-  virtual ~CatalogServiceConnectionIdempotencyPolicy() = 0;
+/// @deprecated Use
+/// retail_v2::MakeDefaultCatalogServiceConnectionIdempotencyPolicy directly.
+using ::google::cloud::retail_v2::
+    MakeDefaultCatalogServiceConnectionIdempotencyPolicy;
 
-  /// Create a new copy of this object.
-  virtual std::unique_ptr<CatalogServiceConnectionIdempotencyPolicy> clone()
-      const = 0;
-
-  virtual google::cloud::Idempotency ListCatalogs(
-      google::cloud::retail::v2::ListCatalogsRequest request) = 0;
-
-  virtual google::cloud::Idempotency UpdateCatalog(
-      google::cloud::retail::v2::UpdateCatalogRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency SetDefaultBranch(
-      google::cloud::retail::v2::SetDefaultBranchRequest const& request) = 0;
-
-  virtual google::cloud::Idempotency GetDefaultBranch(
-      google::cloud::retail::v2::GetDefaultBranchRequest const& request) = 0;
-};
-
-std::unique_ptr<CatalogServiceConnectionIdempotencyPolicy>
-MakeDefaultCatalogServiceConnectionIdempotencyPolicy();
+/// @deprecated Use retail_v2::CatalogServiceConnectionIdempotencyPolicy
+/// directly.
+using ::google::cloud::retail_v2::CatalogServiceConnectionIdempotencyPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace retail

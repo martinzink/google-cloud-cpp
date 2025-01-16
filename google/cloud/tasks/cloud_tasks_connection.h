@@ -20,104 +20,30 @@
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_TASKS_CLOUD_TASKS_CONNECTION_H
 
 #include "google/cloud/tasks/cloud_tasks_connection_idempotency_policy.h"
-#include "google/cloud/tasks/internal/cloud_tasks_retry_traits.h"
-#include "google/cloud/tasks/internal/cloud_tasks_stub.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/stream_range.h"
-#include "google/cloud/version.h"
-#include <memory>
+#include "google/cloud/tasks/v2/cloud_tasks_connection.h"
 
 namespace google {
 namespace cloud {
 namespace tasks {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using CloudTasksRetryPolicy = ::google::cloud::internal::TraitBasedRetryPolicy<
-    tasks_internal::CloudTasksRetryTraits>;
+/// @deprecated Use tasks_v2::MakeCloudTasksConnection directly.
+using ::google::cloud::tasks_v2::MakeCloudTasksConnection;
 
-using CloudTasksLimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        tasks_internal::CloudTasksRetryTraits>;
+/// @deprecated Use tasks_v2::CloudTasksConnection directly.
+using ::google::cloud::tasks_v2::CloudTasksConnection;
 
-using CloudTasksLimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        tasks_internal::CloudTasksRetryTraits>;
+/// @deprecated Use tasks_v2::CloudTasksLimitedErrorCountRetryPolicy directly.
+using ::google::cloud::tasks_v2::CloudTasksLimitedErrorCountRetryPolicy;
 
-class CloudTasksConnection {
- public:
-  virtual ~CloudTasksConnection() = 0;
+/// @deprecated Use tasks_v2::CloudTasksLimitedTimeRetryPolicy directly.
+using ::google::cloud::tasks_v2::CloudTasksLimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StreamRange<google::cloud::tasks::v2::Queue> ListQueues(
-      google::cloud::tasks::v2::ListQueuesRequest request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Queue> GetQueue(
-      google::cloud::tasks::v2::GetQueueRequest const& request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Queue> CreateQueue(
-      google::cloud::tasks::v2::CreateQueueRequest const& request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Queue> UpdateQueue(
-      google::cloud::tasks::v2::UpdateQueueRequest const& request);
-
-  virtual Status DeleteQueue(
-      google::cloud::tasks::v2::DeleteQueueRequest const& request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Queue> PurgeQueue(
-      google::cloud::tasks::v2::PurgeQueueRequest const& request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Queue> PauseQueue(
-      google::cloud::tasks::v2::PauseQueueRequest const& request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Queue> ResumeQueue(
-      google::cloud::tasks::v2::ResumeQueueRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> GetIamPolicy(
-      google::iam::v1::GetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::Policy> SetIamPolicy(
-      google::iam::v1::SetIamPolicyRequest const& request);
-
-  virtual StatusOr<google::iam::v1::TestIamPermissionsResponse>
-  TestIamPermissions(google::iam::v1::TestIamPermissionsRequest const& request);
-
-  virtual StreamRange<google::cloud::tasks::v2::Task> ListTasks(
-      google::cloud::tasks::v2::ListTasksRequest request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Task> GetTask(
-      google::cloud::tasks::v2::GetTaskRequest const& request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Task> CreateTask(
-      google::cloud::tasks::v2::CreateTaskRequest const& request);
-
-  virtual Status DeleteTask(
-      google::cloud::tasks::v2::DeleteTaskRequest const& request);
-
-  virtual StatusOr<google::cloud::tasks::v2::Task> RunTask(
-      google::cloud::tasks::v2::RunTaskRequest const& request);
-};
-
-std::shared_ptr<CloudTasksConnection> MakeCloudTasksConnection(
-    Options options = {});
+/// @deprecated Use tasks_v2::CloudTasksRetryPolicy directly.
+using ::google::cloud::tasks_v2::CloudTasksRetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace tasks
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace tasks_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<tasks::CloudTasksConnection> MakeCloudTasksConnection(
-    std::shared_ptr<CloudTasksStub> stub, Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace tasks_internal
 }  // namespace cloud
 }  // namespace google
 

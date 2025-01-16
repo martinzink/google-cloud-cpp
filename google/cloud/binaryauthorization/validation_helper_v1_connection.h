@@ -19,64 +19,39 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BINARYAUTHORIZATION_VALIDATION_HELPER_V1_CONNECTION_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_BINARYAUTHORIZATION_VALIDATION_HELPER_V1_CONNECTION_H
 
-#include "google/cloud/binaryauthorization/internal/validation_helper_v1_retry_traits.h"
-#include "google/cloud/binaryauthorization/internal/validation_helper_v1_stub.h"
+#include "google/cloud/binaryauthorization/v1/validation_helper_v1_connection.h"
 #include "google/cloud/binaryauthorization/validation_helper_v1_connection_idempotency_policy.h"
-#include "google/cloud/backoff_policy.h"
-#include "google/cloud/options.h"
-#include "google/cloud/status_or.h"
-#include "google/cloud/version.h"
-#include <memory>
 
 namespace google {
 namespace cloud {
 namespace binaryauthorization {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-using ValidationHelperV1RetryPolicy =
-    ::google::cloud::internal::TraitBasedRetryPolicy<
-        binaryauthorization_internal::ValidationHelperV1RetryTraits>;
+/// @deprecated Use binaryauthorization_v1::MakeValidationHelperV1Connection
+/// directly.
+using ::google::cloud::binaryauthorization_v1::MakeValidationHelperV1Connection;
 
-using ValidationHelperV1LimitedTimeRetryPolicy =
-    ::google::cloud::internal::LimitedTimeRetryPolicy<
-        binaryauthorization_internal::ValidationHelperV1RetryTraits>;
+/// @deprecated Use binaryauthorization_v1::ValidationHelperV1Connection
+/// directly.
+using ::google::cloud::binaryauthorization_v1::ValidationHelperV1Connection;
 
-using ValidationHelperV1LimitedErrorCountRetryPolicy =
-    ::google::cloud::internal::LimitedErrorCountRetryPolicy<
-        binaryauthorization_internal::ValidationHelperV1RetryTraits>;
+/// @deprecated Use
+/// binaryauthorization_v1::ValidationHelperV1LimitedErrorCountRetryPolicy
+/// directly.
+using ::google::cloud::binaryauthorization_v1::
+    ValidationHelperV1LimitedErrorCountRetryPolicy;
 
-class ValidationHelperV1Connection {
- public:
-  virtual ~ValidationHelperV1Connection() = 0;
+/// @deprecated Use
+/// binaryauthorization_v1::ValidationHelperV1LimitedTimeRetryPolicy directly.
+using ::google::cloud::binaryauthorization_v1::
+    ValidationHelperV1LimitedTimeRetryPolicy;
 
-  virtual Options options() { return Options{}; }
-
-  virtual StatusOr<google::cloud::binaryauthorization::v1::
-                       ValidateAttestationOccurrenceResponse>
-  ValidateAttestationOccurrence(
-      google::cloud::binaryauthorization::v1::
-          ValidateAttestationOccurrenceRequest const& request);
-};
-
-std::shared_ptr<ValidationHelperV1Connection> MakeValidationHelperV1Connection(
-    Options options = {});
+/// @deprecated Use binaryauthorization_v1::ValidationHelperV1RetryPolicy
+/// directly.
+using ::google::cloud::binaryauthorization_v1::ValidationHelperV1RetryPolicy;
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace binaryauthorization
-}  // namespace cloud
-}  // namespace google
-
-namespace google {
-namespace cloud {
-namespace binaryauthorization_internal {
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
-
-std::shared_ptr<binaryauthorization::ValidationHelperV1Connection>
-MakeValidationHelperV1Connection(std::shared_ptr<ValidationHelperV1Stub> stub,
-                                 Options options);
-
-GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
-}  // namespace binaryauthorization_internal
 }  // namespace cloud
 }  // namespace google
 

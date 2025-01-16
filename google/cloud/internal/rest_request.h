@@ -15,6 +15,7 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_REST_REQUEST_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_INTERNAL_REST_REQUEST_H
 
+#include "google/cloud/internal/rest_context.h"
 #include "google/cloud/status_or.h"
 #include "google/cloud/version.h"
 #include <unordered_map>
@@ -28,7 +29,7 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 class RestClient;
 
 // This class is a regular type that contains the path, headers, and query
-// parameters for use in sending a request to a REST-ful service. It is intended
+// parameters for use in sending a request to a RESTful service. It is intended
 // to be passed to the appropriate HTTP method on RestClient, along with a
 // payload if required.
 class RestRequest {
@@ -38,6 +39,7 @@ class RestRequest {
 
   RestRequest();
   explicit RestRequest(std::string path);
+  explicit RestRequest(RestContext const& rest_context);
   RestRequest(std::string path, HttpHeaders headers);
   RestRequest(std::string path, HttpParameters parameters);
   RestRequest(std::string path, HttpHeaders headers, HttpParameters parameters);

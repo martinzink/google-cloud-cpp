@@ -12,48 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "google/cloud/documentai/document_processor_client.h"
-#include "google/cloud/common_options.h"
+//! [all]
+#include "google/cloud/documentai/v1/document_processor_client.h"
+#include "google/cloud/location.h"
+#include <fstream>
 #include <iostream>
-#include <stdexcept>
+#include <string>
 
 int main(int argc, char* argv[]) try {
-  if (argc != 4) {
+  if (argc != 5) {
     std::cerr << "Usage: " << argv[0]
-              << " project-id location-id processor-id\n";
+              << " project-id location-id processor-id filename (PDF only)\n";
     return 1;
   }
-  std::string const location = argv[2];
-  if (location != "us" && location != "eu") {
+
+  std::string const location_id = argv[2];
+  if (location_id != "us" && location_id != "eu") {
     std::cerr << "location-id must be either 'us' or 'eu'\n";
     return 1;
   }
+  auto const location = google::cloud::Location(argv[1], location_id);
 
-  namespace gc = ::google::cloud;
-  auto options = gc::Options{}.set<gc::EndpointOption>(
-      location + "-documentai.googleapis.com");
-  options.set<google::cloud::TracingComponentsOption>({"rpc"});
-
-  namespace documentai = ::google::cloud::documentai;
+  namespace documentai = ::google::cloud::documentai_v1;
   auto client = documentai::DocumentProcessorServiceClient(
-      documentai::MakeDocumentProcessorServiceConnection(options));
-
-  auto const resource = std::string{"projects/"} + argv[1] + "/locations/" +
-                        argv[2] + "/processors/" + argv[3];
+      documentai::MakeDocumentProcessorServiceConnection(
+          location.location_id()));
 
   google::cloud::documentai::v1::ProcessRequest req;
-  req.set_name(resource);
+  req.set_name(location.FullName() + "/processors/" + argv[3]);
   req.set_skip_human_review(true);
-  auto& doc = *req.mutable_inline_document();
+  auto& doc = *req.mutable_raw_document();
   doc.set_mime_type("application/pdf");
-  doc.set_uri("gs://cloud-samples-data/documentai/invoice.pdf");
+  std::ifstream is(argv[4]);
+  doc.set_content(std::string{std::istreambuf_iterator<char>(is), {}});
 
   auto resp = client.ProcessDocument(std::move(req));
-  if (!resp) throw std::runtime_error(resp.status().message());
+  if (!resp) throw std::move(resp).status();
   std::cout << resp->document().text() << "\n";
 
   return 0;
-} catch (std::exception const& ex) {
-  std::cerr << "Standard exception raised: " << ex.what() << "\n";
+} catch (google::cloud::Status const& status) {
+  std::cerr << "google::cloud::Status thrown: " << status << "\n";
   return 1;
 }
+//! [all]

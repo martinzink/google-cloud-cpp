@@ -15,11 +15,13 @@
 #ifndef GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_INTERNAL_SUBSCRIPTION_CONCURRENCY_CONTROL_H
 #define GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_PUBSUB_INTERNAL_SUBSCRIPTION_CONCURRENCY_CONTROL_H
 
-#include "google/cloud/pubsub/application_callback.h"
+#include "google/cloud/pubsub/exactly_once_ack_handler.h"
+#include "google/cloud/pubsub/internal/batch_callback.h"
 #include "google/cloud/pubsub/internal/session_shutdown_manager.h"
 #include "google/cloud/pubsub/internal/subscription_message_source.h"
 #include "google/cloud/pubsub/message.h"
 #include "google/cloud/pubsub/version.h"
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -35,33 +37,38 @@ class SubscriptionConcurrencyControl
       google::cloud::CompletionQueue cq,
       std::shared_ptr<SessionShutdownManager> shutdown_manager,
       std::shared_ptr<SubscriptionMessageSource> source,
-      std::size_t max_concurrency) {
+      pubsub::Subscription subscription, std::size_t max_concurrency) {
     return std::shared_ptr<SubscriptionConcurrencyControl>(
-        new SubscriptionConcurrencyControl(std::move(cq),
-                                           std::move(shutdown_manager),
-                                           std::move(source), max_concurrency));
+        new SubscriptionConcurrencyControl(
+            std::move(cq), std::move(shutdown_manager), std::move(source),
+            std::move(subscription), max_concurrency));
   }
 
-  void Start(pubsub::ApplicationCallback);
+  void Start(std::shared_ptr<BatchCallback> cb);
   void Shutdown();
-  void AckMessage(std::string const& ack_id);
-  void NackMessage(std::string const& ack_id);
+  future<Status> AckMessage(std::string const& ack_id);
+  future<Status> NackMessage(std::string const& ack_id);
 
  private:
   SubscriptionConcurrencyControl(
       google::cloud::CompletionQueue cq,
       std::shared_ptr<SessionShutdownManager> shutdown_manager,
       std::shared_ptr<SubscriptionMessageSource> source,
-      std::size_t max_concurrency)
+      pubsub::Subscription subscription, std::size_t max_concurrency)
       : cq_(std::move(cq)),
         shutdown_manager_(std::move(shutdown_manager)),
         source_(std::move(source)),
+        subscription_(std::move(subscription)),
         max_concurrency_(max_concurrency) {}
 
   void MessageHandled();
   void OnMessage(google::pubsub::v1::ReceivedMessage m);
   void OnMessageAsync(google::pubsub::v1::ReceivedMessage m,
                       std::weak_ptr<SubscriptionConcurrencyControl> w);
+
+  std::weak_ptr<SubscriptionConcurrencyControl> WeakFromThis() {
+    return shared_from_this();
+  }
 
   std::size_t total_messages() const {
     return message_count_ + messages_requested_;
@@ -70,10 +77,11 @@ class SubscriptionConcurrencyControl
   google::cloud::CompletionQueue cq_;
   std::shared_ptr<SessionShutdownManager> const shutdown_manager_;
   std::shared_ptr<SubscriptionMessageSource> const source_;
+  pubsub::Subscription subscription_;
   std::size_t const max_concurrency_;
 
   std::mutex mu_;
-  pubsub::ApplicationCallback callback_;
+  std::shared_ptr<BatchCallback> callback_;
   std::size_t message_count_ = 0;
   std::size_t messages_requested_ = 0;
 };
